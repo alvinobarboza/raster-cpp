@@ -25,6 +25,8 @@ endif()
 
 add_executable(${PROJECT_NAME}
         src/main.cpp
+        include/transforms/Vec3.h
+        src/transforms/Vec3.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)
