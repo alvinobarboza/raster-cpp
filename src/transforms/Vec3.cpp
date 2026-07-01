@@ -1,4 +1,5 @@
 #include "transforms/Vec3.h"
+#include "transforms/Matrix4x4.h"
 
 #include <cmath>
 
@@ -13,6 +14,14 @@ Vec3 Vec3::operator*(const float scalar) const
         x * scalar,
         y * scalar,
         z * scalar
+    };
+}
+
+Vec3 Vec3::operator*(const Matrix4x4 &rhs) const {
+    return {
+        (x * rhs.at(0,0)) + (y * rhs.at(1,0)) + (z * rhs.at(2,0)) + (1 * rhs.at(3,0)),
+        (x * rhs.at(0,1)) + (y * rhs.at(1,1)) + (z * rhs.at(2,1)) + (1 * rhs.at(3,1)),
+        (x * rhs.at(0,2)) + (y * rhs.at(1,2)) + (z * rhs.at(2,2)) + (1 * rhs.at(3,2)),
     };
 }
 

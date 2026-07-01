@@ -1,6 +1,8 @@
 #pragma once
 #include <iostream>
 
+class Matrix4x4;
+
 class Vec3 {
 public:
     float x, y, z;
@@ -20,6 +22,8 @@ public:
     Vec3& operator-=(const Vec3 &rhs);
     Vec3 operator-(Vec3 rhs) const;
     Vec3 operator-() const;
+
+    Vec3 operator*(const Matrix4x4 &rhs) const;
 
     [[nodiscard]] float length() const;
     [[nodiscard]] Vec3 normalized() const;
