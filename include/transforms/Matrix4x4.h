@@ -36,5 +36,6 @@ public:
     [[nodiscard]] Matrix4x4 transpose() const;
 
     Matrix4x4 operator*( const Matrix4x4& rhs) const;
+    Matrix4x4& operator=( const Matrix4x4& rhs );
     friend std::ostream &operator<<(std::ostream &os, const Matrix4x4 &m);
 };

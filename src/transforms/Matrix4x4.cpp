@@ -87,6 +87,13 @@ Matrix4x4 Matrix4x4::operator*(const Matrix4x4 &rhs) const
     return result;
 }
 
+Matrix4x4& Matrix4x4::operator=(const Matrix4x4 &rhs) {
+    if (this == &rhs) return *this;
+
+    data = rhs.data;
+    return *this;
+}
+
 std::ostream& operator<<(std::ostream &os, const Matrix4x4 &m)
 {
     const std::ios_base::fmtflags f(os.flags());

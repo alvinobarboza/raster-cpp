@@ -27,11 +27,13 @@ add_executable(${PROJECT_NAME}
         src/main.cpp
         include/transforms/Vec3.h
         include/transforms/Vec2.h
+        include/transforms/Matrix4x4.h
+        include/transforms/Constants.h
+        include/transforms/Transforms.h
         src/transforms/Vec3.cpp
         src/transforms/Vec2.cpp
         src/transforms/Matrix4x4.cpp
-        include/transforms/Matrix4x4.h
-        include/transforms/Constants.h
+        src/transforms/Transforms.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)
