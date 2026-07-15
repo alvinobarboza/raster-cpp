@@ -1,14 +1,16 @@
 #pragma once
-#include <iostream>
+#include <ostream>
 
 class Matrix4x4;
 
 class Vec3 {
 public:
-    float x, y, z;
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
 
     Vec3(const float x, const float y, const float z) : x(x), y(y), z(z) {}
-    Vec3() : x(0), y(0), z(0) {}
+    Vec3() = default;
 
     ~Vec3() = default;
 
@@ -20,7 +22,7 @@ public:
     Vec3& operator+=(const Vec3 &rhs);
     Vec3 operator+(Vec3 rhs) const;
     Vec3& operator-=(const Vec3 &rhs);
-    Vec3 operator-(Vec3 rhs) const;
+    Vec3 operator-(const Vec3 &rhs) const;
     Vec3 operator-() const;
 
     Vec3 operator*(const Matrix4x4 &rhs) const;

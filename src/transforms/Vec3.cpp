@@ -1,6 +1,6 @@
 #include "transforms/Vec3.h"
 #include "transforms/Matrix4x4.h"
-wa
+
 #include <cmath>
 
 float Vec3::operator*(const Vec3 &rhs) const
@@ -19,9 +19,9 @@ Vec3 Vec3::operator*(const float scalar) const
 
 Vec3 Vec3::operator*(const Matrix4x4 &rhs) const {
     return {
-        (x * rhs.at(0,0)) + (y * rhs.at(1,0)) + (z * rhs.at(2,0)) + (1 * rhs.at(3,0)),
-        (x * rhs.at(0,1)) + (y * rhs.at(1,1)) + (z * rhs.at(2,1)) + (1 * rhs.at(3,1)),
-        (x * rhs.at(0,2)) + (y * rhs.at(1,2)) + (z * rhs.at(2,2)) + (1 * rhs.at(3,2)),
+        (x * rhs(0,0)) + (y * rhs(1,0)) + (z * rhs(2,0)) + (1.0f * rhs(3,0)),
+        (x * rhs(0,1)) + (y * rhs(1,1)) + (z * rhs(2,1)) + (1.0f * rhs(3,1)),
+        (x * rhs(0,2)) + (y * rhs(1,2)) + (z * rhs(2,2)) + (1.0f * rhs(3,2)),
     };
 }
 
@@ -57,7 +57,7 @@ Vec3 &Vec3::operator-=(const Vec3 &rhs)
     return *this;
 }
 
-Vec3 Vec3::operator-(const Vec3 rhs) const
+Vec3 Vec3::operator-(const Vec3 &rhs) const
 {
     return {
         x - rhs.x,
