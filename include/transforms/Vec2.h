@@ -3,10 +3,11 @@
 
 class Vec2 {
 public:
-    float x, y;
+    float x = 0.0f;
+    float y = 0.0f;
 
     Vec2(const float x, const float y) : x(x), y(y) {}
-    Vec2() : x(0), y(0){}
+    Vec2() = default;
 
     ~Vec2() = default;
 
@@ -18,7 +19,7 @@ public:
     Vec2& operator+=(const Vec2 &rhs);
     Vec2 operator+(Vec2 rhs) const;
     Vec2& operator-=(const Vec2 &rhs);
-    Vec2 operator-(Vec2 rhs) const;
+    Vec2 operator-(const Vec2 &rhs) const;
     Vec2 operator-() const;
 
     [[nodiscard]] float length() const;

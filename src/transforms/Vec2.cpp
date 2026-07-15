@@ -44,7 +44,7 @@ Vec2 &Vec2::operator-=(const Vec2 &rhs)
     return *this;
 }
 
-Vec2 Vec2::operator-(const Vec2 rhs) const
+Vec2 Vec2::operator-(const Vec2 &rhs) const
 {
     return {
         x - rhs.x,
