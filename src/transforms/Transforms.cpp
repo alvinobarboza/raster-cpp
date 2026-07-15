@@ -2,6 +2,10 @@
 
 void Transforms::update_transforms(const bool inverse_transform) {
     rotation_matrix.to_rotation(rotation);
+
+    if (inverse_transform)
+        rotation_matrix = rotation_matrix.transpose();
+    
     scale_matrix.to_scale(scale);
     translation_matrix.to_translation(!inverse_transform ? position : -position);
 
