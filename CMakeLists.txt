@@ -34,6 +34,8 @@ add_executable(${PROJECT_NAME}
         src/transforms/Vec2.cpp
         src/transforms/Matrix4x4.cpp
         src/transforms/Transforms.cpp
+        include/camera/frustum.h
+        include/colliders/sphere.h
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)
