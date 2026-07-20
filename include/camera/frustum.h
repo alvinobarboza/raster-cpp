@@ -1,6 +1,7 @@
 #pragma once
 #include <array>
 
+#include "colliders/sphere.h"
 #include "transforms/Vec3.h"
 
 constexpr size_t TOP_PLANE = 0;
@@ -30,5 +31,5 @@ public:
     Frustum() = default;
 
     [[nodiscard]] bool is_inside_frustum(const Vec3 &point) const;
-    
+    [[nodiscard]] bool is_inside_frustum(const BoundingSphere &sphere) const;
 };
