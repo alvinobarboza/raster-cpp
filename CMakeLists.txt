@@ -36,6 +36,9 @@ add_executable(${PROJECT_NAME}
         src/transforms/Transforms.cpp
         include/camera/frustum.h
         include/colliders/sphere.h
+        src/colliders/sphere.cpp
+        include/colliders/aabb.h
+        src/colliders/aabb.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)
