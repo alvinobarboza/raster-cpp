@@ -17,7 +17,8 @@ Vec3 Vec3::operator*(const float scalar) const
     };
 }
 
-Vec3 Vec3::operator*(const Matrix4x4 &rhs) const {
+Vec3 Vec3::operator*(const Matrix4x4 &rhs) const
+{
     return {
         (x * rhs(0,0)) + (y * rhs(1,0)) + (z * rhs(2,0)) + (1.0f * rhs(3,0)),
         (x * rhs(0,1)) + (y * rhs(1,1)) + (z * rhs(2,1)) + (1.0f * rhs(3,1)),
@@ -71,15 +72,18 @@ Vec3 Vec3::operator-() const
     return {-x,-y,-z};
 }
 
-float Vec3::length() const {
+float Vec3::length() const
+{
     return std::sqrt(x*x + y*y + z*z);
 }
 
-Vec3 Vec3::normalized() const {
+Vec3 Vec3::normalized() const
+{
     return *this / length();
 }
 
-Vec3 Vec3::cross(const Vec3 &rhs) const {
+Vec3 Vec3::cross(const Vec3 &rhs) const
+{
     return {
         y*rhs.z - z*rhs.y,
         z*rhs.x - x*rhs.z,
@@ -87,7 +91,8 @@ Vec3 Vec3::cross(const Vec3 &rhs) const {
     };
 }
 
-Vec3 Vec3::lerp_to(const Vec3 &rhs, const float t) const {
+Vec3 Vec3::lerp_to(const Vec3 &rhs, const float t) const
+{
     if (t <= 0.0f) {
         return *this;
     }
