@@ -4,14 +4,14 @@
 #include "colliders/sphere.h"
 #include "transforms/Vec3.h"
 
-constexpr size_t TOP_PLANE = 0;
-constexpr size_t BOTTOM_PLANE = 1;
-constexpr size_t LEFT_PLANE = 2;
-constexpr size_t RIGHT_PLANE = 3;
-constexpr size_t NEAR_PLANE = 4;
-constexpr size_t FAR_PLANE = 5;
+constexpr int TOP_PLANE = 0;
+constexpr int BOTTOM_PLANE = 1;
+constexpr int LEFT_PLANE = 2;
+constexpr int RIGHT_PLANE = 3;
+constexpr int NEAR_PLANE = 4;
+constexpr int FAR_PLANE = 5;
 
-constexpr size_t PLANES = 6;
+constexpr int PLANES = 6;
 
 class Plane {
 public:
