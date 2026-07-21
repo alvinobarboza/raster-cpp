@@ -4,16 +4,17 @@
 
 class Transforms {
 public:
-    Vec3 scale;
-    Vec3 rotation;
-    Vec3 position;
-    Vec3 forward_direction;
+    Vec3 scale = {};
+    Vec3 rotation = {};
+    Vec3 position = {};
+    Vec3 forward_direction = {};
 
-    Matrix4x4 scale_matrix;
-    Matrix4x4 rotation_matrix;
-    Matrix4x4 translation_matrix;
-    Matrix4x4 transformation_matrix;
+    Matrix4x4 scale_matrix = {};
+    Matrix4x4 rotation_matrix = {};
+    Matrix4x4 translation_matrix = {};
+    Matrix4x4 transformation_matrix = {};
 
+    Transforms() = default;
     Transforms(
         const Vec3 scale,
         const Vec3 rotation,
