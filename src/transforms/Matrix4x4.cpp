@@ -52,7 +52,7 @@ void Matrix4x4::to_translation(const Vec3& translation)
     };
 }
 
-float Matrix4x4::operator()(const size_t x, const size_t y) const
+float Matrix4x4::operator()(const std::size_t x, const std::size_t y) const
 {
     return data[y * length + x];
 }
@@ -61,8 +61,8 @@ Matrix4x4 Matrix4x4::transpose() const
 {
     Matrix4x4 result;
 
-    for (size_t y = 0; y < length; y++) {
-        for (size_t x = 0; x < length; x++) {
+    for (std::size_t y = 0; y < length; y++) {
+        for (std::size_t x = 0; x < length; x++) {
             result.data[y*length+x] = data[x*length+y];
         }
     }
@@ -74,10 +74,10 @@ Matrix4x4 Matrix4x4::operator*(const Matrix4x4 &rhs) const
 {
     Matrix4x4 result;
 
-    for (size_t y = 0; y < length; ++y) {
-        for (size_t x = 0; x < length; ++x) {
+    for (std::size_t y = 0; y < length; ++y) {
+        for (std::size_t x = 0; x < length; ++x) {
             float sum = 0.0f;
-            for (size_t k = 0; k < length; ++k) {
+            for (std::size_t k = 0; k < length; ++k) {
                 sum += (*this)(k, y) * rhs(x, k);
             }
             result.data[x + y * length] = sum;
@@ -91,9 +91,9 @@ std::ostream& operator<<(std::ostream &os, const Matrix4x4 &m)
     const std::ios_base::fmtflags f(os.flags());
 
     os << std::fixed << std::setprecision(3);
-    for (size_t y = 0; y < 4; ++y) {
+    for (std::size_t y = 0; y < 4; ++y) {
         os << "| ";
-        for (size_t x = 0; x < 4; ++x) {
+        for (std::size_t x = 0; x < 4; ++x) {
             os << std::setw(9) << m(x, y) << " ";
         }
         os << "|\n";
