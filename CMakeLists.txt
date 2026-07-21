@@ -40,6 +40,13 @@ add_executable(${PROJECT_NAME}
         include/colliders/aabb.h
         src/colliders/aabb.cpp
         src/camera/frustum.cpp
+        include/camera/camera.h
+        include/mesh/triangle.h
+        include/material/texture.h
+        include/transforms/Vec4.h
+        src/transforms/Vec4.cpp
+        src/material/texture.cpp
+        src/mesh/triangle.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)
