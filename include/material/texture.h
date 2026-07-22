@@ -4,7 +4,7 @@
 #include "transforms/Vec2.h"
 #include "transforms/Vec4.h"
 
-class Texture {
+class TextureRaster {
 public:
     std::vector<Vec4> buffer = {};
     int width = 0, height = 0;

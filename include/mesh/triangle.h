@@ -35,9 +35,9 @@ public:
 
     AABB2D aabb = {};
 
-    Texture &albedo;
-    Texture &normal;
-    Texture &specular;
+    TextureRaster *albedo;
+    TextureRaster *normal;
+    TextureRaster *specular;
 
     bool smooth = false;
 
@@ -45,9 +45,9 @@ public:
         const Vertex &v1,
         const Vertex &v2,
         const Vertex &v3,
-        Texture &albedo,
-        Texture &normal,
-        Texture &specular);
+        TextureRaster *albedo,
+        TextureRaster *normal,
+        TextureRaster *specular);
 };
 
 namespace triangle {

@@ -13,9 +13,9 @@ FullTriangle::FullTriangle(
     const Vertex &v1,
     const Vertex &v2,
     const Vertex &v3,
-    Texture &albedo,
-    Texture &normal,
-    Texture &specular) : albedo(albedo), normal(normal), specular(specular)
+    TextureRaster *albedo,
+    TextureRaster *normal,
+    TextureRaster *specular) : albedo(albedo), normal(normal), specular(specular)
 {
     vertices[0] = v1;
     vertices[1] = v2;
