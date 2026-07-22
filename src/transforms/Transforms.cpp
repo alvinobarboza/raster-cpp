@@ -1,5 +1,6 @@
 #include "transforms/Transforms.h"
 
+// Inverse transform to accommodate camera, as it doesn't actually move
 void Transforms::update_transforms(const bool inverse_transform) {
     rotation_matrix.to_rotation(rotation);
 
