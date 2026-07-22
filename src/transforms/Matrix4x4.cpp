@@ -26,14 +26,14 @@ void Matrix4x4::to_scale(const Vec3& scale)
 }
 void Matrix4x4::to_rotation(const Vec3& angle)
 {
-    const float cosa = std::cos(angle.x * -Transforms::DEG_TO_RAD);
-    const float sina = std::sin(angle.x * -Transforms::DEG_TO_RAD);
+    const float cosa = std::cos(angle.x * -transforms::DEG_TO_RAD);
+    const float sina = std::sin(angle.x * -transforms::DEG_TO_RAD);
 
-    const float cosb = std::cos(angle.y * -Transforms::DEG_TO_RAD);
-    const float sinb = std::sin(angle.y * -Transforms::DEG_TO_RAD);
+    const float cosb = std::cos(angle.y * -transforms::DEG_TO_RAD);
+    const float sinb = std::sin(angle.y * -transforms::DEG_TO_RAD);
 
-    const float cosga = std::cos(angle.z * -Transforms::DEG_TO_RAD);
-    const float singa = std::sin(angle.z * -Transforms::DEG_TO_RAD);
+    const float cosga = std::cos(angle.z * -transforms::DEG_TO_RAD);
+    const float singa = std::sin(angle.z * -transforms::DEG_TO_RAD);
 
     data = {
         cosb * cosga, sina*sinb*cosga - cosa*singa, cosa*sinb*cosga + sina*singa, 0.0f,
