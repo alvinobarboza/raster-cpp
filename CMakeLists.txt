@@ -47,6 +47,9 @@ add_executable(${PROJECT_NAME}
         src/transforms/Vec4.cpp
         src/material/texture.cpp
         src/mesh/triangle.cpp
+        src/camera/camera.cpp
+        include/material/color_convertion.h
+        src/material/color_convertion.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)
