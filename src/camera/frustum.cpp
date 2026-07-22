@@ -6,7 +6,7 @@ Plane::Plane(const Vec3 &normal, const Vec3 &point)
 {
      const Vec3 normalized = normal.normalized();
      this->normal = normalized;
-     distance = normal * point;
+     distance = normalized * point;
 }
 
 float Plane::signed_distance_to_point(const Vec3 &point) const {
