@@ -35,9 +35,9 @@ public:
 
     AABB2D aabb = {};
 
-    TextureRaster *albedo;
-    TextureRaster *normal;
-    TextureRaster *specular;
+    TextureRaster *albedo = nullptr;
+    TextureRaster *normal = nullptr;
+    TextureRaster *specular = nullptr;
 
     bool smooth = false;
 

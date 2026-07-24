@@ -50,6 +50,8 @@ add_executable(${PROJECT_NAME}
         src/camera/camera.cpp
         include/material/color_convertion.h
         src/material/color_convertion.cpp
+        include/mesh/mesh.h
+        src/mesh/mesh.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)
