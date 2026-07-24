@@ -48,6 +48,8 @@ public:
         TextureRaster *albedo,
         TextureRaster *normal,
         TextureRaster *specular);
+
+    void calculate_tri_aabb();
 };
 
 namespace triangle {

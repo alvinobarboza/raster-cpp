@@ -82,40 +82,7 @@ FullTriangle CameraRaster::project_triangle(
     tri.screen_points[1] = ndc_to_screen(vb);
     tri.screen_points[2] = ndc_to_screen(vc);
 
-    tri.depth_z[0] = 1 / v1.point.z;
-    tri.depth_z[1] = 1 / v2.point.z;
-    tri.depth_z[2] = 1 / v3.point.z;
-
-    tri.points_projected[0] = v1.point * tri.depth_z[0];
-    tri.points_projected[1] = v2.point * tri.depth_z[1];
-    tri.points_projected[2] = v3.point * tri.depth_z[2];
-
-    tri.uvs_projected[0] = v1.uv * tri.depth_z[0];
-    tri.uvs_projected[1] = v2.uv * tri.depth_z[1];
-    tri.uvs_projected[2] = v3.uv * tri.depth_z[2];
-
-    tri.normals_rotated[0] = v1.normal;
-    tri.normals_rotated[1] = v2.normal;
-    tri.normals_rotated[2] = v3.normal;
-
-    tri.aabb = {
-        {
-            std::floor(
-                std::min(tri.screen_points[0].x, std::min(tri.screen_points[1].x, tri.screen_points[2].x))
-            ),
-            std::floor(
-                std::min(tri.screen_points[0].y, std::min(tri.screen_points[1].y, tri.screen_points[2].y))
-            )
-        },
-        {
-            std::ceil(
-                std::max(tri.screen_points[0].x, std::max(tri.screen_points[1].x, tri.screen_points[2].x))
-            ),
-            std::ceil(
-                std::max(tri.screen_points[0].y, std::max(tri.screen_points[1].y, tri.screen_points[2].y))
-            )
-        }
-    };
+    tri.calculate_tri_aabb();
 
     return tri;
 }
@@ -135,7 +102,7 @@ void CameraRaster::put_pixel(const int x, const int y, const Vec4 &color, const 
 {
     const int index = y * width + x;
 
-    if (index > depth_buffer.size()) return;
+    if (index >= depth_buffer.size()) return;
 
     if (render_depth)
     {
@@ -219,6 +186,6 @@ void CameraRaster::update_frustum()
     frustum.planes[BOTTOM_PLANE] = {cam_pos, cam_right.cross(cam_front_scaled - cam_up * half_v_side)};
 }
 
-float fov_scaling(const float angle) {
+static float fov_scaling(const float angle) {
     return 1 / std::tan(angle*transforms::DEG_TO_RAD/2);
 }

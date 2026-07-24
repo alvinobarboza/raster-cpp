@@ -1,5 +1,7 @@
 #include "mesh/triangle.h"
 
+#include <cmath>
+
 bool Triangle::is_back_facing(const std::vector<Vec3> &vertices, const std::vector<Vec3> &normals) const
 {
     const float angle_a = normals[n1] * -vertices[v1];
@@ -20,6 +22,44 @@ FullTriangle::FullTriangle(
     vertices[0] = v1;
     vertices[1] = v2;
     vertices[2] = v3;
+
+    depth_z[0] = 1 / v1.point.z;
+    depth_z[1] = 1 / v2.point.z;
+    depth_z[2] = 1 / v3.point.z;
+
+    points_projected[0] = v1.point * depth_z[0];
+    points_projected[1] = v2.point * depth_z[1];
+    points_projected[2] = v3.point * depth_z[2];
+
+    uvs_projected[0] = v1.uv * depth_z[0];
+    uvs_projected[1] = v2.uv * depth_z[1];
+    uvs_projected[2] = v3.uv * depth_z[2];
+
+    normals_rotated[0] = v1.normal;
+    normals_rotated[1] = v2.normal;
+    normals_rotated[2] = v3.normal;
+}
+
+void FullTriangle::calculate_tri_aabb()
+{
+    aabb = {
+        {
+            std::floor(
+                std::min(screen_points[0].x, std::min(screen_points[1].x, screen_points[2].x))
+            ),
+            std::floor(
+                std::min(screen_points[0].y, std::min(screen_points[1].y, screen_points[2].y))
+            )
+        },
+        {
+            std::ceil(
+                std::max(screen_points[0].x, std::max(screen_points[1].x, screen_points[2].x))
+            ),
+            std::ceil(
+                std::max(screen_points[0].y, std::max(screen_points[1].y, screen_points[2].y))
+            )
+        }
+    };
 }
 
 bool triangle::is_edge_top_or_left(const Vec2 &p1, const Vec2 &p2)
