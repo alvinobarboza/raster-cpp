@@ -26,6 +26,8 @@ public:
     Vec4 operator-(const Vec4 &rhs) const;
     Vec4 operator-() const;
 
+    Vec4 operator*(const Matrix4x4 &rhs) const;
+
     [[nodiscard]] float length() const;
     [[nodiscard]] Vec4 normalized() const;
     [[nodiscard]] Vec4 lerp_to(const Vec4 &rhs, float t) const;

@@ -18,6 +18,15 @@ Vec4 Vec4::operator*(const float scalar) const
     };
 }
 
+Vec4 Vec4::operator*(const Matrix4x4& rhs) const {
+    return {
+        rhs(0,0)* x + rhs(1,0)*y + rhs(2,0)*z + rhs(3,0)*w,
+        rhs(0,1)*x + rhs(1,1)*y + rhs(2,1)*z + rhs(3,1)*w,
+        rhs(0,2)*x + rhs(1,2)*y + rhs(2,2)*z + rhs(3,2)*w,
+        rhs(0,3)*x + rhs(1,3)*y + rhs(2,3)*z + rhs(3,3)*w
+    };
+}
+
 Vec4 Vec4::operator/(const float scalar) const
 {
     if (scalar == 0.0f) return {};
