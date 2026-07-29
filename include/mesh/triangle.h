@@ -27,9 +27,8 @@ struct Vertex {
 class FullTriangle {
 public:
     std::array<Vertex, 3> vertices = {};
-    std::array<Vec3, 3> points_projected = {};
-    std::array<Vec3, 3> normals_rotated = {};
-    std::array<Vec2, 3> uvs_projected = {};
+    std::array<Vertex, 3> projected_vertices = {};
+    std::array<Vec3, 3> ndc_points = {};
     std::array<Vec2, 3> screen_points = {};
     std::array<float, 3> depth_z = {};
 
