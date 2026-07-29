@@ -4,6 +4,7 @@
 #include "transforms/Vec2.h"
 #include "transforms/Vec4.h"
 
+// must be powers of 2 128, 256...
 class TextureRaster {
 public:
     std::vector<Vec4> buffer = {};
