@@ -27,17 +27,17 @@ FullTriangle::FullTriangle(
     depth_z[1] = 1 / v2.point.z;
     depth_z[2] = 1 / v3.point.z;
 
-    points_projected[0] = v1.point * depth_z[0];
-    points_projected[1] = v2.point * depth_z[1];
-    points_projected[2] = v3.point * depth_z[2];
+    projected_vertices[0].point = v1.point * depth_z[0];
+    projected_vertices[1].point = v2.point * depth_z[1];
+    projected_vertices[2].point = v3.point * depth_z[2];
 
-    uvs_projected[0] = v1.uv * depth_z[0];
-    uvs_projected[1] = v2.uv * depth_z[1];
-    uvs_projected[2] = v3.uv * depth_z[2];
+    projected_vertices[0].uv = v1.uv * depth_z[0];
+    projected_vertices[1].uv = v2.uv * depth_z[1];
+    projected_vertices[2].uv = v3.uv * depth_z[2];
 
-    normals_rotated[0] = v1.normal;
-    normals_rotated[1] = v2.normal;
-    normals_rotated[2] = v3.normal;
+    projected_vertices[0].normal = v1.normal;
+    projected_vertices[1].normal = v2.normal;
+    projected_vertices[2].normal = v3.normal;
 }
 
 void FullTriangle::calculate_tri_aabb()
