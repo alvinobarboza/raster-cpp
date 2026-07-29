@@ -52,6 +52,16 @@ void Matrix4x4::to_translation(const Vec3& translation)
     };
 }
 
+void Matrix4x4::to_perspective(const float fov_scale, const float aspect_ratio, const float z_near, const float z_far) {
+    const float z_range = z_far - z_near;
+    data = {
+        fov_scale / aspect_ratio,   0.0f,       0.0f,                       0.0f,
+        0.0f,                       fov_scale,  0.0f,                       0.0f,
+        0.0f,                       0.0f,       (z_far + z_near) / z_range, -(2.0f * z_far * z_near) / z_range,
+        0.0f,                       0.0f,       1.0f,                       0.0f,
+    };
+}
+
 float Matrix4x4::operator()(const std::size_t x, const std::size_t y) const
 {
     return data[y * length + x];
