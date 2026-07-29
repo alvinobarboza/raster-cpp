@@ -39,6 +39,7 @@ void CameraRaster::update_frame_buffer_size(const int w, const  int h)
     frame_buffer.resize(width*height, BLACK);
     depth_buffer.resize(width*height, 0.0f);
 
+    projection_matrix.to_perspective(fov_scale, aspect_ratio, z_near, z_far);
     update_frustum();
 }
 
@@ -50,16 +51,18 @@ void CameraRaster::clear_frame_buffer()
     }
 }
 
-Vec2 CameraRaster::vertex_to_ndc(const Vec3 &vertex) const
+Vec3 CameraRaster::vertex_to_ndc(const Vec3 &vertex) const
 {
-    return
-    {
-        vertex.x * fov_scale / (vertex.z * aspect_ratio),
-        vertex.y * fov_scale / vertex.z,
-    };
+    const Vec4 v4 = {vertex.x, vertex.y, vertex.z, 1.0f};
+    Vec4 clip = v4 * projection_matrix;;
+
+    if (clip.w != 0.0f)
+        return {clip.x/clip.w,clip.y/clip.w,clip.z/clip.w};
+
+    return {clip.x,clip.y,clip.z};
 }
 
-Vec2 CameraRaster::ndc_to_screen(const Vec2 &point) const
+Vec2 CameraRaster::ndc_to_screen(const Vec3 &point) const
 {
     return
     {
@@ -74,13 +77,13 @@ FullTriangle CameraRaster::project_triangle(
 {
     FullTriangle tri = {v1, v2, v3, albedo, normal, specular};
 
-    const Vec2 va = vertex_to_ndc(v1.point);
-    const Vec2 vb = vertex_to_ndc(v2.point);
-    const Vec2 vc = vertex_to_ndc(v3.point);
+    tri.ndc_points[0] = vertex_to_ndc(v1.point);
+    tri.ndc_points[1] = vertex_to_ndc(v2.point);
+    tri.ndc_points[2] = vertex_to_ndc(v3.point);
 
-    tri.screen_points[0] = ndc_to_screen(va);
-    tri.screen_points[1] = ndc_to_screen(vb);
-    tri.screen_points[2] = ndc_to_screen(vc);
+    tri.screen_points[0] = ndc_to_screen(tri.ndc_points[0]);
+    tri.screen_points[1] = ndc_to_screen(tri.ndc_points[1]);
+    tri.screen_points[2] = ndc_to_screen(tri.ndc_points[2]);
 
     tri.calculate_tri_aabb();
 

@@ -31,6 +31,7 @@ public:
     float half_height = 0.0f;
 
     Transforms transform = {};
+    Matrix4x4 projection_matrix = {};
 
     Frustum frustum = {};
 
@@ -42,8 +43,8 @@ public:
 
     void update_frame_buffer_size(int w, int h);
     void clear_frame_buffer();
-    [[nodiscard]] Vec2 vertex_to_ndc(const Vec3 &vertex) const;
-    [[nodiscard]] Vec2 ndc_to_screen(const Vec2 &point) const;
+    [[nodiscard]] Vec3 vertex_to_ndc(const Vec3 &vertex) const;
+    [[nodiscard]] Vec2 ndc_to_screen(const Vec3 &point) const;
     [[nodiscard]] FullTriangle project_triangle(
         const Vertex &v1,
         const Vertex &v2,
