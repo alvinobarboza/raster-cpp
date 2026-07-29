@@ -1,4 +1,4 @@
-#include "mesh/triangle.h"
+#include "model/triangle.h"
 
 #include <cmath>
 

@@ -41,17 +41,17 @@ add_executable(${PROJECT_NAME}
         src/colliders/aabb.cpp
         src/camera/frustum.cpp
         include/camera/camera.h
-        include/mesh/triangle.h
+        include/model/triangle.h
         include/material/texture.h
         include/transforms/Vec4.h
         src/transforms/Vec4.cpp
         src/material/texture.cpp
-        src/mesh/triangle.cpp
+        src/model/triangle.cpp
         src/camera/camera.cpp
         include/material/color_convertion.h
         src/material/color_convertion.cpp
-        include/mesh/mesh.h
-        src/mesh/mesh.cpp
+        include/model/mesh.h
+        src/model/mesh.cpp
         include/renderer/renderer.h
 )
 

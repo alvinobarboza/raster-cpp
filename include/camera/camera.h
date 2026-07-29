@@ -3,7 +3,7 @@
 
 #include "frustum.h"
 #include "raylib.h"
-#include "mesh/triangle.h"
+#include "model/triangle.h"
 #include "transforms/Transforms.h"
 #include "transforms/Vec2.h"
 
