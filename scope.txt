@@ -1,0 +1,16 @@
+asset-manager
+    vector<unique *Material>
+    vector<unique *Model>
+    load model/meshs
+    keep-track
+scene
+    vector<*Model>
+        Model*
+            Material*
+    camera
+    skybox
+        material -> texture
+        ambientlight
+
+renderer
+    render scene
