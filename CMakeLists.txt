@@ -53,6 +53,8 @@ add_executable(${PROJECT_NAME}
         include/model/mesh.h
         src/model/mesh.cpp
         include/renderer/renderer.h
+        include/material/material.h
+        src/material/material.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)

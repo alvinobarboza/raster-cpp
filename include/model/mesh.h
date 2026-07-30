@@ -4,6 +4,7 @@
 
 #include "triangle.h"
 #include "colliders/sphere.h"
+#include "material/material.h"
 #include "transforms/Transforms.h"
 
 class MeshData {
@@ -12,19 +13,14 @@ public:
     std::vector<Vec3> vertices = {}, vertices_word = {};
     std::vector<Vec3> normals = {}, normals_word = {};
     std::vector<Vec2> uvs = {};
-    TextureRaster *albedo = nullptr;
-    TextureRaster *normal = nullptr;
-    TextureRaster *specular = nullptr;
+    std::vector<Material> materials = {};
 
     MeshData() = default;
     MeshData(
         std::vector<Triangle> &tris,
         std::vector<Vec3> &vertices,
         std::vector<Vec3> &normals,
-        std::vector<Vec2> &uvs,
-        TextureRaster *albedo,
-        TextureRaster *normal,
-        TextureRaster *specular);
+        std::vector<Vec2> &uvs);
 };
 
 class ModelRaster {

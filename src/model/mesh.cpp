@@ -6,17 +6,11 @@ MeshData::MeshData(
     std::vector<Triangle> &tris,
     std::vector<Vec3> &vertices,
     std::vector<Vec3> &normals,
-    std::vector<Vec2> &uvs,
-    TextureRaster *albedo,
-    TextureRaster *normal,
-    TextureRaster *specular):
+    std::vector<Vec2> &uvs):
 triangles(std::move(tris)),
 vertices(std::move(vertices)),
 normals(std::move(normals)),
-uvs(std::move(uvs)),
-albedo(albedo),
-normal(normal),
-specular(specular)
+uvs(std::move(uvs))
 {
     vertices_word.resize(vertices.size());
     normals_word.resize(normals.size());

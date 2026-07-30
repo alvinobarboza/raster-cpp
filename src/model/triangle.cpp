@@ -1,6 +1,7 @@
 #include "model/triangle.h"
 
 #include <cmath>
+#include <utility>
 
 bool Triangle::is_back_facing(const std::vector<Vec3> &vertices, const std::vector<Vec3> &normals) const
 {
@@ -15,9 +16,7 @@ FullTriangle::FullTriangle(
     const Vertex &v1,
     const Vertex &v2,
     const Vertex &v3,
-    TextureRaster *albedo,
-    TextureRaster *normal,
-    TextureRaster *specular) : albedo(albedo), normal(normal), specular(specular)
+    const Material &material) : material(material)
 {
     vertices[0] = v1;
     vertices[1] = v2;
