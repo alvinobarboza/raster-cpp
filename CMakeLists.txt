@@ -58,6 +58,8 @@ add_executable(${PROJECT_NAME}
         include/engine/resourse_manager.h
         include/engine/scene.h
         src/engine/resource_manager.cpp
+        src/engine/scene.cpp
+        src/engine/renderer.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)

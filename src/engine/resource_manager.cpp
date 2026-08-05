@@ -2,7 +2,6 @@
 #include <fstream>
 #include <sstream>
 
-#include "raylib.h"
 #include "engine/resourse_manager.h"
 
 ModelRaster* ResourceManager::LoadModel(const std::string& path)
