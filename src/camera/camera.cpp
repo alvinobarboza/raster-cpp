@@ -176,7 +176,7 @@ void CameraRaster::update_frustum()
     const Vec3 cam_up = {0.0f, 1.0f, 0.0f};
     const Vec3 cam_pos = {};
 
-    const float half_v_side = z_far * std::tan(fov_angle * Transforms::DEG_TO_RAD * 0.5f);
+    const float half_v_side = z_far * std::tan(fov_angle * transforms::DEG_TO_RAD * 0.5f);
     const float half_h_side = half_v_side * aspect_ratio;
     const Vec3 cam_front_scaled = cam_front * z_far;
 
@@ -189,5 +189,5 @@ void CameraRaster::update_frustum()
 }
 
 static float fov_scaling(const float angle) {
-    return 1 / std::tan(angle*Transforms::DEG_TO_RAD/2);
+    return 1 / std::tan(angle*transforms::DEG_TO_RAD/2);
 }

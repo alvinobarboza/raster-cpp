@@ -17,7 +17,7 @@ uvs(std::move(uvs))
 }
 
 ModelRaster::ModelRaster(
-    const transforms &transform,
+    const Transforms &transform,
     std::unique_ptr<MeshData> meshData):
 transforms(transform),
 meshData(std::move(meshData))

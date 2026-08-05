@@ -30,7 +30,7 @@ public:
     std::unique_ptr<MeshData> meshData = nullptr;
 
     ModelRaster() = default;
-    ModelRaster(const transforms &transform, std::unique_ptr<MeshData> meshData);
+    ModelRaster(const Transforms &transform, std::unique_ptr<MeshData> meshData);
 
     void update_transforms();
 };
