@@ -2,18 +2,18 @@
 
 #include <algorithm>
 
-Plane::Plane(const Vec3 &normal, const Vec3 &point)
+Plane::Plane(const vec3 &normal, const vec3 &point)
 {
-     const Vec3 normalized = normal.normalized();
+     const vec3 normalized = normal.normalized();
      this->normal = normalized;
      distance = normalized * point;
 }
 
-float Plane::signed_distance_to_point(const Vec3 &point) const {
+float Plane::signed_distance_to_point(const vec3 &point) const {
      return normal * point - distance;
 }
 
-bool Frustum::is_inside_frustum(const Vec3 &point) const {
+bool Frustum::is_inside_frustum(const vec3 &point) const {
      return std::ranges::all_of(
           planes.cbegin(),
           planes.cend(),

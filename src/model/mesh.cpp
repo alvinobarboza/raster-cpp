@@ -4,9 +4,9 @@
 
 MeshData::MeshData(
     std::vector<Triangle> &tris,
-    std::vector<Vec3> &vertices,
-    std::vector<Vec3> &normals,
-    std::vector<Vec2> &uvs):
+    std::vector<vec3> &vertices,
+    std::vector<vec3> &normals,
+    std::vector<vec2> &uvs):
 triangles(std::move(tris)),
 vertices(std::move(vertices)),
 normals(std::move(normals)),
@@ -17,7 +17,7 @@ uvs(std::move(uvs))
 }
 
 ModelRaster::ModelRaster(
-    const Transforms &transform,
+    const transforms &transform,
     std::unique_ptr<MeshData> meshData):
 transforms(transform),
 meshData(std::move(meshData))

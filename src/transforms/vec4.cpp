@@ -1,14 +1,14 @@
-#include "transforms/Vec4.h"
-#include "transforms/Matrix4x4.h"
+#include "transforms/vec4.h"
+#include "transforms/matrix4x4.h"
 
 #include <cmath>
 
-float Vec4::operator*(const Vec4 &rhs) const
+float vec4::operator*(const vec4 &rhs) const
 {
     return x*rhs.x + y*rhs.y + z*rhs.z;
 }
 
-Vec4 Vec4::operator*(const float scalar) const
+vec4 vec4::operator*(const float scalar) const
 {
     return {
         x * scalar,
@@ -18,7 +18,7 @@ Vec4 Vec4::operator*(const float scalar) const
     };
 }
 
-Vec4 Vec4::operator*(const Matrix4x4& rhs) const {
+vec4 vec4::operator*(const matrix4x4& rhs) const {
     return {
         rhs(0,0)* x + rhs(1,0)*y + rhs(2,0)*z + rhs(3,0)*w,
         rhs(0,1)*x + rhs(1,1)*y + rhs(2,1)*z + rhs(3,1)*w,
@@ -27,7 +27,7 @@ Vec4 Vec4::operator*(const Matrix4x4& rhs) const {
     };
 }
 
-Vec4 Vec4::operator/(const float scalar) const
+vec4 vec4::operator/(const float scalar) const
 {
     if (scalar == 0.0f) return {};
     return {
@@ -38,7 +38,7 @@ Vec4 Vec4::operator/(const float scalar) const
     };
 }
 
-Vec4 &Vec4::operator+=(const Vec4 &rhs)
+vec4 &vec4::operator+=(const vec4 &rhs)
 {
     x += rhs.x;
     y += rhs.y;
@@ -47,13 +47,13 @@ Vec4 &Vec4::operator+=(const Vec4 &rhs)
     return *this;
 }
 
-Vec4 Vec4::operator+(Vec4 rhs) const
+vec4 vec4::operator+(vec4 rhs) const
 {
     rhs += *this;
     return rhs;
 }
 
-Vec4 &Vec4::operator-=(const Vec4 &rhs)
+vec4 &vec4::operator-=(const vec4 &rhs)
 {
     x -= rhs.x;
     y -= rhs.y;
@@ -62,7 +62,7 @@ Vec4 &Vec4::operator-=(const Vec4 &rhs)
     return *this;
 }
 
-Vec4 Vec4::operator-(const Vec4 &rhs) const
+vec4 vec4::operator-(const vec4 &rhs) const
 {
     return {
         x - rhs.x,
@@ -72,22 +72,22 @@ Vec4 Vec4::operator-(const Vec4 &rhs) const
     };
 }
 
-Vec4 Vec4::operator-() const
+vec4 vec4::operator-() const
 {
     return {-x,-y,-z,-w};
 }
 
-float Vec4::length() const
+float vec4::length() const
 {
     return std::sqrt(x*x + y*y + z*z + w*w);
 }
 
-Vec4 Vec4::normalized() const
+vec4 vec4::normalized() const
 {
     return *this / length();
 }
 
-Vec4 Vec4::lerp_to(const Vec4 &rhs, const float t) const
+vec4 vec4::lerp_to(const vec4 &rhs, const float t) const
 {
     if (t <= 0.0f) {
         return *this;
@@ -98,7 +98,7 @@ Vec4 Vec4::lerp_to(const Vec4 &rhs, const float t) const
     return *this + (rhs - *this) * t;
 }
 
-std::ostream& operator<<(std::ostream &os, const Vec4 &v)
+std::ostream& operator<<(std::ostream &os, const vec4 &v)
 {
     os << "(x:" << v.x << ", y:" << v.y << ", z:" << v.z <<  ", w:" << v.w << ")";
     return os;

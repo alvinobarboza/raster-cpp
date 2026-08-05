@@ -1,13 +1,13 @@
-#include "transforms/Vec2.h"
+#include "transforms/vec2.h"
 
 #include <cmath>
 
-float Vec2::operator*(const Vec2 &rhs) const
+float vec2::operator*(const vec2 &rhs) const
 {
     return x*rhs.x + y*rhs.y;
 }
 
-Vec2 Vec2::operator*(const float scalar) const
+vec2 vec2::operator*(const float scalar) const
 {
     return {
         x * scalar,
@@ -15,7 +15,7 @@ Vec2 Vec2::operator*(const float scalar) const
     };
 }
 
-Vec2 Vec2::operator/(const float scalar) const
+vec2 vec2::operator/(const float scalar) const
 {
     if (scalar == 0.0f) return {0.0f, 0.0f};
     return {
@@ -24,27 +24,27 @@ Vec2 Vec2::operator/(const float scalar) const
     };
 }
 
-Vec2 &Vec2::operator+=(const Vec2 &rhs)
+vec2 &vec2::operator+=(const vec2 &rhs)
 {
     x += rhs.x;
     y += rhs.y;
     return *this;
 }
 
-Vec2 Vec2::operator+(Vec2 rhs) const
+vec2 vec2::operator+(vec2 rhs) const
 {
     rhs += *this;
     return rhs;
 }
 
-Vec2 &Vec2::operator-=(const Vec2 &rhs)
+vec2 &vec2::operator-=(const vec2 &rhs)
 {
     x -= rhs.x;
     y -= rhs.y;
     return *this;
 }
 
-Vec2 Vec2::operator-(const Vec2 &rhs) const
+vec2 vec2::operator-(const vec2 &rhs) const
 {
     return {
         x - rhs.x,
@@ -52,20 +52,20 @@ Vec2 Vec2::operator-(const Vec2 &rhs) const
     };
 }
 
-Vec2 Vec2::operator-() const
+vec2 vec2::operator-() const
 {
     return {-x,-y};
 }
 
-float Vec2::length() const {
+float vec2::length() const {
     return std::sqrt(x*x + y*y);
 }
 
-Vec2 Vec2::normalized() const {
+vec2 vec2::normalized() const {
     return *this / length();
 }
 
-Vec2 Vec2::lerp_to(const Vec2 &rhs, const float t) const {
+vec2 vec2::lerp_to(const vec2 &rhs, const float t) const {
     if (t <= 0.0f) {
         return *this;
     }
@@ -75,7 +75,7 @@ Vec2 Vec2::lerp_to(const Vec2 &rhs, const float t) const {
     return *this + (rhs - *this) * t;
 }
 
-std::ostream& operator<<(std::ostream &os, const Vec2 &v)
+std::ostream& operator<<(std::ostream &os, const vec2 &v)
 {
     os << "(x:" << v.x << ", y:" << v.y << ")";
     return os;

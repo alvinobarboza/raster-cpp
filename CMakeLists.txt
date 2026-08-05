@@ -52,9 +52,10 @@ add_executable(${PROJECT_NAME}
         src/material/color_convertion.cpp
         include/model/mesh.h
         src/model/mesh.cpp
-        include/renderer/renderer.h
+        include/engine/renderer.h
         include/material/material.h
         src/material/material.cpp
+        include/engine/resourse_manager.h
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)

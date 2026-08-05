@@ -2,14 +2,14 @@
 #include <string>
 
 #include "texture.h"
-#include "transforms/Vec3.h"
+#include "transforms/vec3.h"
 
 // Simplified
 class MaterialRaster {
 public:
     std::string name = "default";
 
-    Vec3 diffuse   = {}; // Kd
+    vec3 diffuse   = {}; // Kd
     float specular = 0.0f; // Ns
 
     const TextureRaster* map_diffuse   = nullptr; // map_kd
@@ -18,7 +18,7 @@ public:
 
     MaterialRaster(
         std::string name,
-        Vec3 diffuse_color, float specular,
+        vec3 diffuse_color, float specular,
         const TextureRaster *diffuse,
         const TextureRaster *normal,
         const TextureRaster *roughness);

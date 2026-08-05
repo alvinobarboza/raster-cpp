@@ -4,8 +4,8 @@
 #include "frustum.h"
 #include "raylib.h"
 #include "model/triangle.h"
-#include "transforms/Transforms.h"
-#include "transforms/Vec2.h"
+#include "transforms/transforms.h"
+#include "transforms/vec2.h"
 
 
 class CameraRaster {
@@ -30,8 +30,8 @@ public:
     float half_width = 0.0f;
     float half_height = 0.0f;
 
-    Transforms transform = {};
-    Matrix4x4 projection_matrix = {};
+    transforms transform = {};
+    matrix4x4 projection_matrix = {};
 
     Frustum frustum = {};
 
@@ -39,23 +39,23 @@ public:
         int width, int height,
         float sensitivity, float fov,
         float near, float far,
-        const Vec3 &position, const Vec3 &rotation);
+        const vec3 &position, const vec3 &rotation);
 
     void update_frame_buffer_size(int w, int h);
     void clear_frame_buffer();
-    [[nodiscard]] Vec3 vertex_to_ndc(const Vec3 &vertex) const;
-    [[nodiscard]] Vec2 ndc_to_screen(const Vec3 &point) const;
+    [[nodiscard]] vec3 vertex_to_ndc(const vec3 &vertex) const;
+    [[nodiscard]] vec2 ndc_to_screen(const vec3 &point) const;
     [[nodiscard]] FullTriangle project_triangle(
         const Vertex &v1,
         const Vertex &v2,
         const Vertex &v3,
         const MaterialRaster& material) const;
     [[nodiscard]] bool depth_pass(int x, int y, float depth);
-    void put_pixel(int x, int y, const Vec4 &color, float depth);
+    void put_pixel(int x, int y, const vec4 &color, float depth);
     void move_forward_backwards(float unit);
     void move_left_right(float unit);
     void move_up_down(float unit);
-    void update_rotation(const Vec2 &rotation);
+    void update_rotation(const vec2 &rotation);
     void toggle_view_lock();
     void toggle_wireframe();
     void toggle_render_depth();

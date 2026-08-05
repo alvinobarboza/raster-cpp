@@ -5,32 +5,32 @@
 #include "triangle.h"
 #include "colliders/sphere.h"
 #include "material/material.h"
-#include "transforms/Transforms.h"
+#include "transforms/transforms.h"
 
 class MeshData {
 public:
     std::vector<Triangle> triangles = {};
-    std::vector<Vec3> vertices = {}, vertices_word = {};
-    std::vector<Vec3> normals = {}, normals_word = {};
-    std::vector<Vec2> uvs = {};
+    std::vector<vec3> vertices = {}, vertices_word = {};
+    std::vector<vec3> normals = {}, normals_word = {};
+    std::vector<vec2> uvs = {};
     std::vector<MaterialRaster> materials = {};
 
     MeshData() = default;
     MeshData(
         std::vector<Triangle> &tris,
-        std::vector<Vec3> &vertices,
-        std::vector<Vec3> &normals,
-        std::vector<Vec2> &uvs);
+        std::vector<vec3> &vertices,
+        std::vector<vec3> &normals,
+        std::vector<vec2> &uvs);
 };
 
 class ModelRaster {
 public:
-    Transforms transforms = {};
+    transforms transforms = {};
     BoundingSphere boundingSphere = {};
     std::unique_ptr<MeshData> meshData = nullptr;
 
     ModelRaster() = default;
-    ModelRaster(const Transforms &transform, std::unique_ptr<MeshData> meshData);
+    ModelRaster(const transforms &transform, std::unique_ptr<MeshData> meshData);
 
     void update_transforms();
 };
