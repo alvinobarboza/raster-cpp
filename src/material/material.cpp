@@ -2,7 +2,7 @@
 
 #include <utility>
 
-Material::Material(
+MaterialRaster::MaterialRaster(
     std::string name, const Vec3 diffuse_color,
     const float specular,
     const TextureRaster *diffuse,

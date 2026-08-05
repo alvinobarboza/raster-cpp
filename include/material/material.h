@@ -5,7 +5,7 @@
 #include "transforms/Vec3.h"
 
 // Simplified
-class Material {
+class MaterialRaster {
 public:
     std::string name = "default";
 
@@ -16,7 +16,7 @@ public:
     const TextureRaster* map_normal    = nullptr; // map_Bump
     const TextureRaster* map_roughness = nullptr; // map_Pr / map_Ns
 
-    Material(
+    MaterialRaster(
         std::string name,
         Vec3 diffuse_color, float specular,
         const TextureRaster *diffuse,

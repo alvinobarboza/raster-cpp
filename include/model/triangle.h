@@ -36,7 +36,7 @@ public:
 
     AABB2D aabb = {};
 
-    const Material &material;
+    const MaterialRaster &material;
 
     bool smooth = false;
 
@@ -44,7 +44,7 @@ public:
         const Vertex &v1,
         const Vertex &v2,
         const Vertex &v3,
-        const Material &material);
+        const MaterialRaster &material);
 
     void calculate_tri_aabb();
 };

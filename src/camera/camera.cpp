@@ -72,10 +72,9 @@ Vec2 CameraRaster::ndc_to_screen(const Vec3 &point) const
 }
 
 FullTriangle CameraRaster::project_triangle(
-    const Vertex &v1, const Vertex &v2, const Vertex &v3,
-    TextureRaster *albedo, TextureRaster *normal, TextureRaster *specular) const
+    const Vertex &v1, const Vertex &v2, const Vertex &v3, const MaterialRaster& material) const
 {
-    FullTriangle tri = {v1, v2, v3, albedo, normal, specular};
+    FullTriangle tri = {v1, v2, v3, material};
 
     tri.ndc_points[0] = vertex_to_ndc(v1.point);
     tri.ndc_points[1] = vertex_to_ndc(v2.point);

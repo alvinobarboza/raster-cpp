@@ -49,9 +49,7 @@ public:
         const Vertex &v1,
         const Vertex &v2,
         const Vertex &v3,
-        TextureRaster *albedo,
-        TextureRaster *normal,
-        TextureRaster *specular) const;
+        const MaterialRaster& material) const;
     [[nodiscard]] bool depth_pass(int x, int y, float depth);
     void put_pixel(int x, int y, const Vec4 &color, float depth);
     void move_forward_backwards(float unit);
