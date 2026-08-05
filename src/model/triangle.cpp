@@ -3,7 +3,7 @@
 #include <cmath>
 #include <utility>
 
-bool Triangle::is_back_facing(const std::vector<vec3> &vertices, const std::vector<vec3> &normals) const
+bool Triangle::is_back_facing(const std::vector<Vec3> &vertices, const std::vector<Vec3> &normals) const
 {
     const float angle_a = normals[n1] * -vertices[v1];
     const float angle_b = normals[n2] * -vertices[v2];
@@ -61,7 +61,7 @@ void FullTriangle::calculate_tri_aabb()
     };
 }
 
-bool triangle::is_edge_top_or_left(const vec2 &p1, const vec2 &p2)
+bool triangle::is_edge_top_or_left(const Vec2 &p1, const Vec2 &p2)
 {
     const float x = p2.x - p1.x;
     const float y = p2.y - p1.y;
@@ -72,7 +72,7 @@ bool triangle::is_edge_top_or_left(const vec2 &p1, const vec2 &p2)
     return is_top_edge || is_left_edge;
 }
 
-float triangle::edge_cross(const vec2 &a, const vec2 &b, const vec2 &p)
+float triangle::edge_cross(const Vec2 &a, const Vec2 &b, const Vec2 &p)
 {
     const float ab_x = b.x - a.x;
     const float ab_y = b.y - a.y;

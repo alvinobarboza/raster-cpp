@@ -1,6 +1,6 @@
 #include "colliders/sphere.h"
 
-void BoundingSphere::calculate_boundaries(const std::vector<vec3> &verts, const matrix4x4 &scale)
+void BoundingSphere::calculate_boundaries(const std::vector<Vec3> &verts, const Matrix4x4 &scale)
 {
     radius = 0.0f;
     center = {};
@@ -12,7 +12,7 @@ void BoundingSphere::calculate_boundaries(const std::vector<vec3> &verts, const 
 
     center = center / static_cast<float>(verts.size());
 
-    vec3 scaled = {};
+    Vec3 scaled = {};
     float r = 0.0f;
 
     for (const auto &vert : verts) {

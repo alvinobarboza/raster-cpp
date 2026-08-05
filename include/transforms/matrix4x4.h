@@ -2,15 +2,15 @@
 #include <array>
 #include <ostream>
 
-class vec3;
+class Vec3;
 
-class matrix4x4 {
+class Matrix4x4 {
     std::array<float, 4*4> data {};
     static constexpr size_t length = 4;
 
 public:
-    matrix4x4() = default;
-    matrix4x4(
+    Matrix4x4() = default;
+    Matrix4x4(
         const float m00, const float m01, const float m02, const float m03,
         const float m10, const float m11, const float m12, const float m13,
         const float m20, const float m21, const float m22, const float m23,
@@ -24,14 +24,14 @@ public:
     {}
 
     void to_identity();
-    void to_scale(const vec3& scale);
-    void to_rotation(const vec3& angle);
-    void to_translation(const vec3& translation);
+    void to_scale(const Vec3& scale);
+    void to_rotation(const Vec3& angle);
+    void to_translation(const Vec3& translation);
     void to_perspective(float fov_scale, float aspect_ratio, float z_near, float z_far);
 
-    [[nodiscard]] matrix4x4 transpose() const;
-    [[nodiscard]] matrix4x4 operator*( const matrix4x4& rhs) const;
+    [[nodiscard]] Matrix4x4 transpose() const;
+    [[nodiscard]] Matrix4x4 operator*( const Matrix4x4& rhs) const;
     [[nodiscard]] float operator()(size_t x, size_t y) const;
 
-    friend std::ostream &operator<<(std::ostream &os, const matrix4x4 &m);
+    friend std::ostream &operator<<(std::ostream &os, const Matrix4x4 &m);
 };

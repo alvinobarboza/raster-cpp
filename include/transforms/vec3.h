@@ -1,36 +1,36 @@
 #pragma once
 #include <ostream>
 
-class matrix4x4;
+class Matrix4x4;
 
-class vec3 {
+class Vec3 {
 public:
     float x = 0.0f;
     float y = 0.0f;
     float z = 0.0f;
 
-    vec3(const float x, const float y, const float z) : x(x), y(y), z(z) {}
-    vec3() = default;
+    Vec3(const float x, const float y, const float z) : x(x), y(y), z(z) {}
+    Vec3() = default;
 
-    ~vec3() = default;
+    ~Vec3() = default;
 
     // Get used to dot product, as there is no real operation involving multiplying two vec3
     // and getting a vec3 back
-    float operator*(const vec3 &rhs) const;
-    vec3 operator*(float scalar) const;
-    vec3 operator/(float scalar) const;
-    vec3& operator+=(const vec3 &rhs);
-    vec3 operator+(vec3 rhs) const;
-    vec3& operator-=(const vec3 &rhs);
-    vec3 operator-(const vec3 &rhs) const;
-    vec3 operator-() const;
+    float operator*(const Vec3 &rhs) const;
+    Vec3 operator*(float scalar) const;
+    Vec3 operator/(float scalar) const;
+    Vec3& operator+=(const Vec3 &rhs);
+    Vec3 operator+(Vec3 rhs) const;
+    Vec3& operator-=(const Vec3 &rhs);
+    Vec3 operator-(const Vec3 &rhs) const;
+    Vec3 operator-() const;
 
-    vec3 operator*(const matrix4x4 &rhs) const;
+    Vec3 operator*(const Matrix4x4 &rhs) const;
 
     [[nodiscard]] float length() const;
-    [[nodiscard]] vec3 normalized() const;
-    [[nodiscard]] vec3 cross(const vec3 &rhs) const;
-    [[nodiscard]] vec3 lerp_to(const vec3 &rhs, float t) const;
+    [[nodiscard]] Vec3 normalized() const;
+    [[nodiscard]] Vec3 cross(const Vec3 &rhs) const;
+    [[nodiscard]] Vec3 lerp_to(const Vec3 &rhs, float t) const;
 
-    friend std::ostream &operator<<(std::ostream &os, const vec3 &v);
+    friend std::ostream &operator<<(std::ostream &os, const Vec3 &v);
 };

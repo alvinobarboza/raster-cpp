@@ -10,22 +10,22 @@
 class MeshData {
 public:
     std::vector<Triangle> triangles = {};
-    std::vector<vec3> vertices = {}, vertices_word = {};
-    std::vector<vec3> normals = {}, normals_word = {};
-    std::vector<vec2> uvs = {};
+    std::vector<Vec3> vertices = {}, vertices_word = {};
+    std::vector<Vec3> normals = {}, normals_word = {};
+    std::vector<Vec2> uvs = {};
     std::vector<MaterialRaster> materials = {};
 
     MeshData() = default;
     MeshData(
         std::vector<Triangle> &tris,
-        std::vector<vec3> &vertices,
-        std::vector<vec3> &normals,
-        std::vector<vec2> &uvs);
+        std::vector<Vec3> &vertices,
+        std::vector<Vec3> &normals,
+        std::vector<Vec2> &uvs);
 };
 
 class ModelRaster {
 public:
-    transforms transforms = {};
+    Transforms transforms = {};
     BoundingSphere boundingSphere = {};
     std::unique_ptr<MeshData> meshData = nullptr;
 

@@ -5,7 +5,7 @@
 #include <cmath>
 #include <iomanip>
 
-void matrix4x4::to_identity()
+void Matrix4x4::to_identity()
 {
     data = {
         1.0f, 0.0f, 0.0f, 0.0f,
@@ -15,7 +15,7 @@ void matrix4x4::to_identity()
     };
 }
 
-void matrix4x4::to_scale(const vec3& scale)
+void Matrix4x4::to_scale(const Vec3& scale)
 {
     data = {
         scale.x, 0.0f, 0.0f, 0.0f,
@@ -24,7 +24,7 @@ void matrix4x4::to_scale(const vec3& scale)
         0.0f, 0.0f, 0.0f,       1.0f,
     };
 }
-void matrix4x4::to_rotation(const vec3& angle)
+void Matrix4x4::to_rotation(const Vec3& angle)
 {
     const float cosa = std::cos(angle.x * -transforms::DEG_TO_RAD);
     const float sina = std::sin(angle.x * -transforms::DEG_TO_RAD);
@@ -42,7 +42,7 @@ void matrix4x4::to_rotation(const vec3& angle)
         0.0f, 0.0f, 0.0f, 1.0f,
     };
 }
-void matrix4x4::to_translation(const vec3& translation)
+void Matrix4x4::to_translation(const Vec3& translation)
 {
     data = {
         1.0f, 0.0f, 0.0f, translation.x,
@@ -52,7 +52,7 @@ void matrix4x4::to_translation(const vec3& translation)
     };
 }
 
-void matrix4x4::to_perspective(const float fov_scale, const float aspect_ratio, const float z_near, const float z_far) {
+void Matrix4x4::to_perspective(const float fov_scale, const float aspect_ratio, const float z_near, const float z_far) {
     const float z_range = z_far - z_near;
     data = {
         fov_scale / aspect_ratio,   0.0f,       0.0f,                       0.0f,
@@ -62,14 +62,14 @@ void matrix4x4::to_perspective(const float fov_scale, const float aspect_ratio, 
     };
 }
 
-float matrix4x4::operator()(const std::size_t x, const std::size_t y) const
+float Matrix4x4::operator()(const std::size_t x, const std::size_t y) const
 {
     return data[y * length + x];
 }
 
-matrix4x4 matrix4x4::transpose() const
+Matrix4x4 Matrix4x4::transpose() const
 {
-    matrix4x4 result;
+    Matrix4x4 result;
 
     for (std::size_t y = 0; y < length; y++) {
         for (std::size_t x = 0; x < length; x++) {
@@ -80,9 +80,9 @@ matrix4x4 matrix4x4::transpose() const
     return result;
 }
 
-matrix4x4 matrix4x4::operator*(const matrix4x4 &rhs) const
+Matrix4x4 Matrix4x4::operator*(const Matrix4x4 &rhs) const
 {
-    matrix4x4 result;
+    Matrix4x4 result;
 
     for (std::size_t y = 0; y < length; ++y) {
         for (std::size_t x = 0; x < length; ++x) {
@@ -96,7 +96,7 @@ matrix4x4 matrix4x4::operator*(const matrix4x4 &rhs) const
     return result;
 }
 
-std::ostream& operator<<(std::ostream &os, const matrix4x4 &m)
+std::ostream& operator<<(std::ostream &os, const Matrix4x4 &m)
 {
     const std::ios_base::fmtflags f(os.flags());
 

@@ -56,6 +56,7 @@ add_executable(${PROJECT_NAME}
         include/material/material.h
         src/material/material.cpp
         include/engine/resourse_manager.h
+        include/engine/scene.h
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)

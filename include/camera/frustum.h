@@ -16,12 +16,12 @@ constexpr int PLANES = 6;
 class Plane {
 public:
     float distance = 0.0f;
-    vec3 normal = {};
+    Vec3 normal = {};
 
     Plane() = default;
-    Plane(const vec3 &normal, const vec3 &point);
+    Plane(const Vec3 &normal, const Vec3 &point);
 
-    [[nodiscard]] float signed_distance_to_point(const vec3 &point) const;
+    [[nodiscard]] float signed_distance_to_point(const Vec3 &point) const;
 };
 
 class Frustum {
@@ -30,6 +30,6 @@ public:
 
     Frustum() = default;
 
-    [[nodiscard]] bool is_inside_frustum(const vec3 &point) const;
+    [[nodiscard]] bool is_inside_frustum(const Vec3 &point) const;
     [[nodiscard]] bool is_inside_frustum(const BoundingSphere &sphere) const;
 };

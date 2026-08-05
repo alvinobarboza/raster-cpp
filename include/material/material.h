@@ -9,7 +9,7 @@ class MaterialRaster {
 public:
     std::string name = "default";
 
-    vec3 diffuse   = {}; // Kd
+    Vec3 diffuse   = {}; // Kd
     float specular = 0.0f; // Ns
 
     const TextureRaster* map_diffuse   = nullptr; // map_kd
@@ -18,7 +18,7 @@ public:
 
     MaterialRaster(
         std::string name,
-        vec3 diffuse_color, float specular,
+        Vec3 diffuse_color, float specular,
         const TextureRaster *diffuse,
         const TextureRaster *normal,
         const TextureRaster *roughness);

@@ -2,24 +2,24 @@
 #include "transforms/vec3.h"
 #include "transforms/matrix4x4.h"
 
-class transforms {
+class Transforms {
 public:
-    vec3 scale = {};
-    vec3 rotation = {};
-    vec3 position = {};
-    vec3 forward_direction = {};
+    Vec3 scale = {};
+    Vec3 rotation = {};
+    Vec3 position = {};
+    Vec3 forward_direction = {};
 
-    matrix4x4 scale_matrix = {};
-    matrix4x4 rotation_matrix = {};
-    matrix4x4 translation_matrix = {};
-    matrix4x4 transformation_matrix = {};
+    Matrix4x4 scale_matrix = {};
+    Matrix4x4 rotation_matrix = {};
+    Matrix4x4 translation_matrix = {};
+    Matrix4x4 transformation_matrix = {};
 
-    transforms() = default;
-    transforms(
-        const vec3 scale,
-        const vec3 rotation,
-        const vec3 position,
-        const vec3 forward_direction):
+    Transforms() = default;
+    Transforms(
+        const Vec3 scale,
+        const Vec3 rotation,
+        const Vec3 position,
+        const Vec3 forward_direction):
     scale(scale),
     rotation(rotation),
     position(position),

@@ -9,7 +9,7 @@ CameraRaster::CameraRaster(
     const int width, const int height,
     const float sensitivity, const float fov,
     const float near, const float far,
-    const vec3 &position, const vec3 &rotation)
+    const Vec3 &position, const Vec3 &rotation)
 {
     fov_angle = fov;
     fov_scale = fov_scaling(fov);
@@ -51,10 +51,10 @@ void CameraRaster::clear_frame_buffer()
     }
 }
 
-vec3 CameraRaster::vertex_to_ndc(const vec3 &vertex) const
+Vec3 CameraRaster::vertex_to_ndc(const Vec3 &vertex) const
 {
-    const vec4 v4 = {vertex.x, vertex.y, vertex.z, 1.0f};
-    vec4 clip = v4 * projection_matrix;;
+    const Vec4 v4 = {vertex.x, vertex.y, vertex.z, 1.0f};
+    Vec4 clip = v4 * projection_matrix;;
 
     if (clip.w != 0.0f)
         return {clip.x/clip.w,clip.y/clip.w,clip.z/clip.w};
@@ -62,7 +62,7 @@ vec3 CameraRaster::vertex_to_ndc(const vec3 &vertex) const
     return {clip.x,clip.y,clip.z};
 }
 
-vec2 CameraRaster::ndc_to_screen(const vec3 &point) const
+Vec2 CameraRaster::ndc_to_screen(const Vec3 &point) const
 {
     return
     {
@@ -100,7 +100,7 @@ bool CameraRaster::depth_pass(const int x, const int y, const float depth)
     return true;
 }
 
-void CameraRaster::put_pixel(const int x, const int y, const vec4 &color, const float depth)
+void CameraRaster::put_pixel(const int x, const int y, const Vec4 &color, const float depth)
 {
     const int index = y * width + x;
 
@@ -109,7 +109,7 @@ void CameraRaster::put_pixel(const int x, const int y, const vec4 &color, const 
     if (render_depth)
     {
         const float c = 255.0f * depth;
-        const vec4 color_f = {c,c,c,1};
+        const Vec4 color_f = {c,c,c,1};
         frame_buffer[index] = color_convertion::vec4_to_color(color_f);
         return;
     }
@@ -118,8 +118,8 @@ void CameraRaster::put_pixel(const int x, const int y, const vec4 &color, const 
 
 void CameraRaster::move_forward_backwards(const float unit)
 {
-    const vec3 direction = transform.forward_direction * transform.rotation_matrix;
-    const vec3 normalized_dir = direction.normalized();
+    const Vec3 direction = transform.forward_direction * transform.rotation_matrix;
+    const Vec3 normalized_dir = direction.normalized();
 
     transform.position += normalized_dir * unit;
     transform.update_transforms(true);
@@ -127,9 +127,9 @@ void CameraRaster::move_forward_backwards(const float unit)
 
 void CameraRaster::move_left_right(const float unit)
 {
-    const vec3 direction = transform.forward_direction * transform.rotation_matrix;
-    const vec3 cross_up = direction.cross({0.0f, 0.1f, 0.0f});
-    const vec3 normalized_dir = cross_up.normalized();
+    const Vec3 direction = transform.forward_direction * transform.rotation_matrix;
+    const Vec3 cross_up = direction.cross({0.0f, 0.1f, 0.0f});
+    const Vec3 normalized_dir = cross_up.normalized();
 
     transform.position += normalized_dir * unit;
     transform.update_transforms(true);
@@ -141,7 +141,7 @@ void CameraRaster::move_up_down(const float unit)
     transform.update_transforms(true);
 }
 
-void CameraRaster::update_rotation(const vec2 &rotation)
+void CameraRaster::update_rotation(const Vec2 &rotation)
 {
     if (!update_view) return;
 
@@ -171,14 +171,14 @@ void CameraRaster::toggle_wireframe()
 
 void CameraRaster::update_frustum()
 {
-    const vec3 cam_front = transform.forward_direction;
-    const vec3 cam_right = {1.0f, 0.0f, 0.0f};
-    const vec3 cam_up = {0.0f, 1.0f, 0.0f};
-    const vec3 cam_pos = {};
+    const Vec3 cam_front = transform.forward_direction;
+    const Vec3 cam_right = {1.0f, 0.0f, 0.0f};
+    const Vec3 cam_up = {0.0f, 1.0f, 0.0f};
+    const Vec3 cam_pos = {};
 
-    const float half_v_side = z_far * std::tan(fov_angle * transforms::DEG_TO_RAD * 0.5f);
+    const float half_v_side = z_far * std::tan(fov_angle * Transforms::DEG_TO_RAD * 0.5f);
     const float half_h_side = half_v_side * aspect_ratio;
-    const vec3 cam_front_scaled = cam_front * z_far;
+    const Vec3 cam_front_scaled = cam_front * z_far;
 
     frustum.planes[NEAR_PLANE] = {cam_pos + cam_front * z_near, cam_front};
     frustum.planes[FAR_PLANE] = {cam_pos + cam_front_scaled, -cam_front};
@@ -189,5 +189,5 @@ void CameraRaster::update_frustum()
 }
 
 static float fov_scaling(const float angle) {
-    return 1 / std::tan(angle*transforms::DEG_TO_RAD/2);
+    return 1 / std::tan(angle*Transforms::DEG_TO_RAD/2);
 }
