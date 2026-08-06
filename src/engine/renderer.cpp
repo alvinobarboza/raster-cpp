@@ -82,17 +82,17 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
     const auto area = 1.0f / triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], tri.screen_points[2]);
     const auto p = Vec2(minX + 0.5f, minY + 0.5f);
 
-    auto w0_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p);
-    auto w1_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p);
-    auto w2_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p);
+    auto w0_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p) + bias_0;
+    auto w1_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p) + bias_1;
+    auto w2_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p) + bias_2;
 
-    for (float y = minY; y <= maxY; y ++)
+    for (float y = minY; y <= maxY; y++)
     {
         auto w0 = w0_row;
         auto w1 = w1_row;
         auto w2 = w2_row;
 
-        for (float x = minX; x <= maxX; x ++)
+        for (float x = minX; x <= maxX; x++)
         {
             if (w0 >= 0.0f && w1 >= 0.0f && w2 >= 0.0f)
             {
@@ -103,11 +103,16 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                 if (const auto depth = tri.depth_z[0] * alpha + tri.depth_z[1] * beta + tri.depth_z[2] * gamma;
                     scene.camera.depth_pass(static_cast<int>(x), static_cast<int>(y), depth))
                 {
-                    const auto u1 = ((tri.projected_vertices[0].uv * alpha) / depth).length();
-                    const auto u2 = ((tri.projected_vertices[1].uv * beta) / depth).length();
-                    const auto u3 = ((tri.projected_vertices[2].uv * gamma) / depth).length();
-                    std::cout << u1 << " " << u2 << " " << u3 << std::endl;
-                    scene.camera.put_pixel(static_cast<int>(x), static_cast<int>(y), {u1,u2,u3,1},depth);
+                    // const auto u1 = ((tri.projected_vertices[0].uv * alpha) / depth).normalized().length();
+                    // const auto u2 = ((tri.projected_vertices[1].uv * beta) / depth).normalized().length();
+                    // const auto u3 = ((tri.projected_vertices[2].uv * gamma) / depth).normalized().length();
+
+                    const auto color =
+                        (color_convertion::color_to_vec4(RED) * alpha +
+                            color_convertion::color_to_vec4(BLUE) * beta +
+                                color_convertion::color_to_vec4(GREEN) * gamma) / depth;
+
+                    scene.camera.put_pixel(static_cast<int>(x), static_cast<int>(y), color,depth);
                 }
             }
 
