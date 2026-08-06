@@ -56,15 +56,23 @@ ModelRaster* ResourceManager::LoadModel(const std::string& path)
                 std::ranges::replace(face_data, '/', ' ');
                 std::stringstream f_data(face_data);
 
+                int vr = 0, u = 0, n = 0;
+                f_data >> vr >> u >> n;
                 switch (i) {
                     case 0:
-                        f_data >> tri.v1 >> tri.u1 >> tri.n1;
+                        tri.v1 = vr - 1;
+                        tri.u1 = u - 1;
+                        tri.n1 = n - 1;
                         break;
                     case 1:
-                        f_data >> tri.v2 >> tri.u2 >> tri.n2;
+                        tri.v2 = vr - 1;
+                        tri.u2 = u - 1;
+                        tri.n2 = n - 1;
                         break;
                     case 2:
-                        f_data >> tri.v3 >> tri.u3 >> tri.n3;
+                        tri.v3 = vr - 1;
+                        tri.u3 = u - 1;
+                        tri.n3 = n - 1;
                         break;
                     default: ;
                 }
@@ -83,7 +91,7 @@ ModelRaster* ResourceManager::LoadModel(const std::string& path)
     const auto position = Vec3(1.0f, 1.0f, 1.0f);
     const auto rotation = Vec3(0.0f, 0.0f, 0.0f);
     const auto forward = Vec3(0.0f, 0.0f, 1.0f);
-    const auto transform = Transforms(scale, position, rotation, forward);
+    const auto transform = Transforms(scale, rotation, position, forward);
     auto model = std::make_unique<ModelRaster>(transform, std::move(mesh));
     auto ptr = model.get();
     models.push_back(std::move(model));
