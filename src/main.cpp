@@ -25,7 +25,7 @@ int main() {
 
     ResourceManager rm;
     scene.models.push_back(rm.LoadModel(path));
-    scene.models[0]->transforms.position = {0.0f, 0.0f, -3.0f};
+    scene.models[0]->transforms.position = {0.0f, 0.0f, 3.0f};
     scene.models[0]->update_transforms();
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
