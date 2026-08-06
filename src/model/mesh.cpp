@@ -12,8 +12,8 @@ vertices(std::move(vertices)),
 normals(std::move(normals)),
 uvs(std::move(uvs))
 {
-    vertices_word.resize(vertices.size());
-    normals_word.resize(normals.size());
+    vertices_word.resize(this->vertices.size());
+    normals_word.resize(this->normals.size());
 }
 
 ModelRaster::ModelRaster(
