@@ -14,7 +14,7 @@ float Plane::signed_distance_to_point(const Vec3 &point) const {
 }
 
 bool Frustum::is_inside_frustum(const Vec3 &point) const {
-     return std::ranges::all_of(
+     return !std::ranges::all_of(
           planes.cbegin(),
           planes.cend(),
           [&point](const Plane &plane) {
@@ -23,7 +23,7 @@ bool Frustum::is_inside_frustum(const Vec3 &point) const {
 }
 
 bool Frustum::is_inside_frustum(const BoundingSphere &sphere) const {
-     return std::ranges::all_of(
+     return !std::ranges::all_of(
           planes.cbegin(),
           planes.cend(),
           [&sphere](const Plane &plane) {
