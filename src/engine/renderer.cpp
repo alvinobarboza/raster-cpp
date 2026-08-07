@@ -57,24 +57,24 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
     const auto minX = std::max(tri.aabb.min.x, 0.0f);
     const auto maxX = std::min(tri.aabb.max.x, static_cast<float>(scene.camera.width));
 
-    const auto delta_w0_col = tri.screen_points[0].y - tri.screen_points[1].y;
-    const auto delta_w1_col = tri.screen_points[1].y - tri.screen_points[2].y;
-    const auto delta_w2_col = tri.screen_points[2].y - tri.screen_points[0].y;
+    const auto delta_w0_col = tri.screen_points[1].y - tri.screen_points[2].y;
+    const auto delta_w1_col = tri.screen_points[2].y - tri.screen_points[0].y;
+    const auto delta_w2_col = tri.screen_points[0].y - tri.screen_points[1].y;
 
-    const auto delta_w0_row = tri.screen_points[1].x - tri.screen_points[0].x;
-    const auto delta_w1_row = tri.screen_points[2].x - tri.screen_points[1].x;
-    const auto delta_w2_row = tri.screen_points[0].x - tri.screen_points[2].x;
+    const auto delta_w0_row = tri.screen_points[2].x - tri.screen_points[1].x;
+    const auto delta_w1_row = tri.screen_points[0].x - tri.screen_points[2].x;
+    const auto delta_w2_row = tri.screen_points[1].x - tri.screen_points[0].x;
 
     float bias_0 = 0.0f, bias_1 = 0.0f, bias_2 = 0.0f;
-    if (triangle::is_edge_top_or_left(tri.screen_points[0], tri.screen_points[1]))
+    if (triangle::is_edge_top_or_left(tri.screen_points[1], tri.screen_points[2]))
     {
         bias_0 = -0.001;
     }
-    if (triangle::is_edge_top_or_left(tri.screen_points[1], tri.screen_points[2]))
+    if (triangle::is_edge_top_or_left(tri.screen_points[2], tri.screen_points[0]))
     {
         bias_1 = -0.001;
     }
-    if (triangle::is_edge_top_or_left(tri.screen_points[2], tri.screen_points[0]))
+    if (triangle::is_edge_top_or_left(tri.screen_points[0], tri.screen_points[1]))
     {
         bias_2 = -0.001;
     }
@@ -82,9 +82,9 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
     const auto area = 1.0f / triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], tri.screen_points[2]);
     const auto p = Vec2(minX + 0.5f, minY + 0.5f);
 
-    auto w0_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p) + bias_0;
-    auto w1_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p) + bias_1;
-    auto w2_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p) + bias_2;
+    auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p) + bias_0;
+    auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p) + bias_1;
+    auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p) + bias_2;
 
     for (float y = minY; y <= maxY; y++)
     {
@@ -96,23 +96,19 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
         {
             if (w0 >= 0.0f && w1 >= 0.0f && w2 >= 0.0f)
             {
-                const auto alpha = w1 * area;
-                const auto beta = w2 * area;
-                const auto gamma = w0 * area;
+                const auto alpha = w0 * area;
+                const auto beta = w1 * area;
+                const auto gamma = w2 * area;
 
                 if (const auto depth = tri.depth_z[0] * alpha + tri.depth_z[1] * beta + tri.depth_z[2] * gamma;
                     scene.camera.depth_pass(static_cast<int>(x), static_cast<int>(y), depth))
                 {
-                    // const auto u1 = ((tri.projected_vertices[0].uv * alpha) / depth).normalized().length();
-                    // const auto u2 = ((tri.projected_vertices[1].uv * beta) / depth).normalized().length();
-                    // const auto u3 = ((tri.projected_vertices[2].uv * gamma) / depth).normalized().length();
+                    const float z = 1 / depth;
+                    const float rt = alpha * 255.0f;
+                    const float gt = beta * 255.0f;
+                    const float bt = gamma * 255.0f;
 
-                    const auto color =
-                        (color_convertion::color_to_vec4(RED) * alpha +
-                            color_convertion::color_to_vec4(BLUE) * beta +
-                                color_convertion::color_to_vec4(GREEN) * gamma) / depth;
-
-                    scene.camera.put_pixel(static_cast<int>(x), static_cast<int>(y), color,depth);
+                    scene.camera.put_pixel(static_cast<int>(x), static_cast<int>(y), {rt,gt,bt,1.0f},depth);
                 }
             }
 
