@@ -146,7 +146,7 @@ void CameraRaster::update_rotation(const Vec2 &rotation)
     if (!update_view) return;
 
     transform.rotation.x -= rotation.y * sensitivity;
-    transform.rotation.y += rotation.x * sensitivity;
+    transform.rotation.y -= rotation.x * sensitivity;
 
     if (transform.rotation.x > 89) transform.rotation.x = 89;
     if (transform.rotation.x < -89) transform.rotation.x = -89;
@@ -186,6 +186,63 @@ void CameraRaster::update_frustum()
     frustum.planes[LEFT_PLANE] = {cam_pos, cam_up.cross(cam_front_scaled - cam_right * half_h_side)};
     frustum.planes[TOP_PLANE] = {cam_pos, (cam_front_scaled - cam_up * half_v_side).cross(cam_right)};
     frustum.planes[BOTTOM_PLANE] = {cam_pos, cam_right.cross(cam_front_scaled - cam_up * half_v_side)};
+}
+
+//TODO: Fix camera movement
+void CameraRaster::handle_input()
+{
+    if (IsKeyPressed(KEY_TAB))
+    {
+        toggle_view_lock();
+        update_view ? DisableCursor() : EnableCursor();
+    }
+
+    if (IsKeyPressed(KEY_X))
+    {
+        toggle_wireframe();
+    }
+
+    if (IsKeyPressed(KEY_Z))
+    {
+        toggle_render_depth();
+    }
+
+    constexpr float move_speed = 0.09f;
+
+    if (IsKeyDown(KEY_SPACE))
+    {
+        move_up_down(move_speed);
+    }
+
+    if (IsKeyDown(KEY_LEFT_CONTROL))
+    {
+        move_up_down(-move_speed);
+    }
+
+    if (IsKeyDown(KEY_W))
+    {
+        move_forward_backwards(move_speed);
+    }
+
+    if (IsKeyDown(KEY_S))
+    {
+        move_forward_backwards(-move_speed);
+    }
+
+    if (IsKeyDown(KEY_A))
+    {
+        move_left_right(move_speed);
+    }
+
+    if (IsKeyDown(KEY_D))
+    {
+        move_left_right(-move_speed);
+    }
+
+    const float delta_time = GetFrameTime();
+    const auto [x,y] = GetMouseDelta();
+    const Vec2 mouse_delta{x*delta_time,y*delta_time};
+    update_rotation(mouse_delta);
 }
 
 static float fov_scaling(const float angle) {

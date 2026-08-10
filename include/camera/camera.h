@@ -60,6 +60,7 @@ public:
     void toggle_wireframe();
     void toggle_render_depth();
     void update_frustum();
+    void handle_input();
 };
 
 static float fov_scaling(float angle);

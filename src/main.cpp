@@ -36,7 +36,10 @@ int main() {
     const auto img = GenImageColor(camera.width, camera.height, RAYWHITE);
     auto render_texture = LoadTextureFromImage(img);
 
+    DisableCursor();
     while (!WindowShouldClose()) {
+        camera.handle_input();
+
         scene.models[0]->transforms.rotation.y += 0.15;
         scene.models[0]->transforms.rotation.x += 0.2;
         scene.models[0]->update_transforms();

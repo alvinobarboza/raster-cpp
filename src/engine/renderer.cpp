@@ -103,12 +103,7 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                 if (const auto depth = tri.depth_z[0] * alpha + tri.depth_z[1] * beta + tri.depth_z[2] * gamma;
                     scene.camera.depth_pass(static_cast<int>(x), static_cast<int>(y), depth))
                 {
-                    const float z = 1 / depth;
-                    const float rt = alpha * 255.0f;
-                    const float gt = beta * 255.0f;
-                    const float bt = gamma * 255.0f;
-
-                    scene.camera.put_pixel(static_cast<int>(x), static_cast<int>(y), {rt,gt,bt,1.0f},depth);
+                    scene.camera.put_pixel(static_cast<int>(x), static_cast<int>(y), {alpha,beta,gamma,1.0f},depth);
                 }
             }
 
