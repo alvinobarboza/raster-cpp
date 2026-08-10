@@ -3,10 +3,10 @@
 Color color_convertion::vec4_to_color(const Vec4 &vec)
 {
     return {
-        static_cast<unsigned char>(255.0f/vec.x),
-        static_cast<unsigned char>(255.0f/vec.y),
-        static_cast<unsigned char>(255.0f/vec.z),
-        static_cast<unsigned char>(255.0f/vec.w)
+        static_cast<unsigned char>(vec.x * 255.0f),
+        static_cast<unsigned char>(vec.y * 255.0f),
+        static_cast<unsigned char>(vec.z * 255.0f),
+        static_cast<unsigned char>(vec.w * 255.0f)
         };
 }
 Vec4 color_convertion::color_to_vec4(const Color &color) {
