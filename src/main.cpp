@@ -21,12 +21,16 @@ int main() {
         {}
     };
 
-    const std::string path = "../assets/cube.obj";
-
     ResourceManager rm;
-    scene.models.push_back(rm.LoadModel(path));
+
+    scene.models.push_back(rm.LoadModel("../assets/cube.obj"));
     scene.models[0]->transforms.position = {0.0f, 0.0f, 3.0f};
+    scene.models[0]->transforms.scale = {0.2f, 0.2f, 0.2f};
     scene.models[0]->update_transforms();
+
+    scene.models.push_back(rm.LoadModel("../assets/polyhaven_rico_b3d/marble_bust.obj"));
+    scene.models[1]->transforms.position = {0.0f, 0.3f, 3.0f};
+    scene.models[1]->update_transforms();
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 
@@ -39,10 +43,6 @@ int main() {
     DisableCursor();
     while (!WindowShouldClose()) {
         camera.handle_input();
-
-        scene.models[0]->transforms.rotation.y += 0.15;
-        scene.models[0]->transforms.rotation.x += 0.2;
-        scene.models[0]->update_transforms();
 
         RendererRaster::render_scene(scene);
 
