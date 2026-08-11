@@ -47,7 +47,7 @@ void CameraRaster::clear_frame_buffer()
 {
     for (int i = 0; i < frame_buffer.size(); i++) {
         frame_buffer[i] = BLACK;
-        depth_buffer[i] = 0.0f;
+        depth_buffer[i] = 1.0f;
     }
 }
 
@@ -94,7 +94,7 @@ bool CameraRaster::depth_pass(const int x, const int y, const float depth)
     if (x < 0 || x >= width || y < 0 || y >= height) return false;
 
     const int index = y * width + x;
-    if (depth_buffer[index] > depth) return false;
+    if (depth_buffer[index] < depth) return false;
 
     depth_buffer[index] = depth;
     return true;
@@ -108,7 +108,7 @@ void CameraRaster::put_pixel(const int x, const int y, const Vec4 &color, const 
 
     if (render_depth)
     {
-        const float c = 255.0f * depth;
+        const float c = 1-depth;
         const Vec4 color_f = {c,c,c,1};
         frame_buffer[index] = color_convertion::vec4_to_color(color_f);
         return;
@@ -193,7 +193,6 @@ void CameraRaster::update_frustum()
     frustum.planes[BOTTOM_PLANE] = {cam_pos, cam_right.cross(cam_front_scaled - cam_up * half_v_side)};
 }
 
-//TODO: Fix camera movement
 void CameraRaster::handle_input()
 {
     if (IsKeyPressed(KEY_TAB))
