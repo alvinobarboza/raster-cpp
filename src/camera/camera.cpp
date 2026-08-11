@@ -118,7 +118,10 @@ void CameraRaster::put_pixel(const int x, const int y, const Vec4 &color, const 
 
 void CameraRaster::move_forward_backwards(const float unit)
 {
-    const Vec3 direction = transform.forward_direction * transform.rotation_matrix;
+    // transformations are stored to apply during projection, not really for camera movement.
+    const Matrix4x4 rot_mat = transform.rotation_matrix.transpose();
+
+    const Vec3 direction = transform.forward_direction * rot_mat;
     const Vec3 normalized_dir = direction.normalized();
 
     transform.position += normalized_dir * unit;
@@ -127,7 +130,9 @@ void CameraRaster::move_forward_backwards(const float unit)
 
 void CameraRaster::move_left_right(const float unit)
 {
-    const Vec3 direction = transform.forward_direction * transform.rotation_matrix;
+    const Matrix4x4 rot_mat = transform.rotation_matrix.transpose();
+
+    const Vec3 direction = transform.forward_direction * rot_mat;
     const Vec3 cross_up = direction.cross({0.0f, 0.1f, 0.0f});
     const Vec3 normalized_dir = cross_up.normalized();
 
