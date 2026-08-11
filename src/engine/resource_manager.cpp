@@ -32,56 +32,42 @@ ModelRaster* ResourceManager::LoadModel(const std::string& path)
         {
             ss >> v.x >> v.y >> v.z;
             verts.push_back(v);
-            std::cout << "Vert: " << v << std::endl;
+            // std::cout << "Vert: " << v << std::endl;
         }
         else if (header == "vn")
         {
             ss >> normal.x >> normal.y >> normal.z;
             normals.push_back(normal);
-            std::cout << "Normal: "  << normal << std::endl;
+            // std::cout << "Normal: "  << normal << std::endl;
         }
         else if (header == "vt")
         {
             ss >> uv.x >> uv.y;
             uvs.push_back(uv);
-            std::cout << "UV: "  << uv << std::endl;
+            // std::cout << "UV: "  << uv << std::endl;
         }
         else if (header == "f")
         {
-            Triangle tri{};
-            for (int i = 0; i < 3; i++)
-            {
-                std::string face_data;
-                ss >> face_data;
-                std::ranges::replace(face_data, '/', ' ');
-                std::stringstream f_data(face_data);
+            std::string temp;
 
-                int vr = 0, u = 0, n = 0;
-                f_data >> vr >> u >> n;
-                switch (i) {
-                    case 0:
-                        tri.v1 = vr - 1;
-                        tri.u1 = u - 1;
-                        tri.n1 = n - 1;
-                        break;
-                    case 1:
-                        tri.v2 = vr - 1;
-                        tri.u2 = u - 1;
-                        tri.n2 = n - 1;
-                        break;
-                    case 2:
-                        tri.v3 = vr - 1;
-                        tri.u3 = u - 1;
-                        tri.n3 = n - 1;
-                        break;
-                    default: ;
-                }
+            int v_temp, u, n;
+            std::vector<int> vid{}, uid{}, nid{};
+            while(ss >> temp) {
+                std::ranges::replace(temp, '/', ' ');
+                std::stringstream f_data(temp);
+                f_data >> v_temp >> u >> n;
+                vid.push_back(v_temp);
+                uid.push_back(u);
+                nid.push_back(n);
             }
-            tris.push_back(tri);
-            std::cout << "Faces: " << std::endl;
-            std::cout << tri.v1 << " " << tri.u1 << " " << tri.n1 << std::endl;
-            std::cout << tri.v2 << " " << tri.u2 << " " << tri.n2 << std::endl;
-            std::cout << tri.v3 << " " << tri.u3 << " " << tri.n3 << std::endl;
+
+            Triangle tri{};
+            for(int i = 1; i < vid.size()-1; i++) {
+                tri.v1 = vid[0] - 1, tri.u1 = uid[0] - 1, tri.n1 = nid[0] - 1;
+                tri.v2 = vid[i] - 1, tri.u2 = uid[i] - 1, tri.n2 = nid[i] - 1;
+                tri.v3 = vid[i+1] - 1, tri.u3 = uid[i+1] - 1, tri.n3 = nid[i+1] - 1;
+                tris.push_back(tri);
+            }
         }
     }
     ifs.close();
