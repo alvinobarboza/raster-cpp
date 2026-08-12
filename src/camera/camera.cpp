@@ -57,7 +57,11 @@ Vec3 CameraRaster::vertex_to_ndc(const Vec3 &vertex) const
     Vec4 clip = v4 * projection_matrix;;
 
     if (clip.w != 0.0f)
-        return {clip.x/clip.w,clip.y/clip.w,clip.z/clip.w};
+        return {
+            clip.x/clip.w,
+            clip.y/clip.w,
+            ((clip.z/clip.w) + 1.0f) * 0.5f // normalizing to 0 <> 1
+        };
 
     return {clip.x,clip.y,clip.z};
 }
@@ -94,7 +98,7 @@ bool CameraRaster::depth_pass(const int x, const int y, const float depth)
     if (x < 0 || x >= width || y < 0 || y >= height) return false;
 
     const int index = y * width + x;
-    if (depth_buffer[index] < depth) return false;
+    if (depth > 1.0f || depth < 0.001f) return false;
 
     depth_buffer[index] = depth;
     return true;
