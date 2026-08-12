@@ -37,6 +37,15 @@ void RendererRaster::render_scene(const SceneRaster &scene) {
                 continue;
             }
 
+            // TODO: fix frustum and clip triangles
+            // if (
+            //     !scene.camera.frustum.is_inside_frustum(model->meshData->vertices_word[t.v1]) &&
+            //     !scene.camera.frustum.is_inside_frustum(model->meshData->vertices_word[t.v2]) &&
+            //     !scene.camera.frustum.is_inside_frustum(model->meshData->vertices_word[t.v3]))
+            // {
+            //     continue;
+            // }
+
             const auto& v1 = Vertex(model->meshData->vertices_word[t.v1],
                 model->meshData->normals_word[t.n1], model->meshData->uvs[t.u1]);
             const auto& v2 = Vertex(model->meshData->vertices_word[t.v2],
@@ -45,7 +54,18 @@ void RendererRaster::render_scene(const SceneRaster &scene) {
                 model->meshData->normals_word[t.n3], model->meshData->uvs[t.u3]);
 
             const auto tri = scene.camera.project_triangle(v1, v2, v3, m);
-            render_triangle(tri, scene);
+
+            // TODO: fix frustum
+            bool is_inside_frustum = true;
+            for (const auto & ndc : tri.ndc_points) {
+                if (ndc.x < -1.0f || ndc.x > 1.0f || ndc.y < -1.0f || ndc.y > 1.0f || ndc.z < 0.001f || ndc.z > 1.0f) {
+                    is_inside_frustum = false;
+                    break;
+                }
+            }
+            if (is_inside_frustum) {
+                render_triangle(tri, scene);
+            }
         }
     }
 };

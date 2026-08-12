@@ -72,6 +72,21 @@ ModelRaster* ResourceManager::LoadModel(const std::string& path)
     }
     ifs.close();
 
+    // Test re winding order
+    for (auto& t: tris) {
+        const int v = t.v1;
+        const int u = t.u1;
+        const int n = t.n1;
+
+        t.v1 = t.v3;
+        t.v1 = t.v3;
+        t.v1 = t.v3;
+
+        t.v1 = v;
+        t.u1 = u;
+        t.n1 = n;
+    }
+
     auto mesh = std::make_unique<MeshData>(tris, verts, normals, uvs);
     const auto scale = Vec3(1.0f, 1.0f, 1.0f);
     const auto position = Vec3(1.0f, 1.0f, 1.0f);
