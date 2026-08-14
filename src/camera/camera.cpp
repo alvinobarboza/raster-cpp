@@ -47,7 +47,7 @@ void CameraRaster::clear_frame_buffer()
 {
     for (int i = 0; i < frame_buffer.size(); i++) {
         frame_buffer[i] = BLACK;
-        depth_buffer[i] = 1.0f;
+        depth_buffer[i] = 0.0f;
     }
 }
 
@@ -98,7 +98,7 @@ bool CameraRaster::depth_pass(const int x, const int y, const float depth)
     if (x < 0 || x >= width || y < 0 || y >= height) return false;
 
     const int index = y * width + x;
-    if (depth > 1.0f || depth < 0.001f) return false;
+    if (depth < depth_buffer[index]) return false;
 
     depth_buffer[index] = depth;
     return true;
