@@ -9,11 +9,11 @@
 
 int main() {
     constexpr auto width = 800;
-    constexpr auto height = 600;
+    constexpr auto height = 800;
 
     CameraRaster camera = {
-        width, height, 10.0f, 60, 0.2, 15,
-        {0.0f, 0.0f, -5.0f}, {0.0f, 0.0f, 0.0f}
+        width, height, 10.0f, 70, 0.2, 15,
+        {2.16f, 1.12f, -0.67f}, {-23.71f, 44.57f, 0.0f}
     };
 
     SceneRaster scene = {
@@ -24,7 +24,7 @@ int main() {
     ResourceManager rm;
 
     scene.models.push_back(rm.LoadModel("../assets/cube.obj"));
-    scene.models[0]->transforms.position = {0.0f, 0.0f, 9.0f};
+    scene.models[0]->transforms.position = {0.0f, 0.0f, 1.5f};
     scene.models[0]->transforms.scale = {1.0f, 1.0f, 1.0f};
     scene.models[0]->update_transforms();
 
@@ -62,7 +62,14 @@ int main() {
                 WHITE
             );
 
-            DrawTextEx({},"Hello window", {static_cast<float>(w)/2 - 6*11, static_cast<float>(h)/2-10}, 20, 5, DARKGRAY);
+            DrawText("raster", GetScreenWidth() - 70, GetScreenHeight()-20, 20, DARKGRAY);
+            DrawFPS(10, 20);
+            DrawText(
+                TextFormat("Camera:\n %02.2f Y: %02.2f Z: %02.2f\n X: %02.2f' Y: %02.2f' Z: %02.2f'",
+                    camera.transform.position.x, camera.transform.position.y, camera.transform.position.z,
+                    camera.transform.rotation.x, camera.transform.rotation.y, camera.transform.rotation.z),
+                10, 40, 20, DARKGRAY);
+
         EndDrawing();
         //break;
     }
