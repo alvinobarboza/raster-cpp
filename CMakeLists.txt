@@ -25,15 +25,15 @@ endif()
 
 add_executable(${PROJECT_NAME}
         src/main.cpp
-        include/transforms/Vec3.h
-        include/transforms/Vec2.h
-        include/transforms/Matrix4x4.h
-        include/transforms/Constants.h
-        include/transforms/Transforms.h
-        src/transforms/Vec3.cpp
-        src/transforms/Vec2.cpp
-        src/transforms/Matrix4x4.cpp
-        src/transforms/Transforms.cpp
+        include/transforms/vec3.h
+        include/transforms/vec2.h
+        include/transforms/matrix4x4.h
+        include/transforms/constants.h
+        include/transforms/transforms.h
+        src/transforms/vec3.cpp
+        src/transforms/vec2.cpp
+        src/transforms/matrix4x4.cpp
+        src/transforms/transforms.cpp
         include/camera/frustum.h
         include/colliders/sphere.h
         src/colliders/sphere.cpp
@@ -43,8 +43,8 @@ add_executable(${PROJECT_NAME}
         include/camera/camera.h
         include/model/triangle.h
         include/material/texture.h
-        include/transforms/Vec4.h
-        src/transforms/Vec4.cpp
+        include/transforms/vec4.h
+        src/transforms/vec4.cpp
         src/material/texture.cpp
         src/model/triangle.cpp
         src/camera/camera.cpp
