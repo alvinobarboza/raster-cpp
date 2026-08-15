@@ -37,19 +37,28 @@ int main() {
     InitWindow(width, height, "Hello window");
     SetTargetFPS(60);
 
-    const auto img = GenImageColor(camera.width, camera.height, RAYWHITE);
+    auto img = GenImageColor(camera.width, camera.height, RAYWHITE);
     auto render_texture = LoadTextureFromImage(img);
 
     DisableCursor();
     while (!WindowShouldClose()) {
+        const auto w = GetScreenWidth();
+        const auto h = GetScreenHeight();
+
+        if (IsWindowResized())
+        {
+            camera.update_frame_buffer_size(w, h);
+            UnloadTexture(render_texture);
+            ImageResize(&img, camera.width, camera.height);
+            render_texture = LoadTextureFromImage(img);
+        }
+
         camera.handle_input();
 
         RendererRaster::render_scene(scene);
 
         UpdateTexture(render_texture, camera.frame_buffer.data());
 
-        const auto w = GetScreenWidth();
-        const auto h = GetScreenHeight();
         BeginDrawing();
             ClearBackground(RAYWHITE);
 
@@ -62,7 +71,7 @@ int main() {
                 WHITE
             );
 
-            DrawText("raster", GetScreenWidth() - 70, GetScreenHeight()-20, 20, DARKGRAY);
+            DrawText("raster", w - 70, h - 20, 20, DARKGRAY);
             DrawFPS(10, 20);
             DrawText(
                 TextFormat("Camera:\n %02.2f Y: %02.2f Z: %02.2f\n X: %02.2f' Y: %02.2f' Z: %02.2f'",
