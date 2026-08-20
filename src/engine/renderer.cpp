@@ -2,13 +2,60 @@
 
 #include "material/color_convertion.h"
 
-void RendererRaster::render_scene(const SceneRaster &scene) {
+void RendererRaster::clip_triangle(const Plane& near, const Plane& far)
+{
+    for (const std::array planes = {near, far}; auto& plane : planes) {
+        std::swap(verts_in, verts_out);
+        verts_out.clear();
+
+        int prev_index = 0;
+        for (int i = 0; i < verts_in.size(); i++)
+        {
+            prev_index = i - 1;
+            if (prev_index < 0)
+            {
+                prev_index = static_cast<int>(verts_in.size()) - 1;
+            }
+
+            const auto current_point = verts_in[i];
+            const auto [point, normal, uv] = verts_in[prev_index];
+
+            const auto distance_current_point = plane.signed_distance_to_point(current_point.point);
+            const auto distance_prev_point = plane.signed_distance_to_point(point);
+
+            if (distance_current_point > 0.0f)
+            {
+                if (distance_prev_point <= 0.0f)
+                {
+                    const auto ratio = distance_current_point / (distance_current_point - distance_prev_point);
+                    verts_out.emplace_back(
+                        current_point.point.lerp_to(point, ratio),
+                        current_point.normal.lerp_to(normal, ratio),
+                        current_point.uv.lerp_to(uv, ratio));
+                }
+                verts_out.push_back(current_point);
+            }
+            else if (distance_prev_point > 0)
+            {
+                const auto ratio = distance_current_point / (distance_current_point - distance_prev_point);
+                verts_out.emplace_back(
+                    current_point.point.lerp_to(point, ratio),
+                    current_point.normal.lerp_to(normal, ratio),
+                    current_point.uv.lerp_to(uv, ratio));
+            }
+        }
+    }
+}
+
+void RendererRaster::render_scene(const SceneRaster &scene)
+{
     scene.camera.clear_frame_buffer();
+    tris_buffer.clear();
 
     const auto color = color_convertion::color_to_vec4(GRAY);
     const MaterialRaster m = {"default", {color.x, color.y, color.z} , 250.0f, nullptr, nullptr, nullptr };
-    for (auto& model : scene.models) {
 
+    for (auto& model : scene.models) {
         auto m_rotation = scene.camera.transform.rotation_matrix * model->transforms.rotation_matrix;
         auto m_transforms = scene.camera.transform.transformation_matrix * model->transforms.transformation_matrix;
 
@@ -37,15 +84,6 @@ void RendererRaster::render_scene(const SceneRaster &scene) {
                 continue;
             }
 
-            // TODO: fix frustum and clip triangles
-            // if (
-            //     !scene.camera.frustum.is_inside_frustum(model->meshData->vertices_word[t.v1]) &&
-            //     !scene.camera.frustum.is_inside_frustum(model->meshData->vertices_word[t.v2]) &&
-            //     !scene.camera.frustum.is_inside_frustum(model->meshData->vertices_word[t.v3]))
-            // {
-            //     continue;
-            // }
-
             const auto& v1 = Vertex(model->meshData->vertices_word[t.v1],
                 model->meshData->normals_word[t.n1], model->meshData->uvs[t.u1]);
             const auto& v2 = Vertex(model->meshData->vertices_word[t.v2],
@@ -53,20 +91,35 @@ void RendererRaster::render_scene(const SceneRaster &scene) {
             const auto& v3 = Vertex(model->meshData->vertices_word[t.v3],
                 model->meshData->normals_word[t.n3], model->meshData->uvs[t.u3]);
 
-            const auto tri = scene.camera.project_triangle(v1, v2, v3, m);
+            verts_out.clear();
+            verts_in.clear();
 
-            // TODO: fix frustum
-            bool is_inside_frustum = true;
-            for (const auto & ndc : tri.ndc_points) {
-                if (ndc.x < -1.0f || ndc.x > 1.0f || ndc.y < -1.0f || ndc.y > 1.0f || ndc.z < 0.001f || ndc.z > 1.0f) {
-                    is_inside_frustum = false;
-                    break;
+            verts_out.push_back(v1);
+            verts_out.push_back(v2);
+            verts_out.push_back(v3);
+
+            clip_triangle(
+                scene.camera.frustum.planes[NEAR_PLANE],
+                scene.camera.frustum.planes[FAR_PLANE]);
+
+            if (verts_out.size() > 2) {
+                for (int j = 1; j < verts_out.size() - 1; j++) {
+                    auto tf = scene.camera.project_triangle(
+                        verts_out[0],
+                        verts_out[j],
+                        verts_out[j+1],
+                        m);
+
+                    tf.smooth = t.smooth;
+                    tris_buffer.push_back(tf);
                 }
             }
-            if (is_inside_frustum) {
-                render_triangle(tri, scene);
-            }
         }
+    }
+
+    for (const auto& tri: tris_buffer)
+    {
+        render_triangle(tri, scene);
     }
 };
 

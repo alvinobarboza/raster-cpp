@@ -21,6 +21,8 @@ int main() {
         {}
     };
 
+    RendererRaster renderer;
+
     ResourceManager rm;
 
     scene.models.push_back(rm.LoadModel("../assets/cube.obj"));
@@ -55,7 +57,7 @@ int main() {
 
         camera.handle_input();
 
-        RendererRaster::render_scene(scene);
+        renderer.render_scene(scene);
 
         UpdateTexture(render_texture, camera.frame_buffer.data());
 
