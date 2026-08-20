@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-Plane::Plane(const Vec3 &normal, const Vec3 &point)
+Plane::Plane(const Vec3 &point, const Vec3 &normal)
 {
      const Vec3 normalized = normal.normalized();
      this->normal = normalized;
