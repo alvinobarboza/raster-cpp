@@ -1,3 +1,4 @@
+#include <chrono>
 #include <iostream>
 
 #include "raylib.h"
@@ -57,7 +58,10 @@ int main() {
 
         camera.handle_input();
 
+
+        const std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
         renderer.render_scene(scene);
+        const std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
         UpdateTexture(render_texture, camera.frame_buffer.data());
 
@@ -76,10 +80,16 @@ int main() {
             DrawText("raster", w - 70, h - 20, 20, DARKGRAY);
             DrawFPS(10, 20);
             DrawText(
+                TextFormat(
+                    "Frame time: %d MS",
+                    std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count()
+                ),
+                10, 40, 10, DARKGRAY);
+            DrawText(
                 TextFormat("Camera:\n %02.2f Y: %02.2f Z: %02.2f\n X: %02.2f' Y: %02.2f' Z: %02.2f'",
                     camera.transform.position.x, camera.transform.position.y, camera.transform.position.z,
                     camera.transform.rotation.x, camera.transform.rotation.y, camera.transform.rotation.z),
-                10, 40, 20, DARKGRAY);
+                10, 60, 20, DARKGRAY);
 
         EndDrawing();
         //break;
