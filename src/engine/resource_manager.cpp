@@ -94,89 +94,8 @@ ModelRaster* ResourceManager::load_model(const std::string& path)
         {
             std::string mtl_path;
             ss >> mtl_path;
-
             p.replace_filename(mtl_path);
-
-            std::ifstream ifs_m(p);
-            if(ifs_m.is_open())
-            {
-                std::cout << p << std::endl;
-                std::string m_line;
-                std::string m_header;
-                std::string mat_name;
-
-                Vec3 diff = {-1.0f, -1.0f, -1.0f};
-                float specular = -1.0f;
-                TextureRaster* map_diffuse = nullptr;
-                TextureRaster* map_normal = nullptr;
-                TextureRaster* map_roughness = nullptr;
-
-                while(getline(ifs_m, m_line))
-                {
-                    if (m_line.empty()) continue;
-
-                    std::stringstream m_ss(m_line);
-                    m_ss >> m_header;
-                    if(m_header == "newmtl")
-                    {
-                        if (!mat_name.empty())
-                        {
-                            materials.emplace_back(
-                                mat_name,
-                                diff,
-                                specular,
-                                map_diffuse,
-                                map_normal,
-                                map_roughness);
-
-                            diff = {-1.0f, -1.0f, -1.0f};
-                            specular = -1.0f;
-                            map_diffuse = nullptr;
-                            map_normal = nullptr;
-                            map_roughness = nullptr;
-                        }
-                        m_ss >> mat_name;
-                    }
-                    else if (m_header == "Ns")
-                    {
-                        m_ss >> specular;
-                    }
-                    else if (m_header == "Kd")
-                    {
-                        m_ss >> diff.x >> diff.y >> diff.z;
-                    }
-                    else if (m_header == "map_Kd")
-                    {
-                        std::string filename;
-                        m_ss >> filename;
-                        p.replace_filename(filename);
-                        map_diffuse = load_texture(p);
-                    }
-                    else if (m_header == "map_Ns")
-                    {
-                        std::string filename;
-                        m_ss >> filename;
-                        p.replace_filename(filename);
-                        map_roughness = load_texture(p);
-                    }
-                    else if (m_header == "map_Bump")
-                    {
-                        std::string filename;
-                        while (m_ss >> filename) {}
-                        p.replace_filename(filename);
-                        map_normal = load_texture(p);
-                    }
-                }
-                materials.emplace_back(
-                    mat_name,
-                    diff,
-                    specular,
-                    map_diffuse,
-                    map_normal,
-                    map_roughness);
-
-                ifs_m.close();
-            }
+            materials = load_material(p);
         }
     }
     ifs.close();
@@ -200,9 +119,92 @@ ModelRaster* ResourceManager::load_model(const std::string& path)
     return ptr;
 }
 
-MaterialRaster ResourceManager::load_material(const std::string& path)
+std::vector<MaterialRaster> ResourceManager::load_material(const std::string& path)
 {
-    return {};
+    std::vector<MaterialRaster> materials = {};
+    std::filesystem::path p(path);
+
+    std::ifstream ifs_m(p);
+    if(ifs_m.is_open())
+    {
+        std::cout << p << std::endl;
+        std::string m_line;
+        std::string m_header;
+        std::string mat_name;
+
+        Vec3 diff = {-1.0f, -1.0f, -1.0f};
+        float specular = -1.0f;
+        TextureRaster* map_diffuse = nullptr;
+        TextureRaster* map_normal = nullptr;
+        TextureRaster* map_roughness = nullptr;
+
+        while(getline(ifs_m, m_line))
+        {
+            if (m_line.empty()) continue;
+
+            std::stringstream m_ss(m_line);
+            m_ss >> m_header;
+            if(m_header == "newmtl")
+            {
+                if (!mat_name.empty())
+                {
+                    materials.emplace_back(
+                        mat_name,
+                        diff,
+                        specular,
+                        map_diffuse,
+                        map_normal,
+                        map_roughness);
+
+                    diff = {-1.0f, -1.0f, -1.0f};
+                    specular = -1.0f;
+                    map_diffuse = nullptr;
+                    map_normal = nullptr;
+                    map_roughness = nullptr;
+                }
+                m_ss >> mat_name;
+            }
+            else if (m_header == "Ns")
+            {
+                m_ss >> specular;
+            }
+            else if (m_header == "Kd")
+            {
+                m_ss >> diff.x >> diff.y >> diff.z;
+            }
+            else if (m_header == "map_Kd")
+            {
+                std::string filename;
+                m_ss >> filename;
+                p.replace_filename(filename);
+                map_diffuse = load_texture(p);
+            }
+            else if (m_header == "map_Ns")
+            {
+                std::string filename;
+                m_ss >> filename;
+                p.replace_filename(filename);
+                map_roughness = load_texture(p);
+            }
+            else if (m_header == "map_Bump")
+            {
+                std::string filename;
+                while (m_ss >> filename) {}
+                p.replace_filename(filename);
+                map_normal = load_texture(p);
+            }
+        }
+        materials.emplace_back(
+            mat_name,
+            diff,
+            specular,
+            map_diffuse,
+            map_normal,
+            map_roughness);
+
+        ifs_m.close();
+    }
+    return materials;
 }
 
 std::vector<ModelRaster*> ResourceManager::load_scene(const std::string& path)
