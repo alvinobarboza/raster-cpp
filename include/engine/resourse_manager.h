@@ -9,7 +9,8 @@ public:
     std::vector<std::unique_ptr<ModelRaster>> models = {};
     std::vector<std::unique_ptr<TextureRaster>> textures = {};
 
-    ModelRaster* LoadModel(const std::string& path);
-    MaterialRaster* LoadMaterial(const std::string& path);
-    std::vector<ModelRaster*> LoadScene(const std::string& path);
+    ModelRaster* load_model(const std::string& path);
+    MaterialRaster load_material(const std::string& path);
+    TextureRaster* load_texture(const std::string& path);
+    std::vector<ModelRaster*> load_scene(const std::string& path);
 };
