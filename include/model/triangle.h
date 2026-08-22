@@ -36,7 +36,7 @@ public:
 
     AABB2D aabb = {};
 
-    const MaterialRaster &material;
+    const MaterialRaster *material;
 
     bool smooth = false;
 

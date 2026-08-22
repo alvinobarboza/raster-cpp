@@ -14,7 +14,7 @@ int main() {
 
     CameraRaster camera = {
         width, height, 10.0f, 70, 0.2, 15,
-        {2.16f, 1.12f, -0.67f}, {-23.71f, 44.57f, 0.0f}
+        {0.0f, 0.0f, 4.0f}, {0.0f, 180.0f, 0.0f}
     };
 
     SceneRaster scene = {
@@ -32,7 +32,7 @@ int main() {
     scene.models[0]->update_transforms();
 
     scene.models.push_back(rm.load_model("../assets/polyhaven_rico_b3d/marble_bust.obj"));
-    scene.models[1]->transforms.position = {0.0f, 0.3f, 3.0f};
+    scene.models[1]->transforms.position = {0.0f, 0.0f, 3.0f};
     scene.models[1]->update_transforms();
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);

@@ -16,7 +16,7 @@ FullTriangle::FullTriangle(
     const Vertex &v1,
     const Vertex &v2,
     const Vertex &v3,
-    const MaterialRaster &material) : material(material)
+    const MaterialRaster &material) : material(&material)
 {
     vertices[0] = v1;
     vertices[1] = v2;

@@ -1,5 +1,7 @@
 #include "engine/renderer.h"
 
+#include <algorithm>
+
 #include "material/color_convertion.h"
 
 void RendererRaster::clip_triangle(const Plane& near, const Plane& far)
@@ -115,6 +117,12 @@ void RendererRaster::render_scene(const SceneRaster &scene)
         }
     }
 
+    std::ranges::sort(tris_buffer, [](const FullTriangle &a, const FullTriangle &b) {
+        const auto a_depth = (a.depth_z[0] + a.depth_z[1] + a.depth_z[2]) / 3;
+        const auto b_depth = (b.depth_z[0] + b.depth_z[1] + b.depth_z[2]) / 3;
+        return a_depth > b_depth;
+    });
+
     for (const auto& tri: tris_buffer)
     {
         render_triangle(tri, scene);
@@ -176,15 +184,15 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
 
                 if (scene.camera.depth_pass(static_cast<int>(x), static_cast<int>(y), z_depth))
                 {
-                    const Vec3 tmp_color = tri.material.diffuse;
+                    const Vec3 tmp_color = tri.material->diffuse;
                     Vec4 p_color = {tmp_color.x, tmp_color.y, tmp_color.z, 1.0f};
-                    if (tri.material.map_diffuse)
+                    if (tri.material->map_diffuse)
                     {
                         const auto uv_coord =
                             tri.projected_vertices[0].uv * alpha +
                             tri.projected_vertices[1].uv * beta +
                             tri.projected_vertices[2].uv * gamma;
-                        p_color = tri.material.map_diffuse->texel_color(uv_coord / z_depth);
+                        p_color = tri.material->map_diffuse->texel_color(uv_coord / z_depth);
                     }
                     scene.camera.put_pixel(static_cast<int>(x), static_cast<int>(y), p_color, ndc_depth);
                 }
