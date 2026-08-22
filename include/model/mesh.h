@@ -20,7 +20,8 @@ public:
         std::vector<Triangle> &tris,
         std::vector<Vec3> &vertices,
         std::vector<Vec3> &normals,
-        std::vector<Vec2> &uvs);
+        std::vector<Vec2> &uvs,
+        std::vector<MaterialRaster> &materials);
 };
 
 class ModelRaster {

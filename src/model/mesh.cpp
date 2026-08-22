@@ -6,11 +6,13 @@ MeshData::MeshData(
     std::vector<Triangle> &tris,
     std::vector<Vec3> &vertices,
     std::vector<Vec3> &normals,
-    std::vector<Vec2> &uvs):
+    std::vector<Vec2> &uvs,
+    std::vector<MaterialRaster> &materials):
 triangles(std::move(tris)),
 vertices(std::move(vertices)),
 normals(std::move(normals)),
-uvs(std::move(uvs))
+uvs(std::move(uvs)),
+materials(std::move(materials))
 {
     vertices_word.resize(this->vertices.size());
     normals_word.resize(this->normals.size());
@@ -18,7 +20,7 @@ uvs(std::move(uvs))
 
 ModelRaster::ModelRaster(
     const Transforms &transform,
-    std::unique_ptr<MeshData> meshData):
+    MeshData meshData):
 transforms(transform),
 meshData(std::move(meshData))
 {
@@ -28,6 +30,6 @@ meshData(std::move(meshData))
 void ModelRaster::update_transforms()
 {
     transforms.update_transforms();
-    boundingSphere.calculate_boundaries(meshData->vertices, transforms.scale_matrix);
+    boundingSphere.calculate_boundaries(meshData.vertices, transforms.scale_matrix);
     boundingSphere.center_world = boundingSphere.center * transforms.transformation_matrix;
 }

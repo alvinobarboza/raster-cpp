@@ -26,12 +26,12 @@ int main() {
 
     ResourceManager rm;
 
-    scene.models.push_back(rm.LoadModel("../assets/cube.obj"));
+    scene.models.push_back(rm.load_model("../assets/cube.obj"));
     scene.models[0]->transforms.position = {0.0f, 0.0f, 1.5f};
     scene.models[0]->transforms.scale = {1.0f, 1.0f, 1.0f};
     scene.models[0]->update_transforms();
 
-    scene.models.push_back(rm.LoadModel("../assets/polyhaven_rico_b3d/marble_bust.obj"));
+    scene.models.push_back(rm.load_model("../assets/polyhaven_rico_b3d/marble_bust.obj"));
     scene.models[1]->transforms.position = {0.0f, 0.3f, 3.0f};
     scene.models[1]->update_transforms();
 
@@ -90,7 +90,6 @@ int main() {
                     camera.transform.position.x, camera.transform.position.y, camera.transform.position.z,
                     camera.transform.rotation.x, camera.transform.rotation.y, camera.transform.rotation.z),
                 10, 60, 20, DARKGRAY);
-
         EndDrawing();
         //break;
     }
