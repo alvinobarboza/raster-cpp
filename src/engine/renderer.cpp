@@ -66,30 +66,30 @@ void RendererRaster::render_scene(const SceneRaster &scene)
             continue;
         }
 
-        for (int i = 0; i < model->meshData->vertices.size(); i++)
+        for (int i = 0; i < model->meshData.vertices.size(); i++)
         {
-            model->meshData->vertices_word[i] = model->meshData->vertices[i] * m_transforms;
+            model->meshData.vertices_word[i] = model->meshData.vertices[i] * m_transforms;
         }
 
-        for (int i = 0; i < model->meshData->normals.size(); i++)
+        for (int i = 0; i < model->meshData.normals.size(); i++)
         {
-            model->meshData->normals_word[i] = model->meshData->normals[i] * m_rotation;
+            model->meshData.normals_word[i] = model->meshData.normals[i] * m_rotation;
         }
 
-        for (int i = 0; i < model->meshData->triangles.size(); i++)
+        for (int i = 0; i < model->meshData.triangles.size(); i++)
         {
-            const auto& t = model->meshData->triangles[i];
-            if (!t.is_back_facing(model->meshData->vertices_word, model->meshData->normals_word))
+            const auto& t = model->meshData.triangles[i];
+            if (!t.is_back_facing(model->meshData.vertices_word, model->meshData.normals_word))
             {
                 continue;
             }
 
-            const auto& v1 = Vertex(model->meshData->vertices_word[t.v1],
-                model->meshData->normals_word[t.n1], model->meshData->uvs[t.u1]);
-            const auto& v2 = Vertex(model->meshData->vertices_word[t.v2],
-                model->meshData->normals_word[t.n2], model->meshData->uvs[t.u2]);
-            const auto& v3 = Vertex(model->meshData->vertices_word[t.v3],
-                model->meshData->normals_word[t.n3], model->meshData->uvs[t.u3]);
+            const auto& v1 = Vertex(model->meshData.vertices_word[t.v1],
+                model->meshData.normals_word[t.n1], model->meshData.uvs[t.u1]);
+            const auto& v2 = Vertex(model->meshData.vertices_word[t.v2],
+                model->meshData.normals_word[t.n2], model->meshData.uvs[t.u2]);
+            const auto& v3 = Vertex(model->meshData.vertices_word[t.v3],
+                model->meshData.normals_word[t.n3], model->meshData.uvs[t.u3]);
 
             verts_out.clear();
             verts_in.clear();

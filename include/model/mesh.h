@@ -28,10 +28,10 @@ class ModelRaster {
 public:
     Transforms transforms = {};
     BoundingSphere boundingSphere = {};
-    std::unique_ptr<MeshData> meshData = nullptr;
+    MeshData meshData = {};
 
     ModelRaster() = default;
-    ModelRaster(const Transforms &transform, std::unique_ptr<MeshData> meshData);
+    ModelRaster(const Transforms &transform, MeshData meshData);
 
     void update_transforms();
 };
