@@ -52,9 +52,6 @@ void RendererRaster::render_scene(const SceneRaster &scene)
     scene.camera.clear_frame_buffer();
     tris_buffer.clear();
 
-    const auto color = color_convertion::color_to_vec4(GRAY);
-    const MaterialRaster m = {"default", {color.x, color.y, color.z} , 250.0f, nullptr, nullptr, nullptr };
-
     for (auto& model : scene.models) {
         auto m_rotation = scene.camera.transform.rotation_matrix * model->transforms.rotation_matrix;
         auto m_transforms = scene.camera.transform.transformation_matrix * model->transforms.transformation_matrix;
@@ -103,6 +100,7 @@ void RendererRaster::render_scene(const SceneRaster &scene)
                 scene.camera.frustum.planes[FAR_PLANE]);
 
             if (verts_out.size() > 2) {
+                const auto& m = model->meshData.materials[t.material_id];
                 for (int j = 1; j < verts_out.size() - 1; j++) {
                     auto tf = scene.camera.project_triangle(
                         verts_out[0],
@@ -178,7 +176,17 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
 
                 if (scene.camera.depth_pass(static_cast<int>(x), static_cast<int>(y), z_depth))
                 {
-                    scene.camera.put_pixel(static_cast<int>(x), static_cast<int>(y), {alpha,beta,gamma,1.0f}, ndc_depth);
+                    const Vec3 tmp_color = tri.material.diffuse;
+                    Vec4 p_color = {tmp_color.x, tmp_color.y, tmp_color.z, 1.0f};
+                    if (tri.material.map_diffuse)
+                    {
+                        const auto uv_coord =
+                            tri.projected_vertices[0].uv * alpha +
+                            tri.projected_vertices[1].uv * beta +
+                            tri.projected_vertices[2].uv * gamma;
+                        p_color = tri.material.map_diffuse->texel_color(uv_coord / z_depth);
+                    }
+                    scene.camera.put_pixel(static_cast<int>(x), static_cast<int>(y), p_color, ndc_depth);
                 }
             }
 
