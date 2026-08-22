@@ -23,7 +23,6 @@ ModelRaster* ResourceManager::load_model(const std::string& path)
     std::vector<Vec3> normals = {};
     std::vector<Vec2> uvs = {};
     std::vector<MaterialRaster> materials = {};
-    std::vector<std::string> mtl_names = {};
     std::string cur_mat_name;
 
     std::string line;
@@ -137,7 +136,6 @@ ModelRaster* ResourceManager::load_model(const std::string& path)
                             map_roughness = nullptr;
                         }
                         m_ss >> mat_name;
-                        mtl_names.push_back(mat_name);
                     }
                     else if (m_header == "Ns")
                     {
