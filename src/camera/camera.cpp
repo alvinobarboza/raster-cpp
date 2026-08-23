@@ -95,8 +95,6 @@ FullTriangle CameraRaster::project_triangle(
 
 bool CameraRaster::depth_pass(const int x, const int y, const float depth)
 {
-    if (x < 0 || x >= width || y < 0 || y >= height) return false;
-
     const int index = y * width + x;
     if (depth < depth_buffer[index]) return false;
 
@@ -107,9 +105,6 @@ bool CameraRaster::depth_pass(const int x, const int y, const float depth)
 void CameraRaster::put_pixel(const int x, const int y, const Vec4 &color, const float depth)
 {
     const int index = y * width + x;
-
-    if (index >= depth_buffer.size()) return;
-
     if (render_depth)
     {
         const float c = 1-depth;
