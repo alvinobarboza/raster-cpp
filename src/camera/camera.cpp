@@ -54,7 +54,7 @@ void CameraRaster::clear_frame_buffer()
 Vec3 CameraRaster::vertex_to_ndc(const Vec3 &vertex) const
 {
     const Vec4 v4 = {vertex.x, vertex.y, vertex.z, 1.0f};
-    Vec4 clip = v4 * projection_matrix;;
+    const Vec4 clip = v4 * projection_matrix;;
 
     if (clip.w != 0.0f)
         return {
@@ -107,7 +107,8 @@ void CameraRaster::put_pixel(const int x, const int y, const Vec4 &color, const 
     const int index = y * width + x;
     if (render_depth)
     {
-        const float c = 1-depth;
+        float c = 1-depth;
+        if (c < 0.01) c = 0.01;
         const Vec4 color_f = {c,c,c,1};
         frame_buffer[index] = color_convertion::vec4_to_color(color_f);
         return;
