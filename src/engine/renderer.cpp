@@ -147,15 +147,15 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
     float bias_0 = 0.0f, bias_1 = 0.0f, bias_2 = 0.0f;
     if (triangle::is_edge_top_or_left(tri.screen_points[1], tri.screen_points[2]))
     {
-        bias_0 = -0.001;
+        bias_0 = -0.0001;
     }
     if (triangle::is_edge_top_or_left(tri.screen_points[2], tri.screen_points[0]))
     {
-        bias_1 = -0.001;
+        bias_1 = -0.0001;
     }
     if (triangle::is_edge_top_or_left(tri.screen_points[0], tri.screen_points[1]))
     {
-        bias_2 = -0.001;
+        bias_2 = -0.0001;
     }
 
     const auto area = 1.0f / triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], tri.screen_points[2]);
