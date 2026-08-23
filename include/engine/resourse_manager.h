@@ -11,6 +11,6 @@ public:
     std::vector<std::unique_ptr<ModelRaster>> models = {};
     std::vector<std::unique_ptr<TextureRaster>> textures = {};
 
-    ModelRaster* load_model(const std::string& path);
+    ModelRaster* load_model(const std::string& path, bool flip_handiness);
     std::vector<ModelRaster*> load_scene(const std::string& path);
 };

@@ -6,7 +6,7 @@
 #include "raylib.h"
 #include "engine/resourse_manager.h"
 
-ModelRaster* ResourceManager::load_model(const std::string& path)
+ModelRaster* ResourceManager::load_model(const std::string& path, bool flip_handiness)
 {
     std::filesystem::path p(path);
     std::cout << p << std::endl;
@@ -38,12 +38,14 @@ ModelRaster* ResourceManager::load_model(const std::string& path)
         if (header == "v")
         {
             ss >> v.x >> v.y >> v.z;
+            if (flip_handiness) v.z = -v.z;
             verts.push_back(v);
             // std::cout << "Vert: " << v << std::endl;
         }
         else if (header == "vn")
         {
             ss >> normal.x >> normal.y >> normal.z;
+            if (flip_handiness) normal.z = -normal.z;
             normals.push_back(normal);
             // std::cout << "Normal: "  << normal << std::endl;
         }
@@ -83,9 +85,19 @@ ModelRaster* ResourceManager::load_model(const std::string& path)
 
             Triangle tri{};
             for(int i = 1; i < vid.size()-1; i++) {
-                tri.v1 = vid[0] - 1, tri.u1 = uid[0] - 1, tri.n1 = nid[0] - 1;
-                tri.v2 = vid[i] - 1, tri.u2 = uid[i] - 1, tri.n2 = nid[i] - 1;
-                tri.v3 = vid[i+1] - 1, tri.u3 = uid[i+1] - 1, tri.n3 = nid[i+1] - 1;
+                if (flip_handiness)
+                {
+                    tri.v1 = vid[0] - 1, tri.u1 = uid[0] - 1, tri.n1 = nid[0] - 1;
+                    tri.v2 = vid[i+1] - 1, tri.u2 = uid[i+1] - 1, tri.n2 = nid[i+1] - 1;
+                    tri.v3 = vid[i] - 1, tri.u3 = uid[i] - 1, tri.n3 = nid[i] - 1;
+                }
+                else
+                {
+                    tri.v1 = vid[0] - 1, tri.u1 = uid[0] - 1, tri.n1 = nid[0] - 1;
+                    tri.v2 = vid[i] - 1, tri.u2 = uid[i] - 1, tri.n2 = nid[i] - 1;
+                    tri.v3 = vid[i+1] - 1, tri.u3 = uid[i+1] - 1, tri.n3 = nid[i+1] - 1;
+                }
+
                 tri.material_id = mat_index;
                 tris.push_back(tri);
             }
@@ -99,13 +111,6 @@ ModelRaster* ResourceManager::load_model(const std::string& path)
         }
     }
     ifs.close();
-
-    // Test re winding order
-    // for (auto& t: tris) {
-    //     std::swap(t.v1, t.v3);
-    //     std::swap(t.u1, t.u3);
-    //     std::swap(t.n1, t.n3);
-    // }
 
     const auto mesh = MeshData(tris, verts, normals, uvs, materials);
     const auto scale = Vec3(1.0f, 1.0f, 1.0f);
