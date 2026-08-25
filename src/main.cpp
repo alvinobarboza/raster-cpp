@@ -7,6 +7,7 @@
 #include "engine/renderer.h"
 #include "engine/resourse_manager.h"
 #include "engine/scene.h"
+#include "material/color_convertion.h"
 
 int main() {
     constexpr auto width = 800;
@@ -21,6 +22,12 @@ int main() {
         camera,
         {}
     };
+
+    scene.lights.emplace_back(
+        LightType::DIRECTIONAL,
+        color_convertion::color_to_vec4(WHITE),
+        1.0f,
+        Vec3(-1.0f, -1.0f, 0.0f).normalized());
 
     RendererRaster renderer;
 
