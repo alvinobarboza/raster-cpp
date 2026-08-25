@@ -107,7 +107,7 @@ ModelRaster* ResourceManager::load_model(const std::string& path, bool flip_hand
             std::string mtl_path;
             ss >> mtl_path;
             p.replace_filename(mtl_path);
-            materials = load_material(p);
+            materials = load_material(p.string());
         }
     }
     ifs.close();
@@ -182,21 +182,21 @@ std::vector<MaterialRaster> ResourceManager::load_material(const std::string& pa
                 std::string filename;
                 m_ss >> filename;
                 p.replace_filename(filename);
-                map_diffuse = load_texture(p);
+                map_diffuse = load_texture(p.string());
             }
             else if (m_header == "map_Ns")
             {
                 std::string filename;
                 m_ss >> filename;
                 p.replace_filename(filename);
-                map_roughness = load_texture(p);
+                map_roughness = load_texture(p.string());
             }
             else if (m_header == "map_Bump")
             {
                 std::string filename;
                 while (m_ss >> filename) {}
                 p.replace_filename(filename);
-                map_normal = load_texture(p);
+                map_normal = load_texture(p.string());
             }
         }
         materials.emplace_back(
