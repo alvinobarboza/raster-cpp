@@ -165,6 +165,11 @@ void CameraRaster::toggle_wireframe()
     render_wireframe = !render_wireframe;
 }
 
+void CameraRaster::toggle_render_normal()
+{
+    render_normal = !render_normal;
+}
+
 void CameraRaster::update_frustum()
 {
     const Vec3 cam_front = transform.forward_direction;
@@ -200,6 +205,11 @@ void CameraRaster::handle_input()
     if (IsKeyPressed(KEY_Z))
     {
         toggle_render_depth();
+    }
+
+    if (IsKeyPressed(KEY_N))
+    {
+        toggle_render_normal();
     }
 
     constexpr float move_speed = 0.09f;

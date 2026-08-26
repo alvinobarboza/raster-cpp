@@ -10,6 +10,17 @@ Vec4 TextureRaster::texel_color(const Vec2 &uv) const
     return buffer[h * width + w];
 }
 
+Vec3 TextureRaster::texel_normal(const Vec2 &uv) const
+{
+    const auto normal = texel_color(uv);
+
+    return {
+        normal.x * 2 - 1,
+        normal.y * 2 - 1,
+        normal.z * 2 - 1,
+    };
+}
+
 float TextureRaster::texel_intensity(const Vec2 &uv) const
 {
     return texel_color(uv).x;

@@ -2,6 +2,7 @@
 #include <vector>
 
 #include "transforms/vec2.h"
+#include "transforms/vec3.h"
 #include "transforms/vec4.h"
 
 // must be powers of 2 128, 256...
@@ -13,5 +14,6 @@ public:
     float f_width = 0, f_height = 0;
 
     [[nodiscard]] Vec4 texel_color(const Vec2 &uv) const;
+    [[nodiscard]] Vec3 texel_normal(const Vec2 &uv) const;
     [[nodiscard]] float texel_intensity(const Vec2 &uv) const;
 };

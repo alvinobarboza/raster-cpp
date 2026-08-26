@@ -137,7 +137,7 @@ std::vector<MaterialRaster> ResourceManager::load_material(const std::string& pa
         std::string m_header;
         std::string mat_name;
 
-        Vec3 diff = {-1.0f, -1.0f, -1.0f};
+        Vec4 diff{-1.0f,-1.0f,-1.0f,1.0f};
         float specular = -1.0f;
         TextureRaster* map_diffuse = nullptr;
         TextureRaster* map_normal = nullptr;
@@ -161,7 +161,7 @@ std::vector<MaterialRaster> ResourceManager::load_material(const std::string& pa
                         map_normal,
                         map_roughness);
 
-                    diff = {-1.0f, -1.0f, -1.0f};
+                    diff.x = -1.0f, diff.y = -1.0f, diff.z = -1.0f;
                     specular = -1.0f;
                     map_diffuse = nullptr;
                     map_normal = nullptr;

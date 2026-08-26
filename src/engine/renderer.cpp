@@ -165,6 +165,22 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
     auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p) + bias_1;
     auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p) + bias_2;
 
+    // Tangent calculations
+    const auto edge1 = tri.projected_vertices[1].point - tri.projected_vertices[0].point;
+    const auto edge2 = tri.projected_vertices[2].point - tri.projected_vertices[0].point;
+
+    const auto deltaUV1 = tri.vertices[1].uv - tri.vertices[0].uv;
+    const auto deltaUV2 = tri.vertices[2].uv - tri.vertices[0].uv;
+
+    const auto f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+
+    const Vec3 tangent = Vec3(
+        f*(deltaUV2.y*edge1.x - deltaUV1.y*edge2.x),
+        f*(deltaUV2.y*edge1.y - deltaUV1.y*edge2.y),
+        f*(deltaUV2.y*edge1.z - deltaUV1.y*edge2.z)
+    ).normalized();
+    // Tangent calculations
+
     for (float y = minY; y < maxY; y++)
     {
         auto w0 = w0_row;
@@ -184,15 +200,19 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
 
                 if (scene.camera.depth_pass(static_cast<int>(x), static_cast<int>(y), z_depth))
                 {
-                    const Vec3 tmp_color = tri.material->diffuse;
-                    Vec4 p_color = {tmp_color.x, tmp_color.y, tmp_color.z, 1.0f};
+                    const auto uv_coord =
+                            (tri.projected_vertices[0].uv * alpha +
+                            tri.projected_vertices[1].uv * beta +
+                            tri.projected_vertices[2].uv * gamma) / z_depth;
+                    auto normal =
+                            (tri.projected_vertices[0].normal * alpha +
+                            tri.projected_vertices[1].normal * beta +
+                            tri.projected_vertices[2].normal * gamma) / z_depth;
+
+                    Vec4 p_color = tri.material->diffuse;
                     if (tri.material->map_diffuse)
                     {
-                        const auto uv_coord =
-                            tri.projected_vertices[0].uv * alpha +
-                            tri.projected_vertices[1].uv * beta +
-                            tri.projected_vertices[2].uv * gamma;
-                        p_color = tri.material->map_diffuse->texel_color(uv_coord / z_depth);
+                        p_color = tri.material->map_diffuse->texel_color(uv_coord);
                     }
                     if (scene.camera.render_depth)
                     {
@@ -202,6 +222,24 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                         p_color.y = c;
                         p_color.z = c;
                         p_color.w = 1.0f;
+                    }
+                    if (scene.camera.render_normal && tri.material->map_normal)
+                    {
+                        // test - light implementation
+                        const auto normal_map = tri.material->map_normal->texel_normal(uv_coord);
+                        const auto nt = normal * tangent;
+                        const auto t = (tangent - (normal * nt)).normalized();
+                        const auto b = normal.cross(t);
+
+                        const auto _t = t * normal_map.x;
+                        const auto _b = b * normal_map.y;
+                        const auto _n = normal * normal_map.z;
+
+                        normal = (_t + _b + _n).normalized();
+
+                        p_color.x = normal.x;
+                        p_color.y = normal.y;
+                        p_color.z = normal.z;
                     }
                     scene.camera.put_pixel(static_cast<int>(x), static_cast<int>(y), p_color);
                 }

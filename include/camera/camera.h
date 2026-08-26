@@ -22,6 +22,7 @@ public:
 
     bool update_view = true;
     bool render_depth = false;
+    bool render_normal = false;
     bool render_wireframe = false;
 
     int width = 0;
@@ -59,6 +60,7 @@ public:
     void toggle_view_lock();
     void toggle_wireframe();
     void toggle_render_depth();
+    void toggle_render_normal();
     void update_frustum();
     void handle_input();
 };

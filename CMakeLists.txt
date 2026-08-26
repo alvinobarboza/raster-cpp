@@ -6,11 +6,6 @@ include(FetchContent)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(CMAKE_BUILD_TYPE MATCHES "Debug")
-    add_compile_options(-fsanitize=address -fno-omit-frame-pointer -g)
-    add_link_options(-fsanitize=address)
-endif()
-
 function(include_dependency libName gitUrl gitTag)
     FetchContent_Declare(
             ${libName}
