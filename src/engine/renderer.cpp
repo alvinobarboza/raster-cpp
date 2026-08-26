@@ -194,7 +194,16 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                             tri.projected_vertices[2].uv * gamma;
                         p_color = tri.material->map_diffuse->texel_color(uv_coord / z_depth);
                     }
-                    scene.camera.put_pixel(static_cast<int>(x), static_cast<int>(y), p_color, ndc_depth);
+                    if (scene.camera.render_depth)
+                    {
+                        float c = 1-ndc_depth;
+                        if (c < 0.01) c = 0.01;
+                        p_color.x = c;
+                        p_color.y = c;
+                        p_color.z = c;
+                        p_color.w = 1.0f;
+                    }
+                    scene.camera.put_pixel(static_cast<int>(x), static_cast<int>(y), p_color);
                 }
             }
 

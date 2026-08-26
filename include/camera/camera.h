@@ -51,7 +51,7 @@ public:
         const Vertex &v3,
         const MaterialRaster& material) const;
     [[nodiscard]] bool depth_pass(int x, int y, float depth);
-    void put_pixel(int x, int y, const Vec4 &color, float depth);
+    void put_pixel(int x, int y, const Vec4 &color);
     void move_forward_backwards(float unit);
     void move_left_right(float unit);
     void move_up_down(float unit);

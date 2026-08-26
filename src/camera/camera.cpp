@@ -102,18 +102,9 @@ bool CameraRaster::depth_pass(const int x, const int y, const float depth)
     return true;
 }
 
-void CameraRaster::put_pixel(const int x, const int y, const Vec4 &color, const float depth)
+void CameraRaster::put_pixel(const int x, const int y, const Vec4 &color)
 {
-    const int index = y * width + x;
-    if (render_depth)
-    {
-        float c = 1-depth;
-        if (c < 0.01) c = 0.01;
-        const Vec4 color_f = {c,c,c,1};
-        frame_buffer[index] = color_convertion::vec4_to_color(color_f);
-        return;
-    }
-    frame_buffer[index] = color_convertion::vec4_to_color(color);
+    frame_buffer[y * width + x] = color_convertion::vec4_to_color(color);
 }
 
 void CameraRaster::move_forward_backwards(const float unit)
