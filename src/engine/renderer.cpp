@@ -211,6 +211,16 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                             tri.projected_vertices[1].uv * beta +
                             tri.projected_vertices[2].uv * gamma) / z_depth;
 
+                    const auto fragment_coord = (tri.projected_vertices[0].point * alpha +
+                            tri.projected_vertices[1].point * beta +
+                            tri.projected_vertices[2].point * gamma) / z_depth;
+                    const auto view_dir = -fragment_coord;
+                    float specularStrength = 0.0f;
+                    if (tri.material->map_roughness)
+                    {
+                        specularStrength = tri.material->map_roughness->texel_intensity(uv_coord);
+                    }
+
                     auto normal = tri.normal;
                     if (tri.smooth)
                     {
