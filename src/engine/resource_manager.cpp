@@ -23,6 +23,7 @@ ModelRaster* ResourceManager::load_model(const std::string& path, bool flip_hand
     std::vector<Vec3> normals = {};
     std::vector<Vec2> uvs = {};
     std::vector<MaterialRaster> materials = {};
+    bool smooth_shader = false;
     std::string cur_mat_name;
 
     std::string line;
@@ -55,6 +56,11 @@ ModelRaster* ResourceManager::load_model(const std::string& path, bool flip_hand
             uvs.push_back(uv);
             // std::cout << "UV: "  << uv << std::endl;
         }
+        else if (header == "s")
+        {
+            ss >> header;
+            if (header == "1") smooth_shader = true;
+        }
         else if (header == "usemtl")
         {
             ss >> cur_mat_name;
@@ -84,6 +90,7 @@ ModelRaster* ResourceManager::load_model(const std::string& path, bool flip_hand
             }
 
             Triangle tri{};
+            tri.smooth = smooth_shader;
             for(int i = 1; i < vid.size()-1; i++) {
                 if (flip_handiness)
                 {
