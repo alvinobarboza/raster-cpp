@@ -141,8 +141,10 @@ void CameraRaster::update_rotation(const Vec2 &rotation)
 {
     if (!update_view) return;
 
-    transform.rotation.x -= rotation.y * sensitivity;
-    transform.rotation.y -= rotation.x * sensitivity;
+    constexpr auto amplifier = 4.0f;
+
+    transform.rotation.x -= rotation.y * sensitivity * amplifier;
+    transform.rotation.y -= rotation.x * sensitivity * amplifier;
 
     if (transform.rotation.x > 89) transform.rotation.x = 89;
     if (transform.rotation.x < -89) transform.rotation.x = -89;
@@ -212,39 +214,39 @@ void CameraRaster::handle_input()
         toggle_render_normal();
     }
 
-    constexpr float move_speed = 0.09f;
+
+    const float delta_time = GetFrameTime();
 
     if (IsKeyDown(KEY_SPACE))
     {
-        move_up_down(move_speed);
+        move_up_down(sensitivity * delta_time);
     }
 
     if (IsKeyDown(KEY_LEFT_CONTROL))
     {
-        move_up_down(-move_speed);
+        move_up_down(-sensitivity * delta_time);
     }
 
     if (IsKeyDown(KEY_W))
     {
-        move_forward_backwards(move_speed);
+        move_forward_backwards(sensitivity * delta_time);
     }
 
     if (IsKeyDown(KEY_S))
     {
-        move_forward_backwards(-move_speed);
+        move_forward_backwards(-sensitivity * delta_time);
     }
 
     if (IsKeyDown(KEY_A))
     {
-        move_left_right(move_speed);
+        move_left_right(sensitivity * delta_time);
     }
 
     if (IsKeyDown(KEY_D))
     {
-        move_left_right(-move_speed);
+        move_left_right(-sensitivity * delta_time);
     }
 
-    const float delta_time = GetFrameTime();
     const auto [x,y] = GetMouseDelta();
     const Vec2 mouse_delta{x*delta_time,y*delta_time};
     update_rotation(mouse_delta);
