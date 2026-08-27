@@ -14,8 +14,8 @@ int main() {
     constexpr auto height = 800;
 
     CameraRaster camera = {
-        width, height, 10.0f, 70, 0.2, 15,
-        {0.0f, 0.0f, 4.0f}, {0.0f, 180.0f, 0.0f}
+        width, height, 2.0f, 53, 0.2, 15,
+        {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f}
     };
 
     SceneRaster scene = {
@@ -37,14 +37,14 @@ int main() {
 
     ResourceManager rm;
 
-    scene.models.push_back(rm.load_model("../assets/cube.obj", true));
-    scene.models[0]->transforms.position = {0.0f, 0.0f, 1.5f};
-    scene.models[0]->transforms.scale = {1.0f, 1.0f, 1.0f};
-    scene.models[0]->update_transforms();
+    // scene.models.push_back(rm.load_model("../assets/cube.obj", true));
+    // scene.models[0]->transforms.position = {0.0f, 0.0f, 1.5f};
+    // scene.models[0]->transforms.scale = {1.0f, 1.0f, 1.0f};
+    // scene.models[0]->update_transforms();
 
     scene.models.push_back(rm.load_model("../assets/polyhaven_rico_b3d/marble_bust.obj", true));
-    scene.models[1]->transforms.position = {0.0f, 0.0f, 3.0f};
-    scene.models[1]->update_transforms();
+    scene.models[0]->transforms.position = {0.0f, 0.0f, 3.0f};
+    scene.models[0]->update_transforms();
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 
