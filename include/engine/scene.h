@@ -7,6 +7,7 @@
 struct SkyBox {
     MaterialRaster* material = nullptr;
     Vec4 ambient_color {};
+    float ambient_intensity = 1.0f;
 };
 
 class SceneRaster {

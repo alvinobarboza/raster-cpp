@@ -20,14 +20,18 @@ int main() {
 
     SceneRaster scene = {
         camera,
-        {}
+        {
+            nullptr,
+            {},
+            0.2f
+        }
     };
 
     scene.lights.emplace_back(
         LightType::DIRECTIONAL,
         color_convertion::color_to_vec4(WHITE),
         1.0f,
-        Vec3(-1.0f, -1.0f, 0.0f).normalized());
+        Vec3(-1.0f, -1.0f, 1.0f).normalized());
 
     RendererRaster renderer;
 

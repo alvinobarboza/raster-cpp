@@ -54,6 +54,12 @@ void RendererRaster::render_scene(const SceneRaster &scene)
     scene.camera.clear_frame_buffer();
     tris_buffer.clear();
 
+    //update lights
+    for (auto &light: scene.lights)
+    {
+        light.direction_world = -((light.direction * scene.camera.transform.rotation_matrix).normalized());
+    }
+
     for (auto& model : scene.models) {
         auto m_rotation = scene.camera.transform.rotation_matrix * model->transforms.rotation_matrix;
         auto m_transforms = scene.camera.transform.transformation_matrix * model->transforms.transformation_matrix;
@@ -223,7 +229,7 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                         p_color.z = c;
                         p_color.w = 1.0f;
                     }
-                    if (scene.camera.render_normal && tri.material->map_normal)
+                    if (tri.material->map_normal)
                     {
                         // test - light implementation
                         const auto normal_map = tri.material->map_normal->texel_normal(uv_coord);
@@ -236,10 +242,23 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                         const auto _n = normal * normal_map.z;
 
                         normal = (_t + _b + _n).normalized();
-
-                        p_color.x = normal.x;
-                        p_color.y = normal.y;
-                        p_color.z = normal.z;
+                    }
+                    if (scene.camera.render_normal)
+                    {
+                        p_color.x = normal.x * .5f + .5f;
+                        p_color.y = normal.y * .5f + .5f;
+                        p_color.z = normal.z * .5f + .5f;
+                    }
+                    for (const auto& light : scene.lights)
+                    {
+                        const auto ambient = light.color * scene.skybox.ambient_intensity;
+                        const auto light_intensity = std::max(0.0f, normal * light.direction_world);
+                        const auto computed_intensity = light_intensity * light.intensity;
+                        const auto diffuse = light.color * computed_intensity;
+                        const auto computed_color = ambient + diffuse;
+                        p_color.x = std::min(1.0f, computed_color.x * p_color.x);
+                        p_color.y = std::min(1.0f, computed_color.y * p_color.y);
+                        p_color.z = std::min(1.0f, computed_color.z * p_color.z);
                     }
                     scene.camera.put_pixel(static_cast<int>(x), static_cast<int>(y), p_color);
                 }
