@@ -65,8 +65,8 @@ int main() {
             render_texture = LoadTextureFromImage(img);
         }
 
+        renderer.handle_input();
         camera.handle_input();
-
 
         const std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
         renderer.render_scene(scene);

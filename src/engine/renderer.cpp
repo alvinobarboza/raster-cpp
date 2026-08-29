@@ -136,7 +136,7 @@ void RendererRaster::render_scene(const SceneRaster &scene)
     }
 };
 
-void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster &scene)
+void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster &scene) const
 {
     const auto minY = std::max(tri.aabb.min.y, 0.0f);
     const auto maxY = std::min(tri.aabb.max.y, static_cast<float>(scene.camera.height));
@@ -267,7 +267,9 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                             p_color.x = normal.x * .5f + .5f;
                             p_color.y = normal.y * .5f + .5f;
                             p_color.z = -normal.z * .5f + .5f; // to render opengl style, as my handedness is the opposite
-                        } else {
+                        }
+                        else if (render_light)
+                        {
                             for (const auto& light : scene.lights)
                             {
                                 // shader code todo: specular and need to load Ks in resource manager
@@ -315,4 +317,9 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
         w1_row += delta_w1_row;
         w2_row += delta_w2_row;
     }
+}
+
+void RendererRaster::handle_input()
+{
+    if (IsKeyPressed(KEY_L)) render_light = !render_light;
 }
