@@ -57,7 +57,9 @@ void RendererRaster::render_scene(const SceneRaster &scene)
     //update lights
     for (auto &light: scene.lights)
     {
-        light.direction_world = ((light.direction * scene.camera.transform.rotation_matrix).normalized());
+        // Since this is used only for the dot product between the light and triangle normal, I'm inverting here
+        // Normal UP * actual light direction, will always produce negative value for a correct light setup.
+        light.direction_world = -((light.direction * scene.camera.transform.rotation_matrix).normalized());
     }
 
     for (auto& model : scene.models) {
@@ -81,9 +83,8 @@ void RendererRaster::render_scene(const SceneRaster &scene)
             model->meshData.normals_word[i] = model->meshData.normals[i] * m_rotation;
         }
 
-        for (int i = 0; i < model->meshData.triangles.size(); i++)
+        for (const auto &t: model->meshData.triangles)
         {
-            const auto& t = model->meshData.triangles[i];
             if (!t.is_back_facing(model->meshData.vertices_word, model->meshData.normals_word))
             {
                 continue;
@@ -225,7 +226,7 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                     if (tri.smooth)
                     {
                         normal =
-                            -((tri.projected_vertices[0].normal * alpha +
+                            ((tri.projected_vertices[0].normal * alpha +
                             tri.projected_vertices[1].normal * beta +
                             tri.projected_vertices[2].normal * gamma) / z_depth).normalized();
                     }
@@ -244,12 +245,6 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                         p_color.z = c;
                         p_color.w = 1.0f;
                     }
-                    else if (scene.camera.render_normal)
-                    {
-                        p_color.x = normal.x * .5f + .5f;
-                        p_color.y = normal.y * .5f + .5f;
-                        p_color.z = normal.z * .5f + .5f;
-                    }
                     else
                     {
                         if (tri.material->map_normal)
@@ -258,7 +253,7 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                             const auto normal_map = tri.material->map_normal->texel_normal(uv_coord);
                             const auto nt = normal * tangent;
                             const auto t = (tangent - (normal * nt)).normalized();
-                            const auto b = normal.cross(t);
+                            const auto b = t.cross(normal);
 
                             const auto _t = t * normal_map.x;
                             const auto _b = b * normal_map.y;
@@ -267,38 +262,46 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                             normal = (_t + _b + _n).normalized();
                         }
 
-                        for (const auto& light : scene.lights)
+                        if (scene.camera.render_normal)
                         {
-                            // shader code todo: specular and need to load Ks in resource manager
-                            // vec3 N = normalize(vNormal);
-                            // vec3 L = normalize(vLightDir);
-                            // vec3 V = normalize(vViewDir);
-                            //
-                            // // 2. Sample map_Ns and scale it to a realistic specular exponent range
-                            // float sampledNs = texture2D(map_Ns, vUv).r;
-                            // float maxShininess = 1000.0; // Standard maximum for Blinn-Phong
-                            // float shininess = sampledNs * maxShininess;
-                            //
-                            // // 3. Calculate Blinn-Phong specular intensity using Halfway Vector (H)
-                            // vec3 H = normalize(L + V);
-                            // float specAngle = max(dot(N, H), 0.0);
-                            // float specularIntensity = pow(specAngle, shininess);
-                            //
-                            // // 4. Combine with Ks data
-                            // vec3 finalSpecular = Ks * specularIntensity;
-                            //
-                            // // Combine with your ambient and diffuse colors below...
-                            // gl_FragColor = vec4(finalSpecular, 1.0);
+                            p_color.x = normal.x * .5f + .5f;
+                            p_color.y = normal.y * .5f + .5f;
+                            p_color.z = -normal.z * .5f + .5f; // to render opengl style, as my handedness is the opposite
+                        } else {
+                            for (const auto& light : scene.lights)
+                            {
+                                // shader code todo: specular and need to load Ks in resource manager
+                                // vec3 N = normalize(vNormal);
+                                // vec3 L = normalize(vLightDir);
+                                // vec3 V = normalize(vViewDir);
+                                //
+                                // // 2. Sample map_Ns and scale it to a realistic specular exponent range
+                                // float sampledNs = texture2D(map_Ns, vUv).r;
+                                // float maxShininess = 1000.0; // Standard maximum for Blinn-Phong
+                                // float shininess = sampledNs * maxShininess;
+                                //
+                                // // 3. Calculate Blinn-Phong specular intensity using Halfway Vector (H)
+                                // vec3 H = normalize(L + V);
+                                // float specAngle = max(dot(N, H), 0.0);
+                                // float specularIntensity = pow(specAngle, shininess);
+                                //
+                                // // 4. Combine with Ks data
+                                // vec3 finalSpecular = Ks * specularIntensity;
+                                //
+                                // // Combine with your ambient and diffuse colors below...
+                                // gl_FragColor = vec4(finalSpecular, 1.0);
 
-                            const auto ambient = light.color * scene.skybox.ambient_intensity;
-                            const auto light_intensity = std::max(0.0f, normal * light.direction_world);
-                            const auto computed_intensity = light_intensity * light.intensity;
-                            const auto diffuse = light.color * computed_intensity;
-                            const auto computed_color = ambient + diffuse;
-                            p_color.x = std::min(1.0f, computed_color.x * p_color.x);
-                            p_color.y = std::min(1.0f, computed_color.y * p_color.y);
-                            p_color.z = std::min(1.0f, computed_color.z * p_color.z);
+                                const auto ambient = light.color * scene.skybox.ambient_intensity;
+                                const auto light_intensity = std::max(0.0f, normal * light.direction_world);
+                                const auto computed_intensity = light_intensity * light.intensity;
+                                const auto diffuse = light.color * computed_intensity;
+                                const auto computed_color = ambient + diffuse;
+                                p_color.x = std::min(1.0f, computed_color.x * p_color.x);
+                                p_color.y = std::min(1.0f, computed_color.y * p_color.y);
+                                p_color.z = std::min(1.0f, computed_color.z * p_color.z);
+                            }
                         }
+
                     }
                     scene.camera.put_pixel(static_cast<int>(x), static_cast<int>(y), p_color);
                 }

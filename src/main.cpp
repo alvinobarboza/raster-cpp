@@ -2,7 +2,6 @@
 #include <iostream>
 
 #include "raylib.h"
-#include "../cmake-build-release/_deps/raylib-src/src/raymath.h"
 #include "camera/camera.h"
 #include "engine/renderer.h"
 #include "engine/resourse_manager.h"
@@ -15,7 +14,7 @@ int main() {
 
     CameraRaster camera = {
         width, height, 2.0f, 53, 0.2, 15,
-        {0.0f, 0.5f, 0.0f}, {-18.0f, 0.0f, 0.0f}
+        {0.0f, 0.26f, 0.75f}, {-18.0f, 0.0f, 0.0f}
     };
 
     SceneRaster scene = {
@@ -54,7 +53,6 @@ int main() {
     auto img = GenImageColor(camera.width, camera.height, RAYWHITE);
     auto render_texture = LoadTextureFromImage(img);
 
-    DisableCursor();
     while (!WindowShouldClose()) {
         const auto w = GetScreenWidth();
         const auto h = GetScreenHeight();
@@ -83,7 +81,7 @@ int main() {
                 render_texture,
                 {0.0f, 0.0f, static_cast<float>(camera.width), static_cast<float>(camera.height)},
                 {0.0f, 0.0f, static_cast<float>(w), static_cast<float>(h)},
-                Vector2Zero(),
+                { 0.0f, 0.0f },
                 0,
                 WHITE
             );

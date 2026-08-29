@@ -33,6 +33,7 @@ public:
     std::array<Vec3, 3> ndc_points = {};
     std::array<Vec2, 3> screen_points = {};
     std::array<float, 3> depth_z = {};
+    Vec3 origin = {};
     Vec3 normal = {};
 
     AABB2D aabb = {};

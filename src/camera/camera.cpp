@@ -16,7 +16,7 @@ CameraRaster::CameraRaster(
     z_near = near;
     z_far = far;
     this->sensitivity = sensitivity;
-    update_view = true;
+    update_view = false;
     render_depth = false;
     render_wireframe = false;
 
@@ -139,8 +139,6 @@ void CameraRaster::move_up_down(const float unit)
 
 void CameraRaster::update_rotation(const Vec2 &rotation)
 {
-    if (!update_view) return;
-
     constexpr auto amplifier = 4.0f;
 
     transform.rotation.x -= rotation.y * sensitivity * amplifier;
@@ -247,9 +245,12 @@ void CameraRaster::handle_input()
         move_left_right(-sensitivity * delta_time);
     }
 
-    const auto [x,y] = GetMouseDelta();
-    const Vec2 mouse_delta{x*delta_time,y*delta_time};
-    update_rotation(mouse_delta);
+    if (update_view) {
+        const auto [x,y] = GetMouseDelta();
+        const Vec2 mouse_delta{x*delta_time,y*delta_time};
+        update_rotation(mouse_delta);
+    }
+
 }
 
 static float fov_scaling(const float angle) {

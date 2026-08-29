@@ -38,7 +38,7 @@ FullTriangle::FullTriangle(
     projected_vertices[1].normal = v2.normal;
     projected_vertices[2].normal = v3.normal;
 
-    normal = -(
+    normal = (
     (
         projected_vertices[0].normal +
         projected_vertices[1].normal +

@@ -20,7 +20,7 @@ public:
     float z_far = 0.0f;
     float sensitivity = 0.0f;
 
-    bool update_view = true;
+    bool update_view = false;
     bool render_depth = false;
     bool render_normal = false;
     bool render_wireframe = false;
