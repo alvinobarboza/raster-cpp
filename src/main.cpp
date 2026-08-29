@@ -36,14 +36,13 @@ int main() {
 
     ResourceManager rm;
 
-    // scene.models.push_back(rm.load_model("../assets/cube.obj", true));
-    // scene.models[0]->transforms.position = {0.0f, 0.0f, 1.5f};
-    // scene.models[0]->transforms.scale = {1.0f, 1.0f, 1.0f};
-    // scene.models[0]->update_transforms();
+    scene.models.push_back(rm.load_model("../assets/sample_normal/sample_normal.obj", true));
+    scene.models[0]->transforms.position = {0.0f, 0.0f, 1.5f};
+    scene.models[0]->update_transforms();
 
     scene.models.push_back(rm.load_model("../assets/polyhaven_rico_b3d/marble_bust.obj", true));
-    scene.models[0]->transforms.position = {0.0f, -0.25f, 1.5f};
-    scene.models[0]->update_transforms();
+    scene.models[1]->transforms.position = {0.0f, -0.25f, 1.5f};
+    scene.models[1]->update_transforms();
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 
