@@ -1,6 +1,7 @@
 #include "engine/renderer.h"
 
 #include <algorithm>
+#include <cmath>
 
 #include "material/color_convertion.h"
 
@@ -215,12 +216,6 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                     const auto fragment_coord = (tri.projected_vertices[0].point * alpha +
                             tri.projected_vertices[1].point * beta +
                             tri.projected_vertices[2].point * gamma) / z_depth;
-                    const auto view_dir = -fragment_coord;
-                    float specularStrength = 0.0f;
-                    if (tri.material->map_roughness)
-                    {
-                        specularStrength = tri.material->map_roughness->texel_intensity(uv_coord);
-                    }
 
                     auto normal = tri.normal;
                     if (tri.smooth)
@@ -270,6 +265,15 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                         }
                         else if (render_light)
                         {
+                            float shininess = 0.0f;
+                            if (tri.material->map_roughness)
+                            {
+                                // // 2. Sample map_Ns and scale it to a realistic specular exponent range
+                                // float sampledNs = texture2D(map_Ns, vUv).r;
+                                // float maxShininess = 1000.0; // Standard maximum for Blinn-Phong
+                                // float shininess = sampledNs * maxShininess;
+                                shininess = tri.material->map_roughness->texel_intensity(uv_coord) * 1000.0f;
+                            }
                             for (const auto& light : scene.lights)
                             {
                                 // shader code todo: specular and need to load Ks in resource manager
@@ -277,30 +281,35 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                                 // vec3 L = normalize(vLightDir);
                                 // vec3 V = normalize(vViewDir);
                                 //
-                                // // 2. Sample map_Ns and scale it to a realistic specular exponent range
-                                // float sampledNs = texture2D(map_Ns, vUv).r;
-                                // float maxShininess = 1000.0; // Standard maximum for Blinn-Phong
-                                // float shininess = sampledNs * maxShininess;
-                                //
-                                // // 3. Calculate Blinn-Phong specular intensity using Halfway Vector (H)
-                                // vec3 H = normalize(L + V);
-                                // float specAngle = max(dot(N, H), 0.0);
-                                // float specularIntensity = pow(specAngle, shininess);
-                                //
-                                // // 4. Combine with Ks data
-                                // vec3 finalSpecular = Ks * specularIntensity;
-                                //
-                                // // Combine with your ambient and diffuse colors below...
-                                // gl_FragColor = vec4(finalSpecular, 1.0);
+                                float specular_strength = 0.0f;
+                                if (shininess > 0.0f)
+                                {
+                                    // // 3. Calculate Blinn-Phong specular intensity using Halfway Vector (H)
+                                    // vec3 H = normalize(L + V);
+                                    // float specAngle = max(dot(N, H), 0.0);
+                                    // float specularIntensity = pow(specAngle, shininess);
+                                    const auto view_dir = -fragment_coord;
+                                    const auto h = (light.direction_world + view_dir).normalized();
+                                    const auto spec_angle = std::max(0.0f, normal * h);
+                                    specular_strength = std::pow(spec_angle, shininess);
+
+
+                                    // TODO: 4. Combine with Ks data
+                                    // vec3 finalSpecular = Ks * specularIntensity;
+                                    //
+                                    // // Combine with your ambient and diffuse colors below...
+                                    // gl_FragColor = vec4(finalSpecular, 1.0);
+                                }
+
 
                                 const auto ambient = light.color * scene.skybox.ambient_intensity;
                                 const auto light_intensity = std::max(0.0f, normal * light.direction_world);
                                 const auto computed_intensity = light_intensity * light.intensity;
-                                const auto diffuse = light.color * computed_intensity;
-                                const auto computed_color = ambient + diffuse;
-                                p_color.x = std::min(1.0f, computed_color.x * p_color.x);
-                                p_color.y = std::min(1.0f, computed_color.y * p_color.y);
-                                p_color.z = std::min(1.0f, computed_color.z * p_color.z);
+                                const auto light_color = light.color * computed_intensity;
+                                const auto computed_color = ambient + light_color;
+                                p_color.x = std::min(.95f, (computed_color.x * p_color.x) + (computed_color.x * p_color.x)*specular_strength);
+                                p_color.y = std::min(.95f, (computed_color.y * p_color.y) + (computed_color.y * p_color.y)*specular_strength);
+                                p_color.z = std::min(.95f, (computed_color.z * p_color.z) + (computed_color.z * p_color.z)*specular_strength);
                             }
                         }
 
