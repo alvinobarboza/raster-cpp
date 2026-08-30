@@ -14,7 +14,7 @@ int main() {
 
     CameraRaster camera = {
         width, height, 2.0f, 53, 0.2, 15,
-        {-3.0f, 1.0f, 0.0f}, {0.0f, -66.0f, 0.0f}
+        {0.0f, .25f, 0.75f}, {-18.0f, 0.0f, 0.0f}
     };
 
     SceneRaster scene = {
