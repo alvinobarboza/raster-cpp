@@ -38,8 +38,8 @@ FullTriangle::FullTriangle(
     projected_vertices[1].normal = v2.normal;
     projected_vertices[2].normal = v3.normal;
 
-    const auto ba = projected_vertices[1].point - projected_vertices[0].point;
-    const auto ca = projected_vertices[2].point - projected_vertices[0].point;
+    const auto ba = v2.point - v1.point;
+    const auto ca = v3.point - v1.point;
 
     normal = ba.cross(ca).normalized();
 }

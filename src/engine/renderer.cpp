@@ -174,8 +174,8 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
     auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p) + bias_2;
 
     // Tangent calculations
-    const auto edge1 = tri.projected_vertices[1].point - tri.projected_vertices[0].point;
-    const auto edge2 = tri.projected_vertices[2].point - tri.projected_vertices[0].point;
+    const auto edge1 = tri.vertices[1].point - tri.vertices[0].point;
+    const auto edge2 = tri.vertices[2].point - tri.vertices[0].point;
 
     const auto deltaUV1 = tri.vertices[1].uv - tri.vertices[0].uv;
     const auto deltaUV2 = tri.vertices[2].uv - tri.vertices[0].uv;
@@ -221,9 +221,9 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                     if (tri.smooth)
                     {
                         normal =
-                            ((tri.projected_vertices[0].normal * alpha +
-                            tri.projected_vertices[1].normal * beta +
-                            tri.projected_vertices[2].normal * gamma) / z_depth).normalized();
+                            ((tri.vertices[0].normal * alpha +
+                            tri.vertices[1].normal * beta +
+                            tri.vertices[2].normal * gamma) / z_depth).normalized();
                     }
 
                     Vec4 p_color = tri.material->diffuse;
