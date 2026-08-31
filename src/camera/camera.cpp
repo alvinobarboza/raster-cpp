@@ -6,11 +6,12 @@
 #include "transforms/constants.h"
 
 CameraRaster::CameraRaster(
-    const int width, const int height,
+    const int width, const int height, const int res_factor,
     const float sensitivity, const float fov,
     const float near, const float far,
     const Vec3 &position, const Vec3 &rotation)
 {
+    this->res_factor = res_factor;
     fov_angle = fov;
     fov_scale = fov_scaling(fov);
     z_near = near;
@@ -31,8 +32,8 @@ CameraRaster::CameraRaster(
 
 void CameraRaster::update_frame_buffer_size(const int w, const  int h)
 {
-    width = w;
-    height = h;
+    width = w/res_factor;
+    height = h/res_factor;
     half_width = static_cast<float>(width) / 2;
     half_height = static_cast<float>(height) / 2;
     aspect_ratio = static_cast<float>(width) / static_cast<float>(height);

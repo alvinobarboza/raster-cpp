@@ -12,8 +12,10 @@ int main() {
     constexpr auto width = 800;
     constexpr auto height = 800;
 
+    constexpr auto resolution_factor = 2;
+
     CameraRaster camera = {
-        width, height, 2.0f, 53, 0.2, 15,
+        width, height, resolution_factor, 2.0f, 53, 0.2, 15,
         {0.0f, .25f, 0.75f}, {-18.0f, 0.0f, 0.0f}
     };
 

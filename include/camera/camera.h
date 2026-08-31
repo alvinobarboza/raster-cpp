@@ -27,6 +27,7 @@ public:
 
     int width = 0;
     int height = 0;
+    int res_factor = 1;
 
     float half_width = 0.0f;
     float half_height = 0.0f;
@@ -37,7 +38,7 @@ public:
     Frustum frustum = {};
 
     CameraRaster(
-        int width, int height,
+        int width, int height, int res_factor,
         float sensitivity, float fov,
         float near, float far,
         const Vec3 &position, const Vec3 &rotation);
