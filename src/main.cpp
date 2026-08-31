@@ -94,6 +94,9 @@ int main() {
             );
 
             DrawText("raster", w - 70, h - 20, 20, DARKGRAY);
+            DrawText(
+                TextFormat("Canvas: %dx%d Screen: %dx%d", camera.width, camera.height, w, h),
+                0,h - 20, 20, DARKGRAY);
             DrawFPS(10, 20);
             DrawText(
                 TextFormat(
