@@ -9,6 +9,7 @@ public:
     float y {};
     float z {};
 
+    explicit Vec3(const float v): x(v), y(v), z(v) {}
     Vec3(const float x, const float y, const float z) : x(x), y(y), z(z) {}
     Vec3() = default;
 
@@ -19,6 +20,7 @@ public:
     float operator*(const Vec3 &rhs) const;
     Vec3 operator*(float scalar) const;
     Vec3 operator/(float scalar) const;
+    Vec3 operator/(const Vec3 &rhs) const;
     Vec3& operator+=(const Vec3 &rhs);
     Vec3 operator+(Vec3 rhs) const;
     Vec3& operator-=(const Vec3 &rhs);

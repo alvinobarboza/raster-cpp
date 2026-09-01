@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "material/color_convertion.h"
+#include "transforms/constants.h"
 
 void RendererRaster::clip_triangle(const Plane& near, const Plane& far)
 {
@@ -137,6 +138,34 @@ void RendererRaster::render_scene(const SceneRaster &scene)
     }
 };
 
+/*
+ * Brian Will -> ?v=5p0e7YNONr8
+ */
+
+float distributionGGX(const float NdotH, const float roughness)
+{
+    const float a = roughness * roughness;
+    const float a2 = a * a;
+    float denom = (NdotH * NdotH * (a2 - 1.0f) + 1.0f) ;
+    denom = transforms::PI_R * denom * denom;
+    return a2 / std::ranges::max(denom, 0.0000001f); // Prevent divide by zero
+}
+
+float geometrySmith(const float NdotV, const float NdotL, const float roughness)
+{
+    const float r = roughness + 1.0f;
+    const float k = (r * r) / 8.0f;
+    const float ggx1 = NdotV / (NdotV * (1.0f - k) + k);
+    const float ggx2 = NdotL / (NdotL * (1.0f - k) + k);
+    return ggx1 * ggx2;
+}
+
+Vec3 fresnelSchlick(const float HdotV, const Vec3 baseReflectivity)
+{
+    const Vec3 inverse_reflectivity {1.0f - baseReflectivity.x, 1.0f - baseReflectivity.y, 1.0f - baseReflectivity.z};
+    return baseReflectivity + inverse_reflectivity * std::pow(1.0f - HdotV, 5.0f);
+}
+
 void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster &scene) const
 {
     const auto minY = std::max(tri.aabb.min.y, 0.0f);
@@ -224,6 +253,11 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                     const auto frag_color = tri.material->map_diffuse ?
                         tri.material->map_diffuse->texel_color(uv_coord) : tri.material->diffuse;
 
+                    // Transforming wavefront's specular into roughness, not ideal, but will be for now
+                    const float roughness = tri.material->map_roughness ?
+                        tri.material->map_roughness->texel_intensity(uv_coord)
+                        : tri.material->specular * 0.001f;
+
                     Vec4 final_color = frag_color;
 
                     if (tri.material->map_normal)
@@ -262,34 +296,73 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                     }
                     else if (render_light)
                     {
-                        float shininess = tri.material->specular;
-                        if (tri.material->map_roughness)
-                        {
-                            shininess = tri.material->map_roughness->texel_intensity(uv_coord) * 1000.0f;
-                        }
+                        const auto V = (-frag_coord).normalized();
+                        const auto N = normal;
+
+                        // If I add metallic property, lerp from 0.04 to albedo/diffuse using the range[0,1] of metallic
+                        const Vec3 base_reflectivity {0.4};
+
+                        Vec3 Lo {};
                         for (const auto& light : scene.lights)
                         {
-                            const auto ambient = light.color * scene.skybox.ambient_intensity;
-                            const auto light_intensity = std::max(0.0f, normal * light.direction_world);
+                            // Also (light_pos - frag_pos) for point light
+                            const Vec3 L = light.direction_world;
+                            const Vec3 H = (V + L).normalized();
 
-                            float specular_strength = 0.0f;
-                            if (light_intensity > 0.0f) {
-                                if (shininess > 0.0f)
-                                {
-                                    const auto view_dir = -frag_coord;
-                                    const auto h = (light.direction_world + view_dir).normalized();
-                                    const auto spec_angle = std::max(0.0f, normal * h);
-                                    specular_strength = std::pow(spec_angle, shininess);
-                                }
-                            }
+                            // This a direction light, no attenuation will be applied now
+                            /*
+                             *  float distance = length(light_pos - frag_pos);
+                             *  float attenuation = 1.0 / (distance * distance);
+                             *  vec3 radiance = ligth_color * attenuation;
+                             */
+                            const Vec3 radiance {light.color.x, light.color.y, light.color.z};
 
-                            const auto computed_intensity = light_intensity * light.intensity;
-                            const auto light_color = light.color * computed_intensity;
-                            const auto computed_color = ambient + light_color;
-                            final_color.x = std::min(.95f, (computed_color.x * final_color.x) + (computed_color.x * final_color.x)*specular_strength);
-                            final_color.y = std::min(.95f, (computed_color.y * final_color.y) + (computed_color.y * final_color.y)*specular_strength);
-                            final_color.z = std::min(.95f, (computed_color.z * final_color.z) + (computed_color.z * final_color.z)*specular_strength);
+                            // Cook-Torrance BRDF
+                            const float NdotV = std::max(N * V, 0.0000001f);
+                            const float NdotL = std::max(N * L, 0.0000001f);
+                            const float HdotV = std::max(H * V, 0.0f);
+                            const float NdotH = std::max(N * H, 0.0f);
+
+                            const float D = distributionGGX(NdotH, roughness);
+                            const float G = geometrySmith(NdotV, NdotL, roughness);
+                            const Vec3 F = fresnelSchlick(HdotV, base_reflectivity);
+
+                            Vec3 specular = F * D * G;
+                            specular = specular / (4.0f * NdotV * NdotL);
+
+                            const Vec3 kD = Vec3{1.0f} - F;
+
+                            // When using mettalic property
+                            // kD *= 1.0 - mettalic;
+
+                            // Lo += (kD * albedo / PI + specular) * radiance * NdotL;
+                            const Vec3 kD_x_albedo {kD.x * frag_color.x, kD.y * frag_color.y, kD.z * frag_color.z};
+                            const Vec3 divided_pi_specular = (kD_x_albedo / transforms::PI_R + specular);
+                            const Vec3 mul_radiance {
+                                divided_pi_specular.x * radiance.x,
+                                divided_pi_specular.y * radiance.y,
+                                divided_pi_specular.z * radiance.z};
+
+                            Lo += mul_radiance * NdotL;
                         }
+
+                        const Vec3 ambient {
+                            scene.skybox.ambient_color.x * scene.skybox.ambient_intensity,
+                            scene.skybox.ambient_color.y * scene.skybox.ambient_intensity,
+                            scene.skybox.ambient_color.z * scene.skybox.ambient_intensity};
+                        Vec3 color = ambient + Lo;
+
+                        // HDR tonemapping
+                        color = color / (color + Vec3{1.0f});
+                        // Gamma
+                        const Vec3 gamma_const {1.0f/2.2f};
+                        color = {
+                            std::pow(color.x, gamma_const.x),
+                            std::pow(color.y, gamma_const.y),
+                            std::pow(color.z, gamma_const.z)
+                        };
+
+                        final_color = {color.x, color.y, color.z, 1.0f};
                     }
 
                     scene.camera.put_pixel(static_cast<int>(x), static_cast<int>(y), final_color);

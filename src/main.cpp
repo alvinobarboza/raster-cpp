@@ -9,10 +9,10 @@
 #include "material/color_convertion.h"
 
 int main() {
-    constexpr auto width = 800;
-    constexpr auto height = 800;
+    constexpr auto width = 1280;
+    constexpr auto height = 720;
 
-    constexpr auto resolution_factor = 2;
+    constexpr auto resolution_factor = 1;
 
     CameraRaster camera = {
         width, height, resolution_factor, 2.0f, 53, 0.2, 15,
@@ -23,8 +23,8 @@ int main() {
         camera,
         {
             nullptr,
-            {},
-            0.2f
+            color_convertion::color_to_vec4(SKYBLUE),
+            0.01f
         }
     };
 
