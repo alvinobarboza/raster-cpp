@@ -204,7 +204,6 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                 const auto gamma = w2 * area;
 
                 const float z_depth = tri.depth_z[0] * alpha + tri.depth_z[1] * beta + tri.depth_z[2] * gamma;
-                const float ndc_depth = tri.ndc_points[0].z * alpha + tri.ndc_points[1].z * beta + tri.ndc_points[2].z * gamma;
 
                 if (scene.camera.depth_pass(static_cast<int>(x), static_cast<int>(y), z_depth))
                 {
@@ -213,113 +212,87 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                             tri.projected_vertices[1].uv * beta +
                             tri.projected_vertices[2].uv * gamma) / z_depth;
 
-                    const auto fragment_coord = (tri.projected_vertices[0].point * alpha +
+                    const auto frag_coord = (tri.projected_vertices[0].point * alpha +
                             tri.projected_vertices[1].point * beta +
                             tri.projected_vertices[2].point * gamma) / z_depth;
 
-                    auto normal = tri.normal;
-                    if (tri.smooth)
-                    {
-                        normal =
+                    auto normal = !tri.smooth ? tri.normal :
                             ((tri.vertices[0].normal * alpha +
                             tri.vertices[1].normal * beta +
                             tri.vertices[2].normal * gamma) / z_depth).normalized();
+
+                    const auto frag_color = tri.material->map_diffuse ?
+                        tri.material->map_diffuse->texel_color(uv_coord) : tri.material->diffuse;
+
+                    Vec4 final_color = frag_color;
+
+                    if (tri.material->map_normal)
+                    {
+                        const auto normal_map = tri.material->map_normal->texel_normal(uv_coord);
+                        const auto nt = normal * tangent;
+                        const auto t = (tangent - (normal * nt)).normalized();
+                        const auto b = t.cross(normal);
+
+                        const auto _t = t * normal_map.x;
+                        const auto _b = b * normal_map.y;
+                        const auto _n = normal * normal_map.z;
+
+                        normal = (_t + _b + _n).normalized();
                     }
 
-                    Vec4 p_color = tri.material->diffuse;
-                    if (tri.material->map_diffuse)
+                    if (scene.camera.render_normal)
                     {
-                        p_color = tri.material->map_diffuse->texel_color(uv_coord);
+                        final_color.x = normal.x * .5f + .5f;
+                        final_color.y = normal.y * .5f + .5f;
+                        final_color.z = -normal.z * .5f + .5f;
                     }
-                    if (scene.camera.render_depth)
+                    else if (scene.camera.render_depth)
                     {
+                        const float ndc_depth =
+                            tri.ndc_points[0].z * alpha +
+                                tri.ndc_points[1].z * beta +
+                                    tri.ndc_points[2].z * gamma;
+
                         float c = 1-ndc_depth;
                         if (c < 0.01) c = 0.01;
-                        p_color.x = c;
-                        p_color.y = c;
-                        p_color.z = c;
-                        p_color.w = 1.0f;
+                        final_color.x = c;
+                        final_color.y = c;
+                        final_color.z = c;
+                        final_color.w = 1.0f;
                     }
-                    else
+                    else if (render_light)
                     {
-                        if (tri.material->map_normal)
+                        float shininess = tri.material->specular;
+                        if (tri.material->map_roughness)
                         {
-                            // test - light implementation
-                            const auto normal_map = tri.material->map_normal->texel_normal(uv_coord);
-                            const auto nt = normal * tangent;
-                            const auto t = (tangent - (normal * nt)).normalized();
-                            const auto b = t.cross(normal);
-
-                            const auto _t = t * normal_map.x;
-                            const auto _b = b * normal_map.y;
-                            const auto _n = normal * normal_map.z;
-
-                            normal = (_t + _b + _n).normalized();
+                            shininess = tri.material->map_roughness->texel_intensity(uv_coord) * 1000.0f;
                         }
-
-                        if (scene.camera.render_normal)
+                        for (const auto& light : scene.lights)
                         {
-                            p_color.x = normal.x * .5f + .5f;
-                            p_color.y = normal.y * .5f + .5f;
-                            p_color.z = -normal.z * .5f + .5f; // to render opengl style, as my handedness is the opposite
-                        }
-                        else if (render_light)
-                        {
-                            float shininess = tri.material->specular;
-                            if (tri.material->map_roughness)
-                            {
-                                // // 2. Sample map_Ns and scale it to a realistic specular exponent range
-                                // float sampledNs = texture2D(map_Ns, vUv).r;
-                                // float maxShininess = 1000.0; // Standard maximum for Blinn-Phong
-                                // float shininess = sampledNs * maxShininess;
-                                shininess = tri.material->map_roughness->texel_intensity(uv_coord) * 1000.0f;
-                            }
-                            for (const auto& light : scene.lights)
-                            {
-                                // shader code todo: specular and need to load Ks in resource manager
-                                // vec3 N = normalize(vNormal);
-                                // vec3 L = normalize(vLightDir);
-                                // vec3 V = normalize(vViewDir);
-                                //
+                            const auto ambient = light.color * scene.skybox.ambient_intensity;
+                            const auto light_intensity = std::max(0.0f, normal * light.direction_world);
 
-
-
-                                const auto ambient = light.color * scene.skybox.ambient_intensity;
-                                const auto light_intensity = std::max(0.0f, normal * light.direction_world);
-
-                                float specular_strength = 0.0f;
-                                if (light_intensity > 0.0f) {
-                                    if (shininess > 0.0f)
-                                    {
-                                        // // 3. Calculate Blinn-Phong specular intensity using Halfway Vector (H)
-                                        // vec3 H = normalize(L + V);
-                                        // float specAngle = max(dot(N, H), 0.0);
-                                        // float specularIntensity = pow(specAngle, shininess);
-                                        const auto view_dir = -fragment_coord;
-                                        const auto h = (light.direction_world + view_dir).normalized();
-                                        const auto spec_angle = std::max(0.0f, normal * h);
-                                        specular_strength = std::pow(spec_angle, shininess);
-
-
-                                        // TODO: 4. Combine with Ks data
-                                        // vec3 finalSpecular = Ks * specularIntensity;
-                                        //
-                                        // // Combine with your ambient and diffuse colors below...
-                                        // gl_FragColor = vec4(finalSpecular, 1.0);
-                                    }
+                            float specular_strength = 0.0f;
+                            if (light_intensity > 0.0f) {
+                                if (shininess > 0.0f)
+                                {
+                                    const auto view_dir = -frag_coord;
+                                    const auto h = (light.direction_world + view_dir).normalized();
+                                    const auto spec_angle = std::max(0.0f, normal * h);
+                                    specular_strength = std::pow(spec_angle, shininess);
                                 }
-
-                                const auto computed_intensity = light_intensity * light.intensity;
-                                const auto light_color = light.color * computed_intensity;
-                                const auto computed_color = ambient + light_color;
-                                p_color.x = std::min(.95f, (computed_color.x * p_color.x) + (computed_color.x * p_color.x)*specular_strength);
-                                p_color.y = std::min(.95f, (computed_color.y * p_color.y) + (computed_color.y * p_color.y)*specular_strength);
-                                p_color.z = std::min(.95f, (computed_color.z * p_color.z) + (computed_color.z * p_color.z)*specular_strength);
                             }
-                        }
 
+                            const auto computed_intensity = light_intensity * light.intensity;
+                            const auto light_color = light.color * computed_intensity;
+                            const auto computed_color = ambient + light_color;
+                            final_color.x = std::min(.95f, (computed_color.x * final_color.x) + (computed_color.x * final_color.x)*specular_strength);
+                            final_color.y = std::min(.95f, (computed_color.y * final_color.y) + (computed_color.y * final_color.y)*specular_strength);
+                            final_color.z = std::min(.95f, (computed_color.z * final_color.z) + (computed_color.z * final_color.z)*specular_strength);
+                        }
                     }
-                    scene.camera.put_pixel(static_cast<int>(x), static_cast<int>(y), p_color);
+
+                    scene.camera.put_pixel(static_cast<int>(x), static_cast<int>(y), final_color);
                 }
             }
 
