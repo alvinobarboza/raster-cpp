@@ -9,11 +9,11 @@
 
 class MeshData {
 public:
-    std::vector<Triangle> triangles = {};
-    std::vector<Vec3> vertices = {}, vertices_word = {};
-    std::vector<Vec3> normals = {}, normals_word = {};
-    std::vector<Vec2> uvs = {};
-    std::vector<MaterialRaster> materials = {};
+    std::vector<Triangle> triangles {};
+    std::vector<Vec3> vertices {}, vertices_word {};
+    std::vector<Vec3> normals {}, normals_word {};
+    std::vector<Vec2> uvs {};
+    std::vector<MaterialRaster> materials {};
 
     MeshData() = default;
     MeshData(

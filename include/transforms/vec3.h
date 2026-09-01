@@ -5,9 +5,9 @@ class Matrix4x4;
 
 class Vec3 {
 public:
-    float x = 0.0f;
-    float y = 0.0f;
-    float z = 0.0f;
+    float x {};
+    float y {};
+    float z {};
 
     Vec3(const float x, const float y, const float z) : x(x), y(y), z(z) {}
     Vec3() = default;

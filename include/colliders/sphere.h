@@ -5,8 +5,8 @@
 
 class BoundingSphere {
 public:
-    float radius = 0.0f;
-    Vec3 center = {}, center_world = {};
+    float radius {};
+    Vec3 center {}, center_world {};
 
     BoundingSphere() = default;
 

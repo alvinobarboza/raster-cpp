@@ -6,7 +6,7 @@ class Vec3;
 
 class Matrix4x4 {
     std::array<float, 4*4> data {};
-    static constexpr size_t length = 4;
+    static constexpr size_t length { 4 };
 
 public:
     Matrix4x4() = default;

@@ -1,6 +1,7 @@
 #pragma once
 #include "types.h"
 #include "transforms/vec3.h"
+#include "transforms/vec4.h"
 
 class Light {
     public:

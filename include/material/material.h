@@ -7,14 +7,14 @@
 // Simplified
 class MaterialRaster {
 public:
-    std::string name = "default";
+    std::string name { "default" };
 
-    Vec4 diffuse   = {-1.0f, -1.0f, -1.0f, 1.0f}; // Kd
-    float specular = -1.0f; // Ns
+    Vec4 diffuse   {-1.0f, -1.0f, -1.0f, 1.0f}; // Kd
+    float specular { -1.0f }; // Ns
 
-    const TextureRaster* map_diffuse   = nullptr; // map_kd
-    const TextureRaster* map_normal    = nullptr; // map_Bump
-    const TextureRaster* map_roughness = nullptr; // map_Pr / map_Ns
+    const TextureRaster* map_diffuse   {}; // map_kd
+    const TextureRaster* map_normal    {}; // map_Bump
+    const TextureRaster* map_roughness {}; // map_Pr / map_Ns
 
     MaterialRaster() = default;
 

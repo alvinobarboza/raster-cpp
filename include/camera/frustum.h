@@ -15,8 +15,8 @@ constexpr int PLANES = 6;
 
 class Plane {
 public:
-    float distance = 0.0f;
-    Vec3 normal = {};
+    float distance {};
+    Vec3 normal {};
 
     Plane() = default;
     Plane(const Vec3 &point, const Vec3 &normal);

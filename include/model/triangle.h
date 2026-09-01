@@ -11,11 +11,11 @@
 
 class Triangle {
 public:
-    int v1 = 0, v2 = 0, v3 = 0;
-    int u1 = 0, u2 = 0, u3 = 0;
-    int n1 = 0, n2 = 0, n3 = 0;
-    int material_id = -1;
-    bool smooth = false;
+    int v1 {}, v2 {}, v3 {};
+    int u1 {}, u2 {}, u3 {};
+    int n1 {}, n2 {}, n3 {};
+    int material_id { -1 };
+    bool smooth {};
 
     [[nodiscard]] bool is_back_facing(const std::vector<Vec3> &vertices, const std::vector<Vec3> &normals) const;
 };
@@ -28,19 +28,19 @@ struct Vertex {
 
 class FullTriangle {
 public:
-    std::array<Vertex, 3> vertices = {};
-    std::array<Vertex, 3> projected_vertices = {};
-    std::array<Vec3, 3> ndc_points = {};
-    std::array<Vec2, 3> screen_points = {};
-    std::array<float, 3> depth_z = {};
-    Vec3 origin = {};
-    Vec3 normal = {};
+    std::array<Vertex, 3> vertices {};
+    std::array<Vertex, 3> projected_vertices {};
+    std::array<Vec3, 3> ndc_points {};
+    std::array<Vec2, 3> screen_points {};
+    std::array<float, 3> depth_z {};
+    Vec3 origin {};
+    Vec3 normal {};
 
-    AABB2D aabb = {};
+    AABB2D aabb {};
 
     const MaterialRaster *material;
 
-    bool smooth = false;
+    bool smooth {};
 
     FullTriangle(
         const Vertex &v1,

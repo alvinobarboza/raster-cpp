@@ -3,7 +3,7 @@
 
 class AABB2D {
 public:
-    Vec2 min = {}, max = {};
+    Vec2 min {}, max {};
 
     AABB2D() = default;
     AABB2D(const Vec2& min, const Vec2& max) : min(min), max(max) {};

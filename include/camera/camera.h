@@ -10,32 +10,32 @@
 
 class CameraRaster {
 public:
-    std::vector<Color> frame_buffer = {};
-    std::vector<float> depth_buffer = {};
+    std::vector<Color> frame_buffer {};
+    std::vector<float> depth_buffer {};
 
-    float fov_angle = 0.0f;
-    float fov_scale = 0.0f;
-    float aspect_ratio = 0.0f;
-    float z_near = 0.0f;
-    float z_far = 0.0f;
-    float sensitivity = 0.0f;
+    float fov_angle {};
+    float fov_scale {};
+    float aspect_ratio {};
+    float z_near {};
+    float z_far {};
+    float sensitivity {};
 
-    bool update_view = false;
-    bool render_depth = false;
-    bool render_normal = false;
-    bool render_wireframe = false;
+    bool update_view {};
+    bool render_depth {};
+    bool render_normal {};
+    bool render_wireframe {};
 
-    int width = 0;
-    int height = 0;
-    int res_factor = 1;
+    int width {};
+    int height {};
+    int res_factor {};
 
-    float half_width = 0.0f;
-    float half_height = 0.0f;
+    float half_width {};
+    float half_height {};
 
-    Transforms transform = {};
-    Matrix4x4 projection_matrix = {};
+    Transforms transform {};
+    Matrix4x4 projection_matrix {};
 
-    Frustum frustum = {};
+    Frustum frustum {};
 
     CameraRaster(
         int width, int height, int res_factor,
