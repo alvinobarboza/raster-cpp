@@ -62,6 +62,7 @@ add_executable(${PROJECT_NAME}
         src/engine/renderer.cpp
         include/lights/types.h
         include/lights/light.h
+        include/engine/timer.h
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)

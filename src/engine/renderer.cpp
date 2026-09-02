@@ -1,8 +1,10 @@
 #include "engine/renderer.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 
+#include "engine/timer.h"
 #include "material/color_convertion.h"
 #include "transforms/constants.h"
 
@@ -65,6 +67,7 @@ void RendererRaster::render_scene(const SceneRaster &scene)
     }
 
     for (auto& model : scene.models) {
+        Timer time{model->name};
         auto m_rotation = scene.camera.transform.rotation_matrix * model->transforms.rotation_matrix;
         auto m_transforms = scene.camera.transform.transformation_matrix * model->transforms.transformation_matrix;
 
@@ -75,66 +78,77 @@ void RendererRaster::render_scene(const SceneRaster &scene)
             continue;
         }
 
-        for (int i = 0; i < model->meshData.vertices.size(); i++)
         {
-            model->meshData.vertices_word[i] = model->meshData.vertices[i] * m_transforms;
-        }
-
-        for (int i = 0; i < model->meshData.normals.size(); i++)
-        {
-            model->meshData.normals_word[i] = model->meshData.normals[i] * m_rotation;
-        }
-
-        for (const auto &t: model->meshData.triangles)
-        {
-            if (!t.is_back_facing(model->meshData.vertices_word, model->meshData.normals_word))
+            Timer time_{"transform "+model->name};
+            for (int i = 0; i < model->meshData.vertices.size(); i++)
             {
-                continue;
+                model->meshData.vertices_word[i] = model->meshData.vertices[i] * m_transforms;
             }
 
-            const auto& v1 = Vertex(model->meshData.vertices_word[t.v1],
-                model->meshData.normals_word[t.n1], model->meshData.uvs[t.u1]);
-            const auto& v2 = Vertex(model->meshData.vertices_word[t.v2],
-                model->meshData.normals_word[t.n2], model->meshData.uvs[t.u2]);
-            const auto& v3 = Vertex(model->meshData.vertices_word[t.v3],
-                model->meshData.normals_word[t.n3], model->meshData.uvs[t.u3]);
+            for (int i = 0; i < model->meshData.normals.size(); i++)
+            {
+                model->meshData.normals_word[i] = model->meshData.normals[i] * m_rotation;
+            }
+        }
 
-            verts_out.clear();
-            verts_in.clear();
+        {
+            Timer time_{"clip "+model->name};
+            for (const auto &t: model->meshData.triangles)
+            {
+                if (!t.is_back_facing(model->meshData.vertices_word, model->meshData.normals_word))
+                {
+                    continue;
+                }
 
-            verts_out.push_back(v1);
-            verts_out.push_back(v2);
-            verts_out.push_back(v3);
+                const auto& v1 = Vertex(model->meshData.vertices_word[t.v1],
+                    model->meshData.normals_word[t.n1], model->meshData.uvs[t.u1]);
+                const auto& v2 = Vertex(model->meshData.vertices_word[t.v2],
+                    model->meshData.normals_word[t.n2], model->meshData.uvs[t.u2]);
+                const auto& v3 = Vertex(model->meshData.vertices_word[t.v3],
+                    model->meshData.normals_word[t.n3], model->meshData.uvs[t.u3]);
 
-            clip_triangle(
-                scene.camera.frustum.planes[NEAR_PLANE],
-                scene.camera.frustum.planes[FAR_PLANE]);
+                verts_out.clear();
+                verts_in.clear();
 
-            if (verts_out.size() > 2) {
-                const auto& m = model->meshData.materials[t.material_id];
-                for (int j = 1; j < verts_out.size() - 1; j++) {
-                    auto tf = scene.camera.project_triangle(
-                        verts_out[0],
-                        verts_out[j],
-                        verts_out[j+1],
-                        m);
+                verts_out.push_back(v1);
+                verts_out.push_back(v2);
+                verts_out.push_back(v3);
 
-                    tf.smooth = t.smooth;
-                    tris_buffer.push_back(tf);
+                clip_triangle(
+                    scene.camera.frustum.planes[NEAR_PLANE],
+                    scene.camera.frustum.planes[FAR_PLANE]);
+
+                if (verts_out.size() > 2) {
+                    const auto& m = model->meshData.materials[t.material_id];
+                    for (int j = 1; j < verts_out.size() - 1; j++) {
+                        auto tf = scene.camera.project_triangle(
+                            verts_out[0],
+                            verts_out[j],
+                            verts_out[j+1],
+                            m);
+
+                        tf.smooth = t.smooth;
+                        tris_buffer.push_back(tf);
+                    }
                 }
             }
         }
     }
-
-    std::ranges::sort(tris_buffer, [](const FullTriangle &a, const FullTriangle &b) {
-        const auto a_depth = (a.depth_z[0] + a.depth_z[1] + a.depth_z[2]) / 3;
-        const auto b_depth = (b.depth_z[0] + b.depth_z[1] + b.depth_z[2]) / 3;
-        return a_depth > b_depth;
-    });
-
-    for (const auto& tri: tris_buffer)
     {
-        render_triangle(tri, scene);
+        Timer time{"Sort"};
+        std::ranges::sort(tris_buffer, [](const FullTriangle &a, const FullTriangle &b) {
+            const auto a_depth = (a.depth_z[0] + a.depth_z[1] + a.depth_z[2]) / 3;
+            const auto b_depth = (b.depth_z[0] + b.depth_z[1] + b.depth_z[2]) / 3;
+            return a_depth > b_depth;
+        });
+    }
+
+    {
+        Timer time{"render"};
+        for (const auto& tri: tris_buffer)
+        {
+            render_triangle(tri, scene);
+        }
     }
 };
 
