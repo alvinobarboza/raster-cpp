@@ -370,7 +370,12 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                             std::pow(color.z, gamma_const)
                         };
 
-                        final_color = {color.x, color.y, color.z, 1.0f};
+                        final_color = {
+                            std::clamp(color.x, 0.0f, 1.0f),
+                            std::clamp(color.y, 0.0f, 1.0f),
+                            std::clamp(color.z, 0.0f, 1.0f),
+                            1.0f
+                        };
                     }
 
                     scene.camera.put_pixel(static_cast<int>(x), static_cast<int>(y), final_color);

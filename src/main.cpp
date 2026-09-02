@@ -24,7 +24,7 @@ int main() {
         {
             nullptr,
             {},
-            0.02f
+            0.1f
         }
     };
 
