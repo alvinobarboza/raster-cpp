@@ -20,7 +20,8 @@ materials(std::move(materials))
 
 ModelRaster::ModelRaster(
     const Transforms &transform,
-    MeshData meshData):
+    MeshData meshData, const std::string_view name):
+name(name),
 transforms(transform),
 meshData(std::move(meshData))
 {

@@ -26,12 +26,13 @@ public:
 
 class ModelRaster {
 public:
+    std::string name {};
     Transforms transforms = {};
     BoundingSphere boundingSphere = {};
     MeshData meshData = {};
 
     ModelRaster() = default;
-    ModelRaster(const Transforms &transform, MeshData meshData);
+    ModelRaster(const Transforms &transform, MeshData meshData, std::string_view name);
 
     void update_transforms();
 };

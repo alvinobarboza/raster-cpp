@@ -25,6 +25,7 @@ ModelRaster* ResourceManager::load_model(const std::string& path, bool flip_hand
     std::vector<MaterialRaster> materials = {};
     bool smooth_shader = false;
     std::string cur_mat_name;
+    std::string object_name;
 
     std::string line;
     std::string header;
@@ -36,7 +37,11 @@ ModelRaster* ResourceManager::load_model(const std::string& path, bool flip_hand
         Vec3 normal{};
 
         ss >> header;
-        if (header == "v")
+        if (header == "o")
+        {
+            ss >> object_name;
+        }
+        else if (header == "v")
         {
             ss >> v.x >> v.y >> v.z;
             if (flip_handiness) v.z = -v.z;
@@ -125,7 +130,7 @@ ModelRaster* ResourceManager::load_model(const std::string& path, bool flip_hand
     const auto rotation = Vec3(0.0f, 0.0f, 0.0f);
     const auto forward = Vec3(0.0f, 0.0f, 1.0f);
     const auto transform = Transforms(scale, rotation, position, forward);
-    auto model = std::make_unique<ModelRaster>(transform, mesh);
+    auto model = std::make_unique<ModelRaster>(transform, mesh, object_name);
     auto ptr = model.get();
     models.push_back(std::move(model));
     return ptr;
