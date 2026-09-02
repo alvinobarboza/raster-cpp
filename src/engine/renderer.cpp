@@ -241,9 +241,9 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                             tri.projected_vertices[1].uv * beta +
                             tri.projected_vertices[2].uv * gamma) / z_depth;
 
-                    const auto frag_coord = (tri.projected_vertices[0].point * alpha +
-                            tri.projected_vertices[1].point * beta +
-                            tri.projected_vertices[2].point * gamma) / z_depth;
+                    const auto frag_coord = (tri.vertices[0].point * alpha +
+                            tri.vertices[1].point * beta +
+                            tri.vertices[2].point * gamma) / z_depth;
 
                     auto normal = !tri.smooth ? tri.normal :
                             ((tri.vertices[0].normal * alpha +
@@ -299,8 +299,14 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                         const auto V = (-frag_coord).normalized();
                         const auto N = normal;
 
+                        const Vec3 albedo = {
+                            std::pow(frag_color.x, 2.2f),
+                            std::pow(frag_color.y, 2.2f),
+                            std::pow(frag_color.z, 2.2f)
+                        };
+
                         // If I add metallic property, lerp from 0.04 to albedo/diffuse using the range[0,1] of metallic
-                        const Vec3 base_reflectivity {0.4};
+                        const Vec3 base_reflectivity {0.04};
 
                         Vec3 Lo {};
                         for (const auto& light : scene.lights)
@@ -315,7 +321,7 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                              *  float attenuation = 1.0 / (distance * distance);
                              *  vec3 radiance = ligth_color * attenuation;
                              */
-                            const Vec3 radiance {light.color.x, light.color.y, light.color.z};
+                            const Vec3 radiance {light.color.x*light.intensity, light.color.y*light.intensity, light.color.z*light.intensity};
 
                             // Cook-Torrance BRDF
                             const float NdotV = std::max(N * V, 0.0000001f);
@@ -336,7 +342,7 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                             // kD *= 1.0 - mettalic;
 
                             // Lo += (kD * albedo / PI + specular) * radiance * NdotL;
-                            const Vec3 kD_x_albedo {kD.x * frag_color.x, kD.y * frag_color.y, kD.z * frag_color.z};
+                            const Vec3 kD_x_albedo {kD.x * albedo.x, kD.y * albedo.y, kD.z * albedo.z};
                             const Vec3 divided_pi_specular = (kD_x_albedo / transforms::PI_R + specular);
                             const Vec3 mul_radiance {
                                 divided_pi_specular.x * radiance.x,
@@ -347,19 +353,21 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                         }
 
                         const Vec3 ambient {
-                            scene.skybox.ambient_color.x * scene.skybox.ambient_intensity,
-                            scene.skybox.ambient_color.y * scene.skybox.ambient_intensity,
-                            scene.skybox.ambient_color.z * scene.skybox.ambient_intensity};
+                            albedo.x * scene.skybox.ambient_intensity,
+                            albedo.y * scene.skybox.ambient_intensity,
+                            albedo.z * scene.skybox.ambient_intensity};
                         Vec3 color = ambient + Lo;
 
                         // HDR tonemapping
-                        color = color / (color + Vec3{1.0f});
+                        const float lum = 0.2126f * color.x + 0.7152f * color.y + 0.0722f * color.z;
+                        color = color / (1.0f + lum);
                         // Gamma
-                        const Vec3 gamma_const {1.0f/2.2f};
+                        constexpr float gamma_const {1.0f/2.2f};
+
                         color = {
-                            std::pow(color.x, gamma_const.x),
-                            std::pow(color.y, gamma_const.y),
-                            std::pow(color.z, gamma_const.z)
+                            std::pow(color.x, gamma_const),
+                            std::pow(color.y, gamma_const),
+                            std::pow(color.z, gamma_const)
                         };
 
                         final_color = {color.x, color.y, color.z, 1.0f};

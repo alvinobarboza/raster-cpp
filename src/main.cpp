@@ -23,15 +23,15 @@ int main() {
         camera,
         {
             nullptr,
-            color_convertion::color_to_vec4(SKYBLUE),
-            0.01f
+            {},
+            0.02f
         }
     };
 
     scene.lights.emplace_back(
         LightType::DIRECTIONAL,
         color_convertion::color_to_vec4(WHITE),
-        1.0f,
+        4.0f,
         Vec3(-1.0f, -1.0f, 1.0f).normalized());
 
     RendererRaster renderer;
