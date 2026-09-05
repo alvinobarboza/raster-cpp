@@ -7,7 +7,12 @@ class Timer {
     std::string t_name;
     std::chrono::time_point<std::chrono::steady_clock> start {};
 public:
-    explicit Timer(std::string  name): t_name(std::move(name))
+    explicit Timer(std::string&& name): t_name(std::move(name))
+    {
+        start = std::chrono::steady_clock::now();
+    };
+
+    explicit Timer(std::string& name): t_name(std::move(name))
     {
         start = std::chrono::steady_clock::now();
     };
