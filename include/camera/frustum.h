@@ -19,7 +19,7 @@ public:
     Vec3 normal {};
 
     Plane() = default;
-    Plane(const Vec3 &point, const Vec3 &normal);
+    Plane(float d, const Vec3 &n);
 
     [[nodiscard]] float signed_distance_to_point(const Vec3 &point) const;
 };
