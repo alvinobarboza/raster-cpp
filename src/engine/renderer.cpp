@@ -53,7 +53,7 @@ void RendererRaster::clip_triangle(const Plane& near, const Plane& far)
     }
 }
 
-void RendererRaster::render_scene(const SceneRaster &scene)
+void RendererRaster::render_scene(SceneRaster &scene)
 {
     scene.camera.clear_frame_buffer();
     tris_buffer.clear();
@@ -66,15 +66,28 @@ void RendererRaster::render_scene(const SceneRaster &scene)
         light.direction_world = -((light.direction * scene.camera.transform.rotation_matrix).normalized());
     }
 
-    for (auto& model : scene.models) {
-        Timer time{model->name};
+    for (auto& model: scene.models)
+    {
+        auto m_transforms = scene.camera.transform.transformation_matrix * model->transforms.transformation_matrix;
+        model->boundingSphere.center_world = model->boundingSphere.center * m_transforms;
+        model->to_render = scene.camera.frustum.is_inside_frustum(model->boundingSphere);
+    }
+
+    {
+        Timer time{"Sort-models"};
+        std::ranges::sort(scene.models, []( ModelRaster*& a, ModelRaster*& b) {
+            return a->boundingSphere.center_world.length() > b->boundingSphere.center_world.length();
+        });
+    }
+
+    for (const auto& model : scene.models) {
+        Timer time{model->name+"=================================="};
         auto m_rotation = scene.camera.transform.rotation_matrix * model->transforms.rotation_matrix;
         auto m_transforms = scene.camera.transform.transformation_matrix * model->transforms.transformation_matrix;
 
-        model->boundingSphere.center_world = model->boundingSphere.center * m_transforms;
-
-        if (!scene.camera.frustum.is_inside_frustum(model->boundingSphere.center))
+        if (!model->to_render)
         {
+            std::cout << "[SKIP] " << model->name << "\n";
             continue;
         }
 
@@ -133,14 +146,6 @@ void RendererRaster::render_scene(const SceneRaster &scene)
                 }
             }
         }
-    }
-    {
-        Timer time{"Sort"};
-        std::ranges::sort(tris_buffer, [](const FullTriangle &a, const FullTriangle &b) {
-            const auto a_depth = (a.depth_z[0] + a.depth_z[1] + a.depth_z[2]) / 3;
-            const auto b_depth = (b.depth_z[0] + b.depth_z[1] + b.depth_z[2]) / 3;
-            return a_depth > b_depth;
-        });
     }
 
     {

@@ -15,6 +15,6 @@ class RendererRaster {
     void render_triangle(const FullTriangle &tri, const SceneRaster &scene) const;
 public:
     RendererRaster() = default;
-    void render_scene(const SceneRaster& scene);
+    void render_scene(SceneRaster& scene);
     void handle_input();
 };

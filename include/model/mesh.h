@@ -30,6 +30,7 @@ public:
     Transforms transforms = {};
     BoundingSphere boundingSphere = {};
     MeshData meshData = {};
+    bool to_render {true};
 
     ModelRaster() = default;
     ModelRaster(const Transforms &transform, MeshData meshData, std::string_view name);
