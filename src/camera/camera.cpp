@@ -182,12 +182,12 @@ void CameraRaster::update_frustum()
     const float half_h_side = half_v_side * aspect_ratio;
     const Vec3 cam_front_scaled = cam_front * z_far;
 
-    frustum.planes[NEAR_PLANE] = {cam_pos + cam_front * z_near, cam_front};
-    frustum.planes[FAR_PLANE] = {cam_pos + cam_front_scaled, -cam_front};
-    frustum.planes[RIGHT_PLANE] = {cam_pos, (cam_front_scaled + cam_right * half_h_side).cross(cam_up)};
-    frustum.planes[LEFT_PLANE] = {cam_pos, cam_up.cross(cam_front_scaled - cam_right * half_h_side)};
-    frustum.planes[TOP_PLANE] = {cam_pos, (cam_front_scaled - cam_up * half_v_side).cross(cam_right)};
-    frustum.planes[BOTTOM_PLANE] = {cam_pos, cam_right.cross(cam_front_scaled - cam_up * half_v_side)};
+    frustum.planes[NEAR_PLANE] = {z_near, cam_front};
+    frustum.planes[FAR_PLANE] = {-z_far, -cam_front};
+    frustum.planes[RIGHT_PLANE] = {0.0f, (cam_front_scaled + cam_right * half_h_side).cross(cam_up)};
+    frustum.planes[LEFT_PLANE] = {0.0f, cam_up.cross(cam_front_scaled - cam_right * half_h_side)};
+    frustum.planes[TOP_PLANE] = {0.0f, (cam_front_scaled - cam_up * half_v_side).cross(cam_right)};
+    frustum.planes[BOTTOM_PLANE] = {0.0f, cam_right.cross(cam_front_scaled + cam_up * half_v_side)};
 }
 
 void CameraRaster::handle_input()
