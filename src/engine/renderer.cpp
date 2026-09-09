@@ -285,7 +285,7 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                         const auto _b = b * normal_map.y;
                         const auto _n = normal * normal_map.z;
 
-                        normal = (_t + _b + _n).normalized();
+                        normal = _t + _b + _n;
                     }
 
                     if (scene.camera.render_normal)
