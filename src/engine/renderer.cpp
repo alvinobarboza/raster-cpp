@@ -280,12 +280,7 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                         const auto nt = normal * tangent;
                         const auto t = (tangent - (normal * nt)).normalized();
                         const auto b = t.cross(normal);
-
-                        const auto _t = t * normal_map.x;
-                        const auto _b = b * normal_map.y;
-                        const auto _n = normal * normal_map.z;
-
-                        normal = _t + _b + _n;
+                        normal = (t * normal_map.x) + (b * normal_map.y) + (normal * normal_map.z);
                     }
 
                     if (scene.camera.render_normal)
