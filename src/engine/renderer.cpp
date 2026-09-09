@@ -66,7 +66,7 @@ void RendererRaster::render_scene(SceneRaster &scene)
         light.direction_world = -((light.direction * scene.camera.transform.rotation_matrix).normalized());
     }
 
-    for (auto& model: scene.models)
+    for (const auto& model: scene.models)
     {
         auto m_transforms = scene.camera.transform.transformation_matrix * model->transforms.transformation_matrix;
         model->boundingSphere.center_world = model->boundingSphere.center * m_transforms;
@@ -97,11 +97,13 @@ void RendererRaster::render_scene(SceneRaster &scene)
             {
                 model->meshData.vertices_word[i] = model->meshData.vertices[i] * m_transforms;
             }
+        for (int i = 0; i < model->meshData.vertices.size(); ++i)
 
             for (int i = 0; i < model->meshData.normals.size(); i++)
             {
                 model->meshData.normals_word[i] = model->meshData.normals[i] * m_rotation;
             }
+        for (int i = 0; i < model->meshData.normals.size(); ++i)
         }
 
         {
@@ -139,6 +141,7 @@ void RendererRaster::render_scene(SceneRaster &scene)
                             verts_out[j],
                             verts_out[j+1],
                             m);
+                for (int j = 1; j < verts_out.size() - 1; ++j) {
 
                         tf.smooth = t.smooth;
                         tris_buffer.push_back(tf);
@@ -255,19 +258,20 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
 
                 if (scene.camera.depth_pass(static_cast<int>(x), static_cast<int>(y), z_depth))
                 {
+                    const auto depth = 1 / z_depth;
                     const auto uv_coord =
                             (tri.projected_vertices[0].uv * alpha +
                             tri.projected_vertices[1].uv * beta +
-                            tri.projected_vertices[2].uv * gamma) / z_depth;
+                            tri.projected_vertices[2].uv * gamma) * depth;
 
                     const auto frag_coord = (tri.vertices[0].point * alpha +
                             tri.vertices[1].point * beta +
-                            tri.vertices[2].point * gamma) / z_depth;
+                            tri.vertices[2].point * gamma) * depth;
 
                     auto normal = !tri.smooth ? tri.normal :
                             ((tri.vertices[0].normal * alpha +
                             tri.vertices[1].normal * beta +
-                            tri.vertices[2].normal * gamma) / z_depth).normalized();
+                            tri.vertices[2].normal * gamma) * depth).normalized();
 
                     const auto frag_color = tri.material->map_diffuse ?
                         tri.material->map_diffuse->texel_color(uv_coord) : tri.material->diffuse;
@@ -352,8 +356,7 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                             const float G = geometrySmith(NdotV, NdotL, roughness);
                             const Vec3 F = fresnelSchlick(HdotV, base_reflectivity);
 
-                            Vec3 specular = F * D * G;
-                            specular = specular / (4.0f * NdotV * NdotL);
+                            const Vec3 specular = (F * D * G) / (4.0f * NdotV * NdotL);
 
                             const Vec3 kD = Vec3{1.0f} - F;
 
