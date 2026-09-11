@@ -6,7 +6,7 @@
 
 class ResourceManager {
     std::vector<MaterialRaster> load_material(const std::string& path);
-    TextureRaster* load_texture(const std::string& path);
+    TextureRaster* load_texture(const std::string& path, bool is_intensity = false);
 public:
     std::vector<std::unique_ptr<ModelRaster>> models {};
     std::vector<std::unique_ptr<TextureRaster>> textures {};

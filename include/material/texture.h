@@ -9,6 +9,7 @@
 class TextureRaster {
 public:
     std::vector<Vec4> buffer {};
+    std::vector<float> buffer_float {};
     int width {}, height {};
     int width_mask {}, height_mask {};
     float f_width {}, f_height {};
