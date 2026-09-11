@@ -14,15 +14,9 @@ void RendererRaster::clip_triangle(const Plane& near, const Plane& far)
         std::swap(verts_in, verts_out);
         verts_out.clear();
 
-        int prev_index = 0;
-        for (int i = 0; i < verts_in.size(); i++)
+        size_t prev_index = verts_in.size() - 1;
+        for (size_t i = 0; i < verts_in.size(); i++)
         {
-            prev_index = i - 1;
-            if (prev_index < 0)
-            {
-                prev_index = static_cast<int>(verts_in.size()) - 1;
-            }
-
             const auto current_point = verts_in[i];
             const auto [point, normal, uv] = verts_in[prev_index];
 
@@ -49,6 +43,7 @@ void RendererRaster::clip_triangle(const Plane& near, const Plane& far)
                     current_point.normal.lerp_to(normal, ratio),
                     current_point.uv.lerp_to(uv, ratio));
             }
+            prev_index = i;
         }
     }
 }
@@ -122,9 +117,13 @@ void RendererRaster::render_scene(SceneRaster &scene)
             verts_out.push_back(v2);
             verts_out.push_back(v3);
 
-            clip_triangle(
+            {
+                Timer time{"Clip"};
+                clip_triangle(
                 scene.camera.frustum.planes[NEAR_PLANE],
                 scene.camera.frustum.planes[FAR_PLANE]);
+            }
+
 
             if (verts_out.size() > 2) {
                 const auto& m = model->meshData.materials[t.material_id];
