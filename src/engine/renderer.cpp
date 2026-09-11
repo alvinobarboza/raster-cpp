@@ -117,12 +117,9 @@ void RendererRaster::render_scene(SceneRaster &scene)
             verts_out.push_back(v2);
             verts_out.push_back(v3);
 
-            {
-                Timer time{"Clip"};
-                clip_triangle(
-                scene.camera.frustum.planes[NEAR_PLANE],
-                scene.camera.frustum.planes[FAR_PLANE]);
-            }
+            clip_triangle(
+            scene.camera.frustum.planes[NEAR_PLANE],
+            scene.camera.frustum.planes[FAR_PLANE]);
 
 
             if (verts_out.size() > 2) {
