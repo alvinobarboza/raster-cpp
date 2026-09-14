@@ -14,8 +14,8 @@ int main() {
 
     constexpr auto resolution_factor = 1;
 
-    CameraRaster camera = {
-        width, height, resolution_factor, 2.0f, 53, 0.2, 15,
+    CameraRaster camera{
+         2.0f, 53, 0.2, 15,
         {0.0f, .25f, 0.75f}, {-18.0f, 0.0f, 0.0f}
     };
 
@@ -34,7 +34,8 @@ int main() {
         4.0f,
         Vec3(-1.0f, -1.0f, 1.0f).normalized());
 
-    RendererRaster renderer;
+    RendererRaster renderer{width, height, resolution_factor};
+    camera.update_aspect_ratio(renderer.viewport.aspect_ratio());
 
     ResourceManager rm;
 
@@ -57,7 +58,7 @@ int main() {
     InitWindow(width, height, "Hello window");
     SetTargetFPS(60);
 
-    auto img = GenImageColor(camera.width, camera.height, RAYWHITE);
+    auto img = GenImageColor(renderer.viewport.width, renderer.viewport.height, RAYWHITE);
     auto render_texture = LoadTextureFromImage(img);
 
     while (!WindowShouldClose()) {
@@ -66,10 +67,11 @@ int main() {
 
         if (IsWindowResized())
         {
-            camera.update_frame_buffer_size(w, h);
+            renderer.viewport.update_frame_buffer_size(w, h);
             UnloadTexture(render_texture);
-            ImageResize(&img, camera.width, camera.height);
+            ImageResize(&img, renderer.viewport.width, renderer.viewport.height);
             render_texture = LoadTextureFromImage(img);
+            camera.update_aspect_ratio(renderer.viewport.aspect_ratio());
         }
 
         renderer.handle_input();
@@ -79,14 +81,14 @@ int main() {
         renderer.render_scene(scene);
         const std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
-        UpdateTexture(render_texture, camera.frame_buffer.data());
+        UpdateTexture(render_texture, renderer.viewport.frame_buffer_data());
 
         BeginDrawing();
             ClearBackground(RAYWHITE);
 
             DrawTexturePro(
                 render_texture,
-                {0.0f, 0.0f, static_cast<float>(camera.width), static_cast<float>(camera.height)},
+                {0.0f, 0.0f, static_cast<float>(renderer.viewport.width), static_cast<float>(renderer.viewport.height)},
                 {0.0f, 0.0f, static_cast<float>(w), static_cast<float>(h)},
                 { 0.0f, 0.0f },
                 0,
@@ -95,7 +97,7 @@ int main() {
 
             DrawText("raster", w - 70, h - 20, 20, DARKGRAY);
             DrawText(
-                TextFormat("Canvas: %dx%d Screen: %dx%d", camera.width, camera.height, w, h),
+                TextFormat("Canvas: %dx%d Screen: %dx%d", renderer.viewport.width, renderer.viewport.height, w, h),
                 0,h - 20, 20, DARKGRAY);
             DrawFPS(10, 20);
             DrawText(

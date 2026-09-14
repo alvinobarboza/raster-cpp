@@ -6,50 +6,30 @@
 #include "transforms/constants.h"
 
 CameraRaster::CameraRaster(
-    const int width, const int height, const int res_factor,
     const float sensitivity, const float fov,
     const float near, const float far,
-    const Vec3 &position, const Vec3 &rotation)
+    const Vec3 &position, const Vec3 &rotation):
+fov_angle(fov),
+fov_scale(fov_scaling(fov)),
+z_near(near),
+z_far(far),
+sensitivity(sensitivity),
+aspect_ratio(1.0f)
 {
-    this->res_factor = res_factor;
-    fov_angle = fov;
-    fov_scale = fov_scaling(fov);
-    z_near = near;
-    z_far = far;
-    this->sensitivity = sensitivity;
-    update_view = false;
-    render_depth = false;
-    render_wireframe = false;
-
     transform.position = position;
     transform.rotation = rotation;
     transform.scale = {1,1,1};
     transform.forward_direction = {0,0,1};
 
     transform.update_transforms(true);
-    update_frame_buffer_size(width, height);
-}
-
-void CameraRaster::update_frame_buffer_size(const int w, const  int h)
-{
-    width = w/res_factor;
-    height = h/res_factor;
-    half_width = static_cast<float>(width) / 2;
-    half_height = static_cast<float>(height) / 2;
-    aspect_ratio = static_cast<float>(width) / static_cast<float>(height);
-    frame_buffer.resize(width*height, BLACK);
-    depth_buffer.resize(width*height, 0.0f);
-
-    projection_matrix.to_perspective(fov_scale, aspect_ratio, z_near, z_far);
     update_frustum();
 }
 
-void CameraRaster::clear_frame_buffer()
+void CameraRaster::update_aspect_ratio(const float new_aspect_ratio)
 {
-    for (int i = 0; i < frame_buffer.size(); i++) {
-        frame_buffer[i] = BLACK;
-        depth_buffer[i] = 0.0f;
-    }
+    aspect_ratio = new_aspect_ratio;
+    projection_matrix.to_perspective(fov_scale, aspect_ratio, z_near, z_far);
+    update_frustum();
 }
 
 Vec3 CameraRaster::vertex_to_ndc(const Vec3 &vertex) const
@@ -65,47 +45,6 @@ Vec3 CameraRaster::vertex_to_ndc(const Vec3 &vertex) const
         };
 
     return {clip.x,clip.y,clip.z};
-}
-
-Vec2 CameraRaster::ndc_to_screen(const Vec3 &point) const
-{
-    return
-    {
-        (point.x + 1.0f) * half_width,
-        (1.0f - point.y) * half_height
-    };
-}
-
-FullTriangle CameraRaster::project_triangle(
-    const Vertex &v1, const Vertex &v2, const Vertex &v3, const MaterialRaster& material) const
-{
-    FullTriangle tri = {v1, v2, v3, material};
-
-    tri.ndc_points[0] = vertex_to_ndc(v1.point);
-    tri.ndc_points[1] = vertex_to_ndc(v2.point);
-    tri.ndc_points[2] = vertex_to_ndc(v3.point);
-
-    tri.screen_points[0] = ndc_to_screen(tri.ndc_points[0]);
-    tri.screen_points[1] = ndc_to_screen(tri.ndc_points[1]);
-    tri.screen_points[2] = ndc_to_screen(tri.ndc_points[2]);
-
-    tri.calculate_tri_aabb();
-
-    return tri;
-}
-
-bool CameraRaster::depth_pass(const int x, const int y, const float depth)
-{
-    const int index = y * width + x;
-    if (depth < depth_buffer[index]) return false;
-
-    depth_buffer[index] = depth;
-    return true;
-}
-
-void CameraRaster::put_pixel(const int x, const int y, const Vec4 &color)
-{
-    frame_buffer[y * width + x] = color_convertion::vec4_to_color(color);
 }
 
 void CameraRaster::move_forward_backwards(const float unit)
@@ -151,24 +90,9 @@ void CameraRaster::update_rotation(const Vec2 &rotation)
     transform.update_transforms(true);
 }
 
-void CameraRaster::toggle_render_depth()
-{
-    render_depth = !render_depth;
-}
-
 void CameraRaster::toggle_view_lock()
 {
     update_view = !update_view;
-}
-
-void CameraRaster::toggle_wireframe()
-{
-    render_wireframe = !render_wireframe;
-}
-
-void CameraRaster::toggle_render_normal()
-{
-    render_normal = !render_normal;
 }
 
 void CameraRaster::update_frustum()
@@ -176,7 +100,6 @@ void CameraRaster::update_frustum()
     const Vec3 cam_front = transform.forward_direction;
     const Vec3 cam_right = {1.0f, 0.0f, 0.0f};
     const Vec3 cam_up = {0.0f, 1.0f, 0.0f};
-    const Vec3 cam_pos = {};
 
     const float half_v_side = z_far * std::tan(fov_angle * transforms::DEG_TO_RAD * 0.5f);
     const float half_h_side = half_v_side * aspect_ratio;
@@ -197,22 +120,6 @@ void CameraRaster::handle_input()
         toggle_view_lock();
         update_view ? DisableCursor() : EnableCursor();
     }
-
-    if (IsKeyPressed(KEY_X))
-    {
-        toggle_wireframe();
-    }
-
-    if (IsKeyPressed(KEY_Z))
-    {
-        toggle_render_depth();
-    }
-
-    if (IsKeyPressed(KEY_N))
-    {
-        toggle_render_normal();
-    }
-
 
     const float delta_time = GetFrameTime();
 

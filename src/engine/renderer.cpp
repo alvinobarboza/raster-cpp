@@ -8,7 +8,10 @@
 #include "material/color_convertion.h"
 #include "transforms/constants.h"
 
-void RendererRaster::clip_triangle(const Plane& near, const Plane& far)
+RendererRaster::RendererRaster(const int w, const int h, const int res_factor) noexcept:
+viewport(w, h, res_factor) {}
+
+void RendererRaster::clip_triangle(const Plane& near, const Plane& far) noexcept
 {
     for (const std::array planes = {near, far}; auto& plane : planes) {
         std::swap(verts_in, verts_out);
@@ -50,7 +53,7 @@ void RendererRaster::clip_triangle(const Plane& near, const Plane& far)
 
 void RendererRaster::render_scene(SceneRaster &scene)
 {
-    scene.camera.clear_frame_buffer();
+    viewport.clear_frame_buffer();
     tris_buffer.clear();
 
     //update lights
@@ -117,21 +120,31 @@ void RendererRaster::render_scene(SceneRaster &scene)
             verts_out.push_back(v2);
             verts_out.push_back(v3);
 
+            // TODO: fix clipping
             clip_triangle(
             scene.camera.frustum.planes[NEAR_PLANE],
             scene.camera.frustum.planes[FAR_PLANE]);
 
 
             if (verts_out.size() > 2) {
-                const auto& m = model->meshData.materials[t.material_id];
                 for (int j = 1; j < verts_out.size() - 1; ++j) {
-                    auto tf = scene.camera.project_triangle(
+                    FullTriangle tf {
                         verts_out[0],
                         verts_out[j],
                         verts_out[j+1],
-                        m);
+                        model->meshData.materials[t.material_id], t.smooth
+                    };
 
-                    tf.smooth = t.smooth;
+                    tf.ndc_points[0] = scene.camera.vertex_to_ndc(v1.point);
+                    tf.ndc_points[1] = scene.camera.vertex_to_ndc(v2.point);
+                    tf.ndc_points[2] = scene.camera.vertex_to_ndc(v3.point);
+
+                    tf.screen_points[0] = viewport.ndc_to_screen(tf.ndc_points[0]);
+                    tf.screen_points[1] = viewport.ndc_to_screen(tf.ndc_points[1]);
+                    tf.screen_points[2] = viewport.ndc_to_screen(tf.ndc_points[2]);
+
+                    tf.calculate_tri_aabb();
+
                     tris_buffer.push_back(tf);
                 }
             }
@@ -175,12 +188,12 @@ Vec3 fresnelSchlick(const float HdotV, const Vec3 baseReflectivity)
     return baseReflectivity + inverse_reflectivity * std::pow(1.0f - HdotV, 5.0f);
 }
 
-void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster &scene) const
+void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster &scene) noexcept
 {
     const auto minY = std::max(tri.aabb.min.y, 0.0f);
-    const auto maxY = std::min(tri.aabb.max.y, static_cast<float>(scene.camera.height));
+    const auto maxY = std::min(tri.aabb.max.y, static_cast<float>(viewport.height));
     const auto minX = std::max(tri.aabb.min.x, 0.0f);
-    const auto maxX = std::min(tri.aabb.max.x, static_cast<float>(scene.camera.width));
+    const auto maxX = std::min(tri.aabb.max.x, static_cast<float>(viewport.width));
 
     const auto delta_w0_col = tri.screen_points[1].y - tri.screen_points[2].y;
     const auto delta_w1_col = tri.screen_points[2].y - tri.screen_points[0].y;
@@ -243,7 +256,7 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
 
                 const float z_depth = tri.depth_z[0] * alpha + tri.depth_z[1] * beta + tri.depth_z[2] * gamma;
 
-                if (scene.camera.depth_pass(static_cast<int>(x), static_cast<int>(y), z_depth))
+                if (viewport.depth_pass(static_cast<int>(x), static_cast<int>(y), z_depth))
                 {
                     const auto depth = 1 / z_depth;
                     const auto uv_coord =
@@ -279,13 +292,13 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                         normal = (t * normal_map.x) + (b * normal_map.y) + (normal * normal_map.z);
                     }
 
-                    if (scene.camera.render_normal)
+                    if (render_normal)
                     {
                         final_color.x = normal.x * .5f + .5f;
                         final_color.y = normal.y * .5f + .5f;
                         final_color.z = -normal.z * .5f + .5f;
                     }
-                    else if (scene.camera.render_depth)
+                    else if (render_depth)
                     {
                         const float ndc_depth =
                             tri.ndc_points[0].z * alpha +
@@ -382,7 +395,7 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                         };
                     }
 
-                    scene.camera.put_pixel(static_cast<int>(x), static_cast<int>(y), final_color);
+                    viewport.put_pixel(static_cast<int>(x), static_cast<int>(y), final_color);
                 }
             }
 
@@ -396,7 +409,30 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
     }
 }
 
+void RendererRaster::toggle_render_depth()
+{
+    render_depth = !render_depth;
+}
+
+void RendererRaster::toggle_wireframe()
+{
+    render_wireframe = !render_wireframe;
+}
+
+void RendererRaster::toggle_render_normal()
+{
+    render_normal = !render_normal;
+}
+
+void RendererRaster::toggle_render_light()
+{
+    render_light = !render_light;
+}
+
 void RendererRaster::handle_input()
 {
-    if (IsKeyPressed(KEY_L)) render_light = !render_light;
+    if (IsKeyPressed(KEY_L)) toggle_render_light();
+    if (IsKeyPressed(KEY_X)) toggle_wireframe();
+    if (IsKeyPressed(KEY_Z)) toggle_render_depth();
+    if (IsKeyPressed(KEY_N)) toggle_render_normal();
 }

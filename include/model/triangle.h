@@ -33,7 +33,6 @@ public:
     std::array<Vec3, 3> ndc_points {};
     std::array<Vec2, 3> screen_points {};
     std::array<float, 3> depth_z {};
-    Vec3 origin {};
     Vec3 normal {};
 
     AABB2D aabb {};
@@ -46,7 +45,8 @@ public:
         const Vertex &v1,
         const Vertex &v2,
         const Vertex &v3,
-        const MaterialRaster &material);
+        const MaterialRaster &material,
+        bool smooth);
 
     void calculate_tri_aabb();
 };
