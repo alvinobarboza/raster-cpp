@@ -131,9 +131,8 @@ ModelRaster* ResourceManager::load_model(const std::string& path, bool flip_hand
     const auto forward = Vec3(0.0f, 0.0f, 1.0f);
     const auto transform = Transforms(scale, rotation, position, forward);
     auto model = std::make_unique<ModelRaster>(transform, mesh, object_name);
-    auto ptr = model.get();
     models.push_back(std::move(model));
-    return ptr;
+    return models.back().get();
 }
 
 std::vector<MaterialRaster> ResourceManager::load_material(const std::string& path)
@@ -224,7 +223,7 @@ std::vector<MaterialRaster> ResourceManager::load_material(const std::string& pa
     return materials;
 }
 
-std::vector<ModelRaster*> ResourceManager::load_scene(const std::string& path)
+std::vector<ModelRaster*> ResourceManager::load_scene(const std::string&)
 {
     return {};
 }
