@@ -120,7 +120,6 @@ void RendererRaster::render_scene(SceneRaster &scene)
             verts_out.push_back(v2);
             verts_out.push_back(v3);
 
-            // TODO: fix clipping
             clip_triangle(
             scene.camera.frustum.planes[NEAR_PLANE],
             scene.camera.frustum.planes[FAR_PLANE]);
@@ -128,17 +127,19 @@ void RendererRaster::render_scene(SceneRaster &scene)
 
             if (verts_out.size() > 2) {
                 for (int j = 1; j < verts_out.size() - 1; ++j) {
+                    const auto p1 = verts_out[0];
+                    const auto p2 = verts_out[j];
+                    const auto p3 = verts_out[j + 1];
+
                     FullTriangle tf {
-                        verts_out[0],
-                        verts_out[j],
-                        verts_out[j+1],
+                        p1,p2,p3,
                         model->meshData.materials[t.material_id],
                         t.smooth
                     };
 
-                    const auto ndc0 = scene.camera.vertex_to_ndc(v1.point);
-                    const auto ndc1 = scene.camera.vertex_to_ndc(v2.point);
-                    const auto ndc2 = scene.camera.vertex_to_ndc(v3.point);
+                    const auto ndc0 = scene.camera.vertex_to_ndc(p1.point);
+                    const auto ndc1 = scene.camera.vertex_to_ndc(p2.point);
+                    const auto ndc2 = scene.camera.vertex_to_ndc(p3.point);
 
                     tf.screen_points[0] = viewport.ndc_to_screen(ndc0);
                     tf.screen_points[1] = viewport.ndc_to_screen(ndc1);
