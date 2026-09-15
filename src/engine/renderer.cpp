@@ -182,6 +182,14 @@ void RendererRaster::render_scene(SceneRaster &scene)
             render_triangle(tri, scene);
         }
     }
+    if (render_wireframe) {
+        Timer time{"render-wire"};
+        draw_wireframe_from_tri_buffer();
+    }
+    if (render_triangle_aabb) {
+        Timer time{"render-aabb"};
+        draw_triangle_aabb();
+    }
 };
 
 /*
@@ -430,6 +438,80 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
     }
 }
 
+void RendererRaster::draw_line(Vec3 a, Vec3 b) noexcept
+{
+    const Vec4 color = {0.4f,0.2f,0.2f, 1.0f};
+    const auto dx = b.x - a.x;
+    const auto dy = b.y - a.y;
+
+    if (std::abs(dx) > std::abs(dy)) {
+        if (dx < 0.0f) {
+            std::swap(a,b);
+        }
+
+        const auto ab_y = (b.y-a.y) / (b.x-a.x);
+        auto ys = a.y;
+        for (float x = a.x; x <= b.x; ++x) {
+            if (
+                x > 0.0f && x < static_cast<float>(viewport.width) &&
+                ys > 0.0f && ys < static_cast<float>(viewport.height))
+            {
+                viewport.put_pixel(static_cast<int>(x), static_cast<int>(ys), color);
+            }
+            ys += ab_y;
+        }
+        return;
+    }
+
+    if (dy < 0.0f) {
+        std::swap(a,b);
+    }
+
+    const auto ab_x = (b.x-a.x) / (b.y-a.y);
+    auto xs = a.x;
+
+    for (float y = a.y; y <= b.y; ++y) {
+        if (
+                xs > 0.0f && xs < static_cast<float>(viewport.width) &&
+                y > 0.0f && y < static_cast<float>(viewport.height))
+        {
+            viewport.put_pixel(static_cast<int>(xs), static_cast<int>(y), color);
+        }
+        xs += ab_x;
+    }
+}
+
+void RendererRaster::draw_aabb(const AABB2D &aabb) noexcept
+{
+    draw_line({aabb.min.x, aabb.min.y, 1.0f}, {aabb.min.x, aabb.max.y, 1.0f});
+    draw_line({aabb.min.x, aabb.max.y, 1.0f}, {aabb.max.x, aabb.max.y, 1.0f});
+    draw_line({aabb.max.x, aabb.max.y, 1.0f}, {aabb.max.x, aabb.min.y, 1.0f});
+    draw_line({aabb.max.x, aabb.min.y, 1.0f}, {aabb.min.x, aabb.min.y, 1.0f});
+}
+
+void RendererRaster::draw_wireframe_triangle(const FullTriangle &triangle) noexcept
+{
+    draw_line(triangle.screen_points[0], triangle.screen_points[1] );
+    draw_line(triangle.screen_points[1], triangle.screen_points[2] );
+    draw_line(triangle.screen_points[2], triangle.screen_points[0] );
+}
+
+void RendererRaster::draw_wireframe_from_tri_buffer() noexcept
+{
+    for (const auto &tri : tris_buffer)
+    {
+        draw_wireframe_triangle(tri);
+    }
+}
+
+void RendererRaster::draw_triangle_aabb() noexcept
+{
+    for (const auto& tri : tris_buffer)
+    {
+        draw_aabb(tri.aabb);
+    }
+}
+
 void RendererRaster::toggle_render_depth()
 {
     render_depth = !render_depth;
@@ -450,10 +532,16 @@ void RendererRaster::toggle_render_light()
     render_light = !render_light;
 }
 
+void RendererRaster::toggle_render_triangle_aabb()
+{
+    render_triangle_aabb = !render_triangle_aabb;
+}
+
 void RendererRaster::handle_input()
 {
     if (IsKeyPressed(KEY_L)) toggle_render_light();
     if (IsKeyPressed(KEY_X)) toggle_wireframe();
     if (IsKeyPressed(KEY_Z)) toggle_render_depth();
     if (IsKeyPressed(KEY_N)) toggle_render_normal();
+    if (IsKeyPressed(KEY_T)) toggle_render_triangle_aabb();
 }

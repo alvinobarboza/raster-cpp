@@ -11,10 +11,13 @@ public:
 };
 
 class RendererRaster {
+    static constexpr int TILE_SIZE = 32;
+
     bool render_light {};
     bool render_depth {};
     bool render_normal {};
     bool render_wireframe {};
+    bool render_triangle_aabb {};
 
     // Sutherland–Hodgman tmp vars
     std::vector<Vertex> verts_in {};
@@ -27,6 +30,11 @@ class RendererRaster {
 
     static bool is_outside_screen(const Vec3& ndc0, const Vec3& ndc1, const Vec3& ndc2) noexcept;
 
+    void draw_line(Vec3 a, Vec3 b) noexcept;
+    void draw_aabb(const AABB2D& aabb) noexcept;
+    void draw_wireframe_triangle(const FullTriangle& triangle) noexcept;
+    void draw_wireframe_from_tri_buffer() noexcept;
+    void draw_triangle_aabb() noexcept;
     void render_triangle(const FullTriangle &tri, const SceneRaster &scene) noexcept;
 public:
     Viewport viewport {};
@@ -38,6 +46,7 @@ public:
     void toggle_render_depth();
     void toggle_render_normal();
     void toggle_render_light();
+    void toggle_render_triangle_aabb();
 
     void handle_input();
 };
