@@ -67,7 +67,8 @@ add_executable(${PROJECT_NAME}
         src/engine/viewport.cpp
         include/engine/screen_tile.h
 )
-target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Werror -Wpedantic)
+
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Werror -Wpedantic -Wextra)
 target_include_directories(${PROJECT_NAME} PRIVATE include)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB1})
