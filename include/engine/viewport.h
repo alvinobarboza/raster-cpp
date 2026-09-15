@@ -24,7 +24,7 @@ public:
     [[nodiscard]] Color* frame_buffer_data() noexcept;
     void clear_frame_buffer();
     void update_frame_buffer_size(int w, int h);
-    [[nodiscard]] Vec2 ndc_to_screen(const Vec3 &point) const;
+    [[nodiscard]] Vec3 ndc_to_screen(const Vec3 &point) const;
     [[nodiscard]] float aspect_ratio() const;
     bool depth_pass(int x, int y, float z_depth);
     void put_pixel(int x, int y, const Vec4 &color);

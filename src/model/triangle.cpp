@@ -27,17 +27,9 @@ FullTriangle::FullTriangle(
     depth_z[1] = 1 / v2.point.z;
     depth_z[2] = 1 / v3.point.z;
 
-    projected_vertices[0].point = v1.point * depth_z[0];
-    projected_vertices[1].point = v2.point * depth_z[1];
-    projected_vertices[2].point = v3.point * depth_z[2];
-
-    projected_vertices[0].uv = v1.uv * depth_z[0];
-    projected_vertices[1].uv = v2.uv * depth_z[1];
-    projected_vertices[2].uv = v3.uv * depth_z[2];
-
-    projected_vertices[0].normal = v1.normal;
-    projected_vertices[1].normal = v2.normal;
-    projected_vertices[2].normal = v3.normal;
+    projected_uv[0] = v1.uv * depth_z[0];
+    projected_uv[1] = v2.uv * depth_z[1];
+    projected_uv[2] = v3.uv * depth_z[2];
 
     const auto ba = v2.point - v1.point;
     const auto ca = v3.point - v1.point;
@@ -67,7 +59,7 @@ void FullTriangle::calculate_tri_aabb()
     };
 }
 
-bool triangle::is_edge_top_or_left(const Vec2 &p1, const Vec2 &p2)
+bool triangle::is_edge_top_or_left(const Vec3 &p1, const Vec3 &p2)
 {
     const float x = p2.x - p1.x;
     const float y = p2.y - p1.y;
@@ -78,7 +70,7 @@ bool triangle::is_edge_top_or_left(const Vec2 &p1, const Vec2 &p2)
     return is_top_edge || is_left_edge;
 }
 
-float triangle::edge_cross(const Vec2 &a, const Vec2 &b, const Vec2 &p)
+float triangle::edge_cross(const Vec3 &a, const Vec3 &b, const Vec3 &p)
 {
     const float ab_x = b.x - a.x;
     const float ab_y = b.y - a.y;

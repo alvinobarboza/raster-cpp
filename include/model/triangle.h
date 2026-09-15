@@ -20,7 +20,7 @@ public:
     [[nodiscard]] bool is_back_facing(const std::vector<Vec3> &vertices, const std::vector<Vec3> &normals) const;
 };
 
-struct Vertex {
+struct alignas(16) Vertex {
     Vec3 point;
     Vec3 normal;
     Vec2 uv;
@@ -29,17 +29,15 @@ struct Vertex {
 class FullTriangle {
 public:
     std::array<Vertex, 3> vertices {};
-    std::array<Vertex, 3> projected_vertices {};
-    std::array<Vec3, 3> ndc_points {};
-    std::array<Vec2, 3> screen_points {};
+    std::array<Vec2, 3> projected_uv {};
+    std::array<Vec3, 3> screen_points {};
     std::array<float, 3> depth_z {};
-    Vec3 normal {};
-
     AABB2D aabb {};
+    Vec3 normal {};
+    bool smooth {};
 
     const MaterialRaster *material;
 
-    bool smooth {};
 
     FullTriangle(
         const Vertex &v1,
@@ -52,6 +50,6 @@ public:
 };
 
 namespace triangle {
-    [[nodiscard]] bool is_edge_top_or_left(const Vec2 &p1, const Vec2 &p2);
-    [[nodiscard]] float edge_cross(const Vec2 &a, const Vec2 &b, const Vec2 &p);
+    [[nodiscard]] bool is_edge_top_or_left(const Vec3 &p1, const Vec3 &p2);
+    [[nodiscard]] float edge_cross(const Vec3 &a, const Vec3 &b, const Vec3 &p);
 }

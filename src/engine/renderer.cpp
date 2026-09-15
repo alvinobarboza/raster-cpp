@@ -132,16 +132,17 @@ void RendererRaster::render_scene(SceneRaster &scene)
                         verts_out[0],
                         verts_out[j],
                         verts_out[j+1],
-                        model->meshData.materials[t.material_id], t.smooth
+                        model->meshData.materials[t.material_id],
+                        t.smooth
                     };
 
-                    tf.ndc_points[0] = scene.camera.vertex_to_ndc(v1.point);
-                    tf.ndc_points[1] = scene.camera.vertex_to_ndc(v2.point);
-                    tf.ndc_points[2] = scene.camera.vertex_to_ndc(v3.point);
+                    const auto ndc0 = scene.camera.vertex_to_ndc(v1.point);
+                    const auto ndc1 = scene.camera.vertex_to_ndc(v2.point);
+                    const auto ndc2 = scene.camera.vertex_to_ndc(v3.point);
 
-                    tf.screen_points[0] = viewport.ndc_to_screen(tf.ndc_points[0]);
-                    tf.screen_points[1] = viewport.ndc_to_screen(tf.ndc_points[1]);
-                    tf.screen_points[2] = viewport.ndc_to_screen(tf.ndc_points[2]);
+                    tf.screen_points[0] = viewport.ndc_to_screen(ndc0);
+                    tf.screen_points[1] = viewport.ndc_to_screen(ndc1);
+                    tf.screen_points[2] = viewport.ndc_to_screen(ndc2);
 
                     tf.calculate_tri_aabb();
 
@@ -218,7 +219,7 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
     }
 
     const auto area = 1.0f / triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], tri.screen_points[2]);
-    const auto p = Vec2(minX + 0.5f, minY + 0.5f);
+    const Vec3 p = {minX + 0.5f, minY + 0.5f, 0.0f};
 
     auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p) + bias_0;
     auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p) + bias_1;
@@ -260,9 +261,9 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                 {
                     const auto depth = 1 / z_depth;
                     const auto uv_coord =
-                            (tri.projected_vertices[0].uv * alpha +
-                            tri.projected_vertices[1].uv * beta +
-                            tri.projected_vertices[2].uv * gamma) * depth;
+                            (tri.projected_uv[0] * alpha +
+                            tri.projected_uv[1] * beta +
+                            tri.projected_uv[2] * gamma) * depth;
 
                     const auto frag_coord = (tri.vertices[0].point * alpha +
                             tri.vertices[1].point * beta +
@@ -301,9 +302,9 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                     else if (render_depth)
                     {
                         const float ndc_depth =
-                            tri.ndc_points[0].z * alpha +
-                                tri.ndc_points[1].z * beta +
-                                    tri.ndc_points[2].z * gamma;
+                            tri.screen_points[0].z * alpha +
+                                tri.screen_points[1].z * beta +
+                                    tri.screen_points[2].z * gamma;
 
                         float c = 1-ndc_depth;
                         if (c < 0.01) c = 0.01;
@@ -369,10 +370,7 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                             Lo += mul_radiance * NdotL;
                         }
 
-                        const Vec3 ambient {
-                            albedo.x * scene.skybox.ambient_intensity,
-                            albedo.y * scene.skybox.ambient_intensity,
-                            albedo.z * scene.skybox.ambient_intensity};
+                        const Vec3 ambient {albedo * scene.skybox.ambient_intensity};
                         Vec3 color = ambient + Lo;
 
                         // HDR tonemapping

@@ -4,7 +4,7 @@
 
 class alignas(32) Gbuffer {
 public:
-    Vec4 albedo {};
+    Vec3 albedo {};
     Vec3 normal {};
     float roughness {};
     float depth{};

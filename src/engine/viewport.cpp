@@ -30,12 +30,13 @@ void Viewport::update_frame_buffer_size(const int w, const  int h)
     depth_buffer.resize(width*height, 0.0f);
 }
 
-Vec2 Viewport::ndc_to_screen(const Vec3 &point) const
+Vec3 Viewport::ndc_to_screen(const Vec3 &point) const
 {
     return
     {
         (point.x + 1.0f) * half_width,
-        (1.0f - point.y) * half_height
+        (1.0f - point.y) * half_height,
+        point.z
     };
 }
 
