@@ -3,7 +3,6 @@
 #include "raylib.h"
 #include "screen_tile.h"
 
-#include "transforms/vec2.h"
 #include "transforms/vec3.h"
 #include "transforms/vec4.h"
 
@@ -16,6 +15,8 @@ class Viewport {
     float half_width {};
     float half_height {};
 public:
+    static constexpr int TILE_SIZE = 32;
+    std::vector<ScreenTile> tiles{};
     int width {};
     int height {};
 
@@ -24,6 +25,7 @@ public:
 
     [[nodiscard]] Color* frame_buffer_data() noexcept;
     void clear_frame_buffer() noexcept;
+    void update_tiles() noexcept;
     void update_frame_buffer_size(int w, int h) noexcept;
     [[nodiscard]] Vec3 ndc_to_screen(const Vec3 &point) const;
     [[nodiscard]] float aspect_ratio() const;

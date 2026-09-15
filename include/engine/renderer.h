@@ -11,8 +11,6 @@ public:
 };
 
 class RendererRaster {
-    static constexpr int TILE_SIZE = 32;
-
     bool render_light {};
     bool render_depth {};
     bool render_normal {};
