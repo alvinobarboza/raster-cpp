@@ -51,6 +51,20 @@ void RendererRaster::clip_triangle(const Plane& near, const Plane& far) noexcept
     }
 }
 
+bool RendererRaster::is_outside_screen(const Vec3 &ndc0, const Vec3 &ndc1, const Vec3 &ndc2) noexcept
+{
+    //UP
+    if (ndc0.y > 1.0f & ndc1.y > 1.0f & ndc2.y > 1.0f) return true;
+    //DOWN
+    if (ndc0.y < -1.0f & ndc1.y < -1.0f & ndc2.y < -1.0f) return true;
+    //LEFT
+    if (ndc0.x < -1.0f & ndc1.x < -1.0f & ndc2.x < -1.0f) return true;
+    //RIGHT
+    if (ndc0.x > 1.0f & ndc1.x > 1.0f & ndc2.x > 1.0f) return true;
+
+    return false;
+}
+
 void RendererRaster::render_scene(SceneRaster &scene)
 {
     viewport.clear_frame_buffer();
@@ -77,6 +91,7 @@ void RendererRaster::render_scene(SceneRaster &scene)
     });
 
 
+    //int count_skipped_tris = 0;
     for (const auto& model : scene.models)
     {
         auto m_rotation = scene.camera.transform.rotation_matrix * model->transforms.rotation_matrix;
@@ -84,7 +99,7 @@ void RendererRaster::render_scene(SceneRaster &scene)
 
         if (!model->to_render)
         {
-            std::cout << "[SKIP] " << model->name << "\n";
+            //std::cout << "[SKIP] " << model->name << "\n";
             continue;
         }
 
@@ -141,6 +156,12 @@ void RendererRaster::render_scene(SceneRaster &scene)
                     const auto ndc1 = scene.camera.vertex_to_ndc(p2.point);
                     const auto ndc2 = scene.camera.vertex_to_ndc(p3.point);
 
+                    if (is_outside_screen(ndc0, ndc1, ndc2))
+                    {
+                        //++count_skipped_tris;
+                        continue;
+                    };
+
                     tf.screen_points[0] = viewport.ndc_to_screen(ndc0);
                     tf.screen_points[1] = viewport.ndc_to_screen(ndc1);
                     tf.screen_points[2] = viewport.ndc_to_screen(ndc2);
@@ -152,6 +173,7 @@ void RendererRaster::render_scene(SceneRaster &scene)
             }
         }
     }
+    //std::cout << "[SKIP] triangles: "<< count_skipped_tris <<"\n";
 
     {
         Timer time{"render"};

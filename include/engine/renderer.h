@@ -25,6 +25,8 @@ class RendererRaster {
     // just near and far for now
     void clip_triangle(const Plane& near, const Plane& far) noexcept;
 
+    static bool is_outside_screen(const Vec3& ndc0, const Vec3& ndc1, const Vec3& ndc2) noexcept;
+
     void render_triangle(const FullTriangle &tri, const SceneRaster &scene) noexcept;
 public:
     Viewport viewport {};
