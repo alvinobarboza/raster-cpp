@@ -39,5 +39,3 @@ public:
     void toggle_view_lock();
     void handle_input();
 };
-
-static float fov_scaling(float angle);

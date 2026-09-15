@@ -17,7 +17,7 @@ FullTriangle::FullTriangle(
     const Vertex &v2,
     const Vertex &v3,
     const MaterialRaster &material,
-    const bool smooth) : material(&material), smooth(smooth)
+    const bool smooth) : smooth(smooth), material(&material)
 {
     vertices[0] = v1;
     vertices[1] = v2;

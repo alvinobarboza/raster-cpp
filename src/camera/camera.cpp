@@ -5,16 +5,20 @@
 #include "material/color_convertion.h"
 #include "transforms/constants.h"
 
+static float fov_scaling(const float angle) {
+    return 1 / std::tan(angle*transforms::DEG_TO_RAD/2);
+}
+
 CameraRaster::CameraRaster(
     const float sensitivity, const float fov,
     const float near, const float far,
     const Vec3 &position, const Vec3 &rotation):
 fov_angle(fov),
 fov_scale(fov_scaling(fov)),
+aspect_ratio(1.0f),
 z_near(near),
 z_far(far),
-sensitivity(sensitivity),
-aspect_ratio(1.0f)
+sensitivity(sensitivity)
 {
     transform.position = position;
     transform.rotation = rotation;
@@ -159,8 +163,4 @@ void CameraRaster::handle_input()
         update_rotation(mouse_delta);
     }
 
-}
-
-static float fov_scaling(const float angle) {
-    return 1 / std::tan(angle*transforms::DEG_TO_RAD/2);
 }

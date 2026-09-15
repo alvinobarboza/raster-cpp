@@ -75,7 +75,7 @@ ModelRaster* ResourceManager::load_model(const std::string& path, bool flip_hand
             std::string temp;
             int mat_index = -1;
 
-            for (int i = 0; i < materials.size(); i++)
+            for (size_t i = 0; i < materials.size(); i++)
             {
                 if (materials[i].name == cur_mat_name)
                 {
@@ -96,7 +96,7 @@ ModelRaster* ResourceManager::load_model(const std::string& path, bool flip_hand
 
             Triangle tri{};
             tri.smooth = smooth_shader;
-            for(int i = 1; i < vid.size()-1; i++) {
+            for(size_t i = 1; i < vid.size()-1; i++) {
                 if (flip_handiness)
                 {
                     tri.v1 = vid[0] - 1, tri.u1 = uid[0] - 1, tri.n1 = nid[0] - 1;

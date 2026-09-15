@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include "raylib.h"
+#include "screen_tile.h"
 
 #include "transforms/vec2.h"
 #include "transforms/vec3.h"
@@ -22,10 +23,10 @@ public:
     Viewport(int width, int height, int res_factor);
 
     [[nodiscard]] Color* frame_buffer_data() noexcept;
-    void clear_frame_buffer();
-    void update_frame_buffer_size(int w, int h);
+    void clear_frame_buffer() noexcept;
+    void update_frame_buffer_size(int w, int h) noexcept;
     [[nodiscard]] Vec3 ndc_to_screen(const Vec3 &point) const;
     [[nodiscard]] float aspect_ratio() const;
-    bool depth_pass(int x, int y, float z_depth);
-    void put_pixel(int x, int y, const Vec4 &color);
+    bool depth_pass(int x, int y, float z_depth) noexcept;
+    void put_pixel(int x, int y, const Vec4 &color) noexcept;
 };

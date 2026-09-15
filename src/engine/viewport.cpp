@@ -9,7 +9,7 @@ Viewport::Viewport(
     update_frame_buffer_size(width, height);
 }
 
-void Viewport::clear_frame_buffer()
+void Viewport::clear_frame_buffer() noexcept
 {
     std::ranges::fill(frame_buffer, BLACK);
     std::ranges::fill(depth_buffer, 0.0f);
@@ -20,7 +20,7 @@ Color* Viewport::frame_buffer_data() noexcept
     return frame_buffer.data();
 }
 
-void Viewport::update_frame_buffer_size(const int w, const  int h)
+void Viewport::update_frame_buffer_size(const int w, const  int h) noexcept
 {
     width = w/res_factor;
     height = h/res_factor;
@@ -45,7 +45,7 @@ float Viewport::aspect_ratio() const
     return static_cast<float>(width) / static_cast<float>(height);
 }
 
-bool Viewport::depth_pass(const int x, const int y, const float z_depth)
+bool Viewport::depth_pass(const int x, const int y, const float z_depth) noexcept
 {
     const int index = y * width + x;
     if (z_depth < depth_buffer[index]) return false;
@@ -54,7 +54,7 @@ bool Viewport::depth_pass(const int x, const int y, const float z_depth)
     return true;
 }
 
-void Viewport::put_pixel(const int x, const int y, const Vec4 &color)
+void Viewport::put_pixel(const int x, const int y, const Vec4 &color) noexcept
 {
     frame_buffer[y * width + x] = color_convertion::vec4_to_color(color);
 }

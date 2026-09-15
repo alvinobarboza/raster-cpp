@@ -54,13 +54,13 @@ void RendererRaster::clip_triangle(const Plane& near, const Plane& far) noexcept
 bool RendererRaster::is_outside_screen(const Vec3 &ndc0, const Vec3 &ndc1, const Vec3 &ndc2) noexcept
 {
     //UP
-    if (ndc0.y > 1.0f & ndc1.y > 1.0f & ndc2.y > 1.0f) return true;
+    if ((ndc0.y > 1.0f) & (ndc1.y > 1.0f) & (ndc2.y > 1.0f)) return true;
     //DOWN
-    if (ndc0.y < -1.0f & ndc1.y < -1.0f & ndc2.y < -1.0f) return true;
+    if ((ndc0.y < -1.0f) & (ndc1.y < -1.0f) & (ndc2.y < -1.0f)) return true;
     //LEFT
-    if (ndc0.x < -1.0f & ndc1.x < -1.0f & ndc2.x < -1.0f) return true;
+    if ((ndc0.x < -1.0f) & (ndc1.x < -1.0f) & (ndc2.x < -1.0f)) return true;
     //RIGHT
-    if (ndc0.x > 1.0f & ndc1.x > 1.0f & ndc2.x > 1.0f) return true;
+    if ((ndc0.x > 1.0f) & (ndc1.x > 1.0f) & (ndc2.x > 1.0f)) return true;
 
     return false;
 }
@@ -103,12 +103,12 @@ void RendererRaster::render_scene(SceneRaster &scene)
             continue;
         }
 
-        for (int i = 0; i < model->meshData.vertices.size(); ++i)
+        for (size_t i = 0; i < model->meshData.vertices.size(); ++i)
         {
             model->meshData.vertices_word[i] = model->meshData.vertices[i] * m_transforms;
         }
 
-        for (int i = 0; i < model->meshData.normals.size(); ++i)
+        for (size_t i = 0; i < model->meshData.normals.size(); ++i)
         {
             model->meshData.normals_word[i] = model->meshData.normals[i] * m_rotation;
         }
@@ -141,7 +141,7 @@ void RendererRaster::render_scene(SceneRaster &scene)
 
 
             if (verts_out.size() > 2) {
-                for (int j = 1; j < verts_out.size() - 1; ++j) {
+                for (size_t j = 1; j < verts_out.size() - 1; ++j) {
                     const auto p1 = verts_out[0];
                     const auto p2 = verts_out[j];
                     const auto p3 = verts_out[j + 1];
