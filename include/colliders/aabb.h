@@ -9,4 +9,6 @@ public:
     AABB2D(const Vec2& min, const Vec2& max) : min(min), max(max) {};
 
     [[nodiscard]] bool collides(const AABB2D& other) const;
+
+    friend std::ostream &operator<<(std::ostream &os, const AABB2D &aabb);
 };

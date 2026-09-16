@@ -17,63 +17,49 @@ void Viewport::clear_frame_buffer() noexcept
 
 void Viewport::update_tiles() noexcept
 {
-    // JUST TO SAVE TESTS
-    // int tile_size = 4;
-    // int width = 14;
-    // int height = 8;
-    // int tile_x = (width + tile_size - 1) / tile_size;
-    // int tile_y = (height + tile_size - 1) / tile_size;
-    // int total_tiles = tile_x * tile_y;
-    //
-    //
-    // char l = 'a';
-    // std::vector<char> screen (width*height, l);
-    //
-    // print("tile_size", tile_size);
-    // std::cout << width << " x " << height << '\n';
-    // print("tile_x", tile_x);
-    // print("tile_y", tile_y);
-    // print("total_tiles", total_tiles);
-    // print("mult x", tile_x * tile_size);
-    // print("mult y", tile_y * tile_size);
-    //
-    // int offset_x = 0;
-    // int offset_y = 0;
-    //
-    // for(int ty = 0; ty < tile_y; ++ty)
-    // {
-    //     for(int tx = 0; tx < tile_x; ++tx)
-    //     {
-    //         //std::cout << "\n[off_x: " << offset_x;
-    //         //std::cout << " off_y: " << offset_y;
-    //         //std::cout << "] \n";
-    //         for(int y = 0; y < tile_size; ++y)
-    //         {
-    //             for(int x = 0; x < tile_size; ++x)
-    //             {
-    //                 const auto fx = x + offset_x;
-    //                 const auto fy = y + offset_y;
-    //                 const auto index = fx + fy * width;
-    //                 //std::cout << "[x: " << fx;
-    //                 //std::cout << " fy: " << fy;
-    //                 //std::cout << " i: " << index;
-    //                 //std::cout << "] ";
-    //                 if (fx < width && fy < height) {
-    //                     screen[index] = l;
-    //                 }
-    //             }
-    //             //std::cout << '\n';
-    //         }
-    //         l++;
-    //         offset_x += tile_size;
-    //     }
-    //     //std::cout << '\n';
-    //     offset_y += tile_size;
-    //     offset_x = 0;
-    // }
-    // std::cout << '\n';
-    // //end:
+    const int tile_x = (width + TILE_SIZE - 1) / TILE_SIZE ;
+    const int tile_y = (height + TILE_SIZE - 1) / TILE_SIZE ;
+    const int total_tiles = tile_x * tile_y;
 
+    tiles.clear();
+    tiles.reserve(total_tiles);
+
+    std::cout << "viewport_res: " << width << 'x' << height << '\n';
+    std::cout << "tile_size: " << TILE_SIZE << '\n';
+    std::cout << "tile_x: " << tile_x << '\n';
+    std::cout << "tile_y: " << tile_y << '\n';
+    std::cout << "total_tiles: " << total_tiles << '\n';
+
+    AABB2D aabb_temp;
+
+    int offset_x = 0;
+    int offset_y = 0;
+
+    for(int ty = 0; ty < tile_y; ++ty)
+    {
+        for(int tx = 0; tx < tile_x; ++tx)
+        {
+            aabb_temp.min.x = offset_x;
+            aabb_temp.min.y = offset_y;
+            aabb_temp.max.x = offset_x+TILE_SIZE-1;
+            aabb_temp.max.y = offset_y+TILE_SIZE-1;
+
+            tiles.emplace_back(aabb_temp);
+
+            offset_x += TILE_SIZE;
+        }
+        offset_y += TILE_SIZE;
+        offset_x = 0;
+    }
+}
+
+void Viewport::reset_tiles() noexcept
+{
+    std::ranges::for_each(tiles, [](ScreenTile& tile)
+    {
+        tile.is_active = false;
+        tile.triangles_id.clear();
+    });
 }
 
 Color* Viewport::frame_buffer_data() noexcept

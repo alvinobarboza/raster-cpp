@@ -68,6 +68,7 @@ bool RendererRaster::is_outside_screen(const Vec3 &ndc0, const Vec3 &ndc1, const
 void RendererRaster::render_scene(SceneRaster &scene)
 {
     viewport.clear_frame_buffer();
+    viewport.reset_tiles();
     tris_buffer.clear();
 
     //update lights

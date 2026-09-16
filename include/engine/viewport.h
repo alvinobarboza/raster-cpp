@@ -26,6 +26,7 @@ public:
     [[nodiscard]] Color* frame_buffer_data() noexcept;
     void clear_frame_buffer() noexcept;
     void update_tiles() noexcept;
+    void reset_tiles() noexcept;
     void update_frame_buffer_size(int w, int h) noexcept;
     [[nodiscard]] Vec3 ndc_to_screen(const Vec3 &point) const;
     [[nodiscard]] float aspect_ratio() const;

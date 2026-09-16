@@ -8,3 +8,9 @@ bool AABB2D::collides(const AABB2D& other) const
         this->min.y <= other.max.y &&
         this->max.y >= other.min.y;
 }
+
+std::ostream &operator<<(std::ostream &os, const AABB2D& aabb)
+{
+    os << "min: " << aabb.min << ", max: " << aabb.max;
+    return os;
+}
