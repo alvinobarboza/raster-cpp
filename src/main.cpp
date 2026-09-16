@@ -56,7 +56,7 @@ int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 
     InitWindow(width, height, "Hello window");
-    SetTargetFPS(60);
+    SetTargetFPS(30);
 
     auto img = GenImageColor(renderer.viewport.width, renderer.viewport.height, RAYWHITE);
     auto render_texture = LoadTextureFromImage(img);
