@@ -35,6 +35,20 @@ FullTriangle::FullTriangle(
     const auto ca = v3.point - v1.point;
 
     normal = ba.cross(ca).normalized();
+
+    const auto edge1 = vertices[1].point - vertices[0].point;
+    const auto edge2 = vertices[2].point - vertices[0].point;
+
+    const auto deltaUV1 = vertices[1].uv - vertices[0].uv;
+    const auto deltaUV2 = vertices[2].uv - vertices[0].uv;
+
+    const auto f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+
+    tangent = Vec3(
+        f*(deltaUV2.y*edge1.x - deltaUV1.y*edge2.x),
+        f*(deltaUV2.y*edge1.y - deltaUV1.y*edge2.y),
+        f*(deltaUV2.y*edge1.z - deltaUV1.y*edge2.z)
+    ).normalized();
 }
 
 void FullTriangle::calculate_tri_aabb()

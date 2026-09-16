@@ -257,21 +257,7 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
     auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p) + bias_1;
     auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p) + bias_2;
 
-    // Tangent calculations
-    const auto edge1 = tri.vertices[1].point - tri.vertices[0].point;
-    const auto edge2 = tri.vertices[2].point - tri.vertices[0].point;
 
-    const auto deltaUV1 = tri.vertices[1].uv - tri.vertices[0].uv;
-    const auto deltaUV2 = tri.vertices[2].uv - tri.vertices[0].uv;
-
-    const auto f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
-
-    const Vec3 tangent = Vec3(
-        f*(deltaUV2.y*edge1.x - deltaUV1.y*edge2.x),
-        f*(deltaUV2.y*edge1.y - deltaUV1.y*edge2.y),
-        f*(deltaUV2.y*edge1.z - deltaUV1.y*edge2.z)
-    ).normalized();
-    // Tangent calculations
 
     for (float y = minY; y < maxY; y++)
     {
@@ -319,8 +305,8 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                     if (tri.material->map_normal)
                     {
                         const auto normal_map = tri.material->map_normal->texel_normal(uv_coord);
-                        const auto nt = normal * tangent;
-                        const auto t = (tangent - (normal * nt)).normalized();
+                        const auto nt = normal * tri.tangent;
+                        const auto t = (tri.tangent - (normal * nt)).normalized();
                         const auto b = t.cross(normal);
                         normal = (t * normal_map.x) + (b * normal_map.y) + (normal * normal_map.z);
                     }

@@ -34,6 +34,7 @@ public:
     std::array<float, 3> depth_z {};
     AABB2D aabb {};
     Vec3 normal {};
+    Vec3 tangent {};
     bool smooth {};
 
     const MaterialRaster *material;
