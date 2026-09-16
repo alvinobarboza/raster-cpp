@@ -3,7 +3,7 @@ project(raster-cpp)
 
 include(FetchContent)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 function(include_dependency libName gitUrl gitTag)
