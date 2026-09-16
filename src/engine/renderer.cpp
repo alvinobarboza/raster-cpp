@@ -54,13 +54,13 @@ void RendererRaster::clip_triangle(const Plane& near, const Plane& far) noexcept
 bool RendererRaster::is_outside_screen(const Vec3 &ndc0, const Vec3 &ndc1, const Vec3 &ndc2) noexcept
 {
     //UP
-    if ((ndc0.y > 1.0f) & (ndc1.y > 1.0f) & (ndc2.y > 1.0f)) return true;
+    if ((ndc0.y > 1.0f) && (ndc1.y > 1.0f) && (ndc2.y > 1.0f)) return true;
     //DOWN
-    if ((ndc0.y < -1.0f) & (ndc1.y < -1.0f) & (ndc2.y < -1.0f)) return true;
+    if ((ndc0.y < -1.0f) && (ndc1.y < -1.0f) && (ndc2.y < -1.0f)) return true;
     //LEFT
-    if ((ndc0.x < -1.0f) & (ndc1.x < -1.0f) & (ndc2.x < -1.0f)) return true;
+    if ((ndc0.x < -1.0f) && (ndc1.x < -1.0f) && (ndc2.x < -1.0f)) return true;
     //RIGHT
-    if ((ndc0.x > 1.0f) & (ndc1.x > 1.0f) & (ndc2.x > 1.0f)) return true;
+    if ((ndc0.x > 1.0f) && (ndc1.x > 1.0f) && (ndc2.x > 1.0f)) return true;
 
     return false;
 }
