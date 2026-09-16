@@ -257,8 +257,6 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
     auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p) + bias_1;
     auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p) + bias_2;
 
-
-
     for (float y = minY; y < maxY; y++)
     {
         auto w0 = w0_row;
