@@ -46,7 +46,7 @@ void Viewport::update_tiles() noexcept
             aabb_temp.max.y = offset_y+TILE_SIZE-1;
 
             tiles.emplace_back(aabb_temp);
-            std::cout << aabb_temp << '\n';
+            //std::cout << aabb_temp << '\n';
         }
     }
 }

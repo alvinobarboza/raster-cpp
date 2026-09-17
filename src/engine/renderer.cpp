@@ -221,6 +221,87 @@ Vec3 fresnelSchlick(const float HdotV, const Vec3 baseReflectivity)
     return baseReflectivity + inverse_reflectivity * std::pow(1.0f - HdotV, 5.0f);
 }
 
+Vec4 calculate_light(
+    const std::vector<Light>& lights,
+    const float frag_rough, const Vec4 frag_color,const Vec3 frag_normal,
+    const Vec3 view_normal, const float ambient_intensity) noexcept
+{
+    const Vec3 albedo = {
+        std::pow(frag_color.x, 2.2f),
+        std::pow(frag_color.y, 2.2f),
+        std::pow(frag_color.z, 2.2f)
+    };
+
+    // If I add metallic property, lerp from 0.04 to albedo/diffuse using the range[0,1] of metallic
+    const Vec3 base_reflectivity {0.04};
+
+    Vec3 Lo {};
+    for (const auto& light : lights)
+    {
+        // Also (light_pos - frag_pos) for point light
+        const Vec3 L = light.direction_world;
+        const Vec3 H = (view_normal + L).normalized();
+
+        // This a direction light, no attenuation will be applied now
+        /*
+         *  float distance = length(light_pos - frag_pos);
+         *  float attenuation = 1.0 / (distance * distance);
+         *  vec3 radiance = ligth_color * attenuation;
+         */
+        const Vec3 radiance {light.color.x*light.intensity, light.color.y*light.intensity, light.color.z*light.intensity};
+
+        // Cook-Torrance BRDF
+        const float NdotV = std::max(frag_normal * view_normal, 0.0000001f);
+        const float NdotL = std::max(frag_normal * L, 0.0000001f);
+        const float HdotV = std::max(H * view_normal, 0.0f);
+        const float NdotH = std::max(frag_normal * H, 0.0f);
+
+        const float D = distributionGGX(NdotH, frag_rough);
+        const float G = geometrySmith(NdotV, NdotL, frag_rough);
+        const Vec3 F = fresnelSchlick(HdotV, base_reflectivity);
+
+        const Vec3 specular = (F * D * G) / (4.0f * NdotV * NdotL);
+
+        const Vec3 kD = Vec3{1.0f} - F;
+
+        // When using mettalic property
+        // kD *= 1.0 - mettalic;
+
+        // Lo += (kD * albedo / PI + specular) * radiance * NdotL;
+        const Vec3 kD_x_albedo {kD.x * albedo.x, kD.y * albedo.y, kD.z * albedo.z};
+        const Vec3 divided_pi_specular = (kD_x_albedo / transforms::PI_R + specular);
+        const Vec3 mul_radiance {
+            divided_pi_specular.x * radiance.x,
+            divided_pi_specular.y * radiance.y,
+            divided_pi_specular.z * radiance.z};
+
+        Lo += mul_radiance * NdotL;
+    }
+
+    const Vec3 ambient {albedo * ambient_intensity};
+    Vec3 color = ambient + Lo;
+
+    // HDR tonemapping
+    const float lum = 0.2126f * color.x + 0.7152f * color.y + 0.0722f * color.z;
+    color = color / (1.0f + lum);
+    // Gamma
+    constexpr float gamma_const {1.0f/2.2f};
+
+    color = {
+        std::pow(color.x, gamma_const),
+        std::pow(color.y, gamma_const),
+        std::pow(color.z, gamma_const)
+    };
+
+    return {
+        std::clamp(color.x, 0.0f, 1.0f),
+        std::clamp(color.y, 0.0f, 1.0f),
+        std::clamp(color.z, 0.0f, 1.0f),
+        1.0f
+    };
+}
+
+
 void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster &scene) noexcept
 {
     const auto minY = std::max(tri.aabb.min.y, 0.0f);
@@ -257,13 +338,13 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
     auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p) + bias_1;
     auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p) + bias_2;
 
-    for (float y = minY; y < maxY; y++)
+    for (int y = minY; y < maxY; y++)
     {
         auto w0 = w0_row;
         auto w1 = w1_row;
         auto w2 = w2_row;
 
-        for (float x = minX; x < maxX; x++)
+        for (int x = minX; x < maxX; x++)
         {
             if (w0 >= 0.0f && w1 >= 0.0f && w2 >= 0.0f)
             {
@@ -271,49 +352,26 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                 const auto beta = w1 * area;
                 const auto gamma = w2 * area;
 
-                const float z_depth = tri.depth_z[0] * alpha + tri.depth_z[1] * beta + tri.depth_z[2] * gamma;
-
-                if (viewport.depth_pass(static_cast<int>(x), static_cast<int>(y), z_depth))
+                if (const float z_depth = tri.frag_depth(alpha, beta, gamma);
+                    viewport.depth_pass(x, y, z_depth))
                 {
-                    const auto depth = 1 / z_depth;
-                    const auto uv_coord =
-                            (tri.projected_uv[0] * alpha +
-                            tri.projected_uv[1] * beta +
-                            tri.projected_uv[2] * gamma) * depth;
-
-                    const auto frag_coord = (tri.vertices[0].point * alpha +
-                            tri.vertices[1].point * beta +
-                            tri.vertices[2].point * gamma) * depth;
-
-                    auto normal = !tri.smooth ? tri.normal :
-                            ((tri.vertices[0].normal * alpha +
-                            tri.vertices[1].normal * beta +
-                            tri.vertices[2].normal * gamma) * depth).normalized();
-
-                    const auto frag_color = tri.material->map_diffuse ?
-                        tri.material->map_diffuse->texel_color(uv_coord) : tri.material->diffuse;
-
-                    // Transforming wavefront's specular into roughness, not ideal, but will be for now
-                    const float roughness = tri.material->map_roughness ?
-                        tri.material->map_roughness->texel_intensity(uv_coord)
-                        : tri.material->specular * 0.001f;
-
-                    Vec4 final_color = frag_color;
-
-                    if (tri.material->map_normal)
-                    {
-                        const auto normal_map = tri.material->map_normal->texel_normal(uv_coord);
-                        const auto nt = normal * tri.tangent;
-                        const auto t = (tri.tangent - (normal * nt)).normalized();
-                        const auto b = t.cross(normal);
-                        normal = (t * normal_map.x) + (b * normal_map.y) + (normal * normal_map.z);
-                    }
+                    const auto frag_depth = 1 / z_depth;
+                    const auto frag_uv = tri.frag_uv_coord(alpha, beta, gamma, frag_depth);
+                    const auto frag_coord = tri.frag_coord(alpha, beta, gamma, frag_depth);
+                    const auto frag_normal = tri.frag_normal(alpha, beta, gamma, frag_uv,frag_depth);
+                    const auto frag_color = tri.frag_color(frag_uv);
+                    const float frag_rough = tri.frag_roughness(frag_uv);
 
                     if (render_normal)
                     {
-                        final_color.x = normal.x * .5f + .5f;
-                        final_color.y = normal.y * .5f + .5f;
-                        final_color.z = -normal.z * .5f + .5f;
+                        const Vec4 final_color{
+                            frag_normal.x * .5f + .5f,
+                            frag_normal.y * .5f + .5f,
+                            -frag_normal.z * .5f + .5f,
+                            1.0f
+                        };
+
+                        viewport.put_pixel(x, y, final_color);
                     }
                     else if (render_depth)
                     {
@@ -324,92 +382,26 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
 
                         float c = 1-ndc_depth;
                         if (c < 0.01) c = 0.01;
-                        final_color.x = c;
-                        final_color.y = c;
-                        final_color.z = c;
-                        final_color.w = 1.0f;
+
+                        const Vec4 final_color {
+                            c,c,c,1.0f
+                        };
+
+                        viewport.put_pixel(x, y, final_color);
                     }
                     else if (render_light)
                     {
-                        const auto V = (-frag_coord).normalized();
-                        const auto N = normal;
+                        const auto view_normal = (-frag_coord).normalized();
+                        const auto final_color = calculate_light(
+                            scene.lights, frag_rough, frag_color, frag_normal,
+                            view_normal, scene.skybox.ambient_intensity);
 
-                        const Vec3 albedo = {
-                            std::pow(frag_color.x, 2.2f),
-                            std::pow(frag_color.y, 2.2f),
-                            std::pow(frag_color.z, 2.2f)
-                        };
-
-                        // If I add metallic property, lerp from 0.04 to albedo/diffuse using the range[0,1] of metallic
-                        const Vec3 base_reflectivity {0.04};
-
-                        Vec3 Lo {};
-                        for (const auto& light : scene.lights)
-                        {
-                            // Also (light_pos - frag_pos) for point light
-                            const Vec3 L = light.direction_world;
-                            const Vec3 H = (V + L).normalized();
-
-                            // This a direction light, no attenuation will be applied now
-                            /*
-                             *  float distance = length(light_pos - frag_pos);
-                             *  float attenuation = 1.0 / (distance * distance);
-                             *  vec3 radiance = ligth_color * attenuation;
-                             */
-                            const Vec3 radiance {light.color.x*light.intensity, light.color.y*light.intensity, light.color.z*light.intensity};
-
-                            // Cook-Torrance BRDF
-                            const float NdotV = std::max(N * V, 0.0000001f);
-                            const float NdotL = std::max(N * L, 0.0000001f);
-                            const float HdotV = std::max(H * V, 0.0f);
-                            const float NdotH = std::max(N * H, 0.0f);
-
-                            const float D = distributionGGX(NdotH, roughness);
-                            const float G = geometrySmith(NdotV, NdotL, roughness);
-                            const Vec3 F = fresnelSchlick(HdotV, base_reflectivity);
-
-                            const Vec3 specular = (F * D * G) / (4.0f * NdotV * NdotL);
-
-                            const Vec3 kD = Vec3{1.0f} - F;
-
-                            // When using mettalic property
-                            // kD *= 1.0 - mettalic;
-
-                            // Lo += (kD * albedo / PI + specular) * radiance * NdotL;
-                            const Vec3 kD_x_albedo {kD.x * albedo.x, kD.y * albedo.y, kD.z * albedo.z};
-                            const Vec3 divided_pi_specular = (kD_x_albedo / transforms::PI_R + specular);
-                            const Vec3 mul_radiance {
-                                divided_pi_specular.x * radiance.x,
-                                divided_pi_specular.y * radiance.y,
-                                divided_pi_specular.z * radiance.z};
-
-                            Lo += mul_radiance * NdotL;
-                        }
-
-                        const Vec3 ambient {albedo * scene.skybox.ambient_intensity};
-                        Vec3 color = ambient + Lo;
-
-                        // HDR tonemapping
-                        const float lum = 0.2126f * color.x + 0.7152f * color.y + 0.0722f * color.z;
-                        color = color / (1.0f + lum);
-                        // Gamma
-                        constexpr float gamma_const {1.0f/2.2f};
-
-                        color = {
-                            std::pow(color.x, gamma_const),
-                            std::pow(color.y, gamma_const),
-                            std::pow(color.z, gamma_const)
-                        };
-
-                        final_color = {
-                            std::clamp(color.x, 0.0f, 1.0f),
-                            std::clamp(color.y, 0.0f, 1.0f),
-                            std::clamp(color.z, 0.0f, 1.0f),
-                            1.0f
-                        };
+                        viewport.put_pixel(x, y, final_color);
                     }
-
-                    viewport.put_pixel(static_cast<int>(x), static_cast<int>(y), final_color);
+                    else
+                    {
+                        viewport.put_pixel(x, y, frag_color);
+                    }
                 }
             }
 

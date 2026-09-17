@@ -73,6 +73,59 @@ void FullTriangle::calculate_tri_aabb()
     };
 }
 
+float FullTriangle::frag_depth(const float alpha, const float beta, const float gamma) const noexcept
+{
+    return depth_z[0] * alpha + depth_z[1] * beta + depth_z[2] * gamma;
+}
+
+Vec2 FullTriangle::frag_uv_coord(const float alpha, const float beta, const float gamma, const float depth) const noexcept
+{
+    return (projected_uv[0] * alpha +
+            projected_uv[1] * beta +
+            projected_uv[2] * gamma) * depth;
+}
+
+Vec3 FullTriangle::frag_coord(const float alpha, const float beta, const float gamma, const float depth) const noexcept
+{
+    return (vertices[0].point * alpha +
+            vertices[1].point * beta +
+            vertices[2].point * gamma) * depth;
+}
+
+Vec3 FullTriangle::frag_normal(
+    const float alpha, const float beta, const float gamma,
+    const Vec2 uv, const float depth) const noexcept
+{
+    const auto _normal = !smooth ? normal :
+                    ((vertices[0].normal * alpha +
+                    vertices[1].normal * beta +
+                    vertices[2].normal * gamma) * depth).normalized();
+
+    if (!material->map_normal) return _normal;
+
+    const auto normal_map = material->map_normal->texel_normal(uv);
+    const auto nt = _normal * tangent;
+    const auto t = (tangent - (_normal * nt)).normalized();
+    const auto b = t.cross(_normal);
+
+    return (t * normal_map.x) + (b * normal_map.y) + (_normal * normal_map.z);
+}
+
+Vec4 FullTriangle::frag_color(const Vec2 uv) const noexcept
+{
+    return material->map_diffuse ?
+        material->map_diffuse->texel_color(uv) : material->diffuse;
+}
+
+
+float FullTriangle::frag_roughness(const Vec2 uv) const noexcept
+{
+    // Transforming wavefront's specular into roughness, not ideal, but will be for now
+    return material->map_roughness ?
+            material->map_roughness->texel_intensity(uv)
+            : material->specular * 0.001f;
+}
+
 bool triangle::is_edge_top_or_left(const Vec3 &p1, const Vec3 &p2)
 {
     const float x = p2.x - p1.x;
