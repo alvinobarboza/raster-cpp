@@ -50,6 +50,7 @@ public:
     void calculate_tri_aabb();
 
     float frag_depth(float alpha, float beta, float gamma) const noexcept;
+    float frag_depth_ndc(float alpha, float beta, float gamma) const noexcept;
     Vec2 frag_uv_coord(float alpha, float beta, float gamma, float depth) const noexcept;
     Vec3 frag_coord(float alpha, float beta, float gamma, float depth) const noexcept;
     Vec3 frag_normal(float alpha, float beta, float gamma, Vec2 uv, float depth) const noexcept;

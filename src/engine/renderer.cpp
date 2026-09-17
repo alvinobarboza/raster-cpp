@@ -54,13 +54,13 @@ void RendererRaster::clip_triangle(const Plane& near, const Plane& far) noexcept
 bool RendererRaster::is_outside_screen(const Vec3 &ndc0, const Vec3 &ndc1, const Vec3 &ndc2) noexcept
 {
     //UP
-    if ((ndc0.y > 1.0f) && (ndc1.y > 1.0f) && (ndc2.y > 1.0f)) return true;
+    if (ndc0.y > 1.0f && ndc1.y > 1.0f && ndc2.y > 1.0f) return true;
     //DOWN
-    if ((ndc0.y < -1.0f) && (ndc1.y < -1.0f) && (ndc2.y < -1.0f)) return true;
+    if (ndc0.y < -1.0f && ndc1.y < -1.0f && ndc2.y < -1.0f) return true;
     //LEFT
-    if ((ndc0.x < -1.0f) && (ndc1.x < -1.0f) && (ndc2.x < -1.0f)) return true;
+    if (ndc0.x < -1.0f && ndc1.x < -1.0f && ndc2.x < -1.0f) return true;
     //RIGHT
-    if ((ndc0.x > 1.0f) && (ndc1.x > 1.0f) && (ndc2.x > 1.0f)) return true;
+    if (ndc0.x > 1.0f && ndc1.x > 1.0f && ndc2.x > 1.0f) return true;
 
     return false;
 }
@@ -76,7 +76,7 @@ void RendererRaster::render_scene(SceneRaster &scene)
     {
         // Since this is used only for the dot product between the light and triangle normal, I'm inverting here
         // Normal UP * actual light direction, will always produce negative value for a correct light setup.
-        light.direction_world = -((light.direction * scene.camera.transform.rotation_matrix).normalized());
+        light.direction_world = -(light.direction * scene.camera.transform.rotation_matrix).normalized();
     }
 
     for (const auto& model: scene.models)
@@ -161,7 +161,7 @@ void RendererRaster::render_scene(SceneRaster &scene)
                     {
                         //++count_skipped_tris;
                         continue;
-                    };
+                    }
 
                     tf.screen_points[0] = viewport.ndc_to_screen(ndc0);
                     tf.screen_points[1] = viewport.ndc_to_screen(ndc1);
@@ -176,22 +176,36 @@ void RendererRaster::render_scene(SceneRaster &scene)
     }
     //std::cout << "[SKIP] triangles: "<< count_skipped_tris <<"\n";
 
+    if (render_forward)
     {
-        Timer time{"render"};
+        Timer time{"render-forward"};
         for (const auto& tri: tris_buffer)
         {
             render_triangle(tri, scene);
         }
     }
-    if (render_wireframe) {
-        Timer time{"render-wire"};
+
+    if (render_deferred)
+    {
+        Timer time{"render-deferred"};
+        render_tiles(scene);
+    }
+
+    if (render_wireframe)
+    {
         draw_wireframe_from_tri_buffer();
     }
-    if (render_triangle_aabb) {
-        Timer time{"render-aabb"};
+
+    if (render_triangle_aabb)
+    {
         draw_triangle_aabb();
     }
-};
+
+    if (render_active_tiles)
+    {
+        draw_active_tiles();
+    }
+}
 
 /*
  * Brian Will -> ?v=5p0e7YNONr8
@@ -201,7 +215,7 @@ float distributionGGX(const float NdotH, const float roughness)
 {
     const float a = roughness * roughness;
     const float a2 = a * a;
-    float denom = (NdotH * NdotH * (a2 - 1.0f) + 1.0f) ;
+    float denom = NdotH * NdotH * (a2 - 1.0f) + 1.0f ;
     denom = transforms::PI_R * denom * denom;
     return a2 / std::ranges::max(denom, 0.0000001f); // Prevent divide by zero
 }
@@ -209,7 +223,7 @@ float distributionGGX(const float NdotH, const float roughness)
 float geometrySmith(const float NdotV, const float NdotL, const float roughness)
 {
     const float r = roughness + 1.0f;
-    const float k = (r * r) / 8.0f;
+    const float k = r * r / 8.0f;
     const float ggx1 = NdotV / (NdotV * (1.0f - k) + k);
     const float ggx2 = NdotL / (NdotL * (1.0f - k) + k);
     return ggx1 * ggx2;
@@ -260,7 +274,7 @@ Vec4 calculate_light(
         const float G = geometrySmith(NdotV, NdotL, frag_rough);
         const Vec3 F = fresnelSchlick(HdotV, base_reflectivity);
 
-        const Vec3 specular = (F * D * G) / (4.0f * NdotV * NdotL);
+        const Vec3 specular = F * D * G / (4.0f * NdotV * NdotL);
 
         const Vec3 kD = Vec3{1.0f} - F;
 
@@ -269,7 +283,7 @@ Vec4 calculate_light(
 
         // Lo += (kD * albedo / PI + specular) * radiance * NdotL;
         const Vec3 kD_x_albedo {kD.x * albedo.x, kD.y * albedo.y, kD.z * albedo.z};
-        const Vec3 divided_pi_specular = (kD_x_albedo / transforms::PI_R + specular);
+        const Vec3 divided_pi_specular = kD_x_albedo / transforms::PI_R + specular;
         const Vec3 mul_radiance {
             divided_pi_specular.x * radiance.x,
             divided_pi_specular.y * radiance.y,
@@ -301,6 +315,144 @@ Vec4 calculate_light(
     };
 }
 
+void RendererRaster::render_tiles(const SceneRaster &scene) noexcept
+{
+    for (auto& tile : viewport.tiles)
+    {
+        tile.bin_triangles(tris_buffer);
+        if (tile.is_active)
+        {
+            std::array<Gbuffer, Viewport::TILE_SIZE * Viewport::TILE_SIZE> g_buffer{};
+
+            for (const auto i : tile.triangles_id)
+            {
+                const auto& tri = tris_buffer[i];
+
+                const auto delta_w0_col = tri.screen_points[1].y - tri.screen_points[2].y;
+                const auto delta_w1_col = tri.screen_points[2].y - tri.screen_points[0].y;
+                const auto delta_w2_col = tri.screen_points[0].y - tri.screen_points[1].y;
+
+                const auto delta_w0_row = tri.screen_points[2].x - tri.screen_points[1].x;
+                const auto delta_w1_row = tri.screen_points[0].x - tri.screen_points[2].x;
+                const auto delta_w2_row = tri.screen_points[1].x - tri.screen_points[0].x;
+
+                float bias_0 = 0.0f, bias_1 = 0.0f, bias_2 = 0.0f;
+                if (triangle::is_edge_top_or_left(tri.screen_points[1], tri.screen_points[2]))
+                {
+                    bias_0 = -0.0001;
+                }
+                if (triangle::is_edge_top_or_left(tri.screen_points[2], tri.screen_points[0]))
+                {
+                    bias_1 = -0.0001;
+                }
+                if (triangle::is_edge_top_or_left(tri.screen_points[0], tri.screen_points[1]))
+                {
+                    bias_2 = -0.0001;
+                }
+
+                const auto area = 1.0f / triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], tri.screen_points[2]);
+                const Vec3 p = {tile.aabb.min.x + 0.5f, tile.aabb.min.y + 0.5f, 0.0f};
+
+                auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p) + bias_0;
+                auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p) + bias_1;
+                auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p) + bias_2;
+
+                for (int y = 0; y < Viewport::TILE_SIZE; y++)
+                {
+                    auto w0 = w0_row;
+                    auto w1 = w1_row;
+                    auto w2 = w2_row;
+
+                    for (int x = 0; x < Viewport::TILE_SIZE; x++)
+                    {
+                        if (w0 >= 0.0f && w1 >= 0.0f && w2 >= 0.0f)
+                        {
+                            const auto alpha = w0 * area;
+                            const auto beta = w1 * area;
+                            const auto gamma = w2 * area;
+
+                            const int index = x + y * Viewport::TILE_SIZE;
+                            if (const float z_depth = tri.frag_depth_ndc(alpha, beta, gamma);
+                                g_buffer[index].depth > z_depth && x < viewport.width && y < viewport.width)
+                            {
+                                g_buffer[index].depth = z_depth;
+
+                                const auto frag_depth = 1 / tri.frag_depth(alpha, beta, gamma);
+                                const auto frag_uv = tri.frag_uv_coord(alpha, beta, gamma, frag_depth);
+                                const auto frag_coord = tri.frag_coord(alpha, beta, gamma, frag_depth);
+                                const auto frag_normal = tri.frag_normal(alpha, beta, gamma, frag_uv,frag_depth);
+                                const auto frag_color = tri.frag_color(frag_uv);
+                                const float frag_rough = tri.frag_roughness(frag_uv);
+
+                                g_buffer[index].frag_coord = frag_coord;
+                                g_buffer[index].albedo = frag_color;
+                                g_buffer[index].normal = frag_normal;
+                                g_buffer[index].roughness = frag_rough;
+                            }
+                        }
+                        w0 += delta_w0_col;
+                        w1 += delta_w1_col;
+                        w2 += delta_w2_col;
+                    }
+                    w0_row += delta_w0_row;
+                    w1_row += delta_w1_row;
+                    w2_row += delta_w2_row;
+                }
+            }
+
+            for (int y = 0; y < Viewport::TILE_SIZE; y++)
+            {
+                for (int x = 0; x < Viewport::TILE_SIZE; x++)
+                {
+                    const int index = x + y * Viewport::TILE_SIZE;
+                    const auto& gb = g_buffer[index];
+                    if (gb.depth > 2.0f) continue;
+
+                    const int offset_x = x + static_cast<int>(tile.aabb.min.x);
+                    const int offset_y = y + static_cast<int>(tile.aabb.min.y);
+
+                    if (offset_x >= viewport.width || offset_y >= viewport.height) continue;
+
+                    if (render_normal)
+                    {
+                        const Vec4 final_color{
+                            gb.normal.x * .5f + .5f,
+                            gb.normal.y * .5f + .5f,
+                            -gb.normal.z * .5f + .5f,
+                            1.0f
+                        };
+
+                        viewport.put_pixel(offset_x, offset_y, final_color);
+                        continue;
+                    }
+                    if (render_depth)
+                    {
+                        const Vec4 final_color{
+                            1-gb.depth,
+                            1-gb.depth,
+                            1-gb.depth,
+                            1.0f
+                        };
+                        viewport.put_pixel(offset_x, offset_y, final_color);
+                        continue;
+                    }
+                    if (!render_light)
+                    {
+                        viewport.put_pixel(offset_x, offset_y, gb.albedo);
+                        continue;
+                    }
+
+                    const auto view_normal = (-gb.frag_coord).normalized();
+                    const auto final_color = calculate_light(
+                        scene.lights, gb.roughness, gb.albedo,
+                        gb.normal, view_normal, scene.skybox.ambient_intensity);
+
+                    viewport.put_pixel(offset_x, offset_y, final_color);
+                }
+            }
+        }
+    }
+}
 
 void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster &scene) noexcept
 {
@@ -489,6 +641,17 @@ void RendererRaster::draw_triangle_aabb() noexcept
     }
 }
 
+void RendererRaster::draw_active_tiles() noexcept
+{
+    for (const auto& tile : viewport.tiles)
+    {
+        if (tile.is_active)
+        {
+            draw_aabb(tile.aabb);
+        }
+    }
+}
+
 void RendererRaster::toggle_render_depth()
 {
     render_depth = !render_depth;
@@ -514,6 +677,23 @@ void RendererRaster::toggle_render_triangle_aabb()
     render_triangle_aabb = !render_triangle_aabb;
 }
 
+void RendererRaster::toggle_render_active_tiles()
+{
+    render_active_tiles = !render_active_tiles;
+}
+
+void RendererRaster::toggle_render_forward()
+{
+    render_forward = !render_forward;
+    render_deferred = !render_forward;
+}
+
+void RendererRaster::toggle_render_deferred()
+{
+    render_deferred = !render_deferred;
+    render_forward = !render_deferred;
+}
+
 void RendererRaster::handle_input()
 {
     if (IsKeyPressed(KEY_L)) toggle_render_light();
@@ -521,4 +701,7 @@ void RendererRaster::handle_input()
     if (IsKeyPressed(KEY_Z)) toggle_render_depth();
     if (IsKeyPressed(KEY_N)) toggle_render_normal();
     if (IsKeyPressed(KEY_T)) toggle_render_triangle_aabb();
+    if (IsKeyPressed(KEY_C)) toggle_render_active_tiles();
+    if (IsKeyPressed(KEY_F)) toggle_render_forward();
+    if (IsKeyPressed(KEY_R)) toggle_render_deferred();
 }

@@ -73,6 +73,11 @@ void FullTriangle::calculate_tri_aabb()
     };
 }
 
+float FullTriangle::frag_depth_ndc(const float alpha, const float beta, const float gamma) const noexcept
+{
+    return screen_points[0].z * alpha + screen_points[1].z * beta + screen_points[2].z * gamma;
+}
+
 float FullTriangle::frag_depth(const float alpha, const float beta, const float gamma) const noexcept
 {
     return depth_z[0] * alpha + depth_z[1] * beta + depth_z[2] * gamma;

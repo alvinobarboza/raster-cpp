@@ -60,21 +60,6 @@ void Viewport::reset_tiles() noexcept
     });
 }
 
-void Viewport::bin_triangles(const std::vector<FullTriangle> &triangles) noexcept
-{
-    for (const auto [index, triangle] : std::views::enumerate(triangles))
-    {
-        for (auto&[aabb, triangles_id, is_active] : tiles)
-        {
-            if (triangle.aabb.collides(aabb))
-            {
-                is_active = true;
-                triangles_id.push_back(index);
-            }
-        }
-    }
-}
-
 Color* Viewport::frame_buffer_data() noexcept
 {
     return frame_buffer.data();
