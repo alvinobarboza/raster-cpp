@@ -33,24 +33,21 @@ void Viewport::update_tiles() noexcept
 
     AABB2D aabb_temp;
 
-    int offset_x = 0;
-    int offset_y = 0;
-
     for(int ty = 0; ty < tile_y; ++ty)
     {
         for(int tx = 0; tx < tile_x; ++tx)
         {
+            const float offset_x = static_cast<float>(tx) * TILE_SIZE;
+            const float offset_y = static_cast<float>(ty) * TILE_SIZE;
+
             aabb_temp.min.x = offset_x;
             aabb_temp.min.y = offset_y;
             aabb_temp.max.x = offset_x+TILE_SIZE-1;
             aabb_temp.max.y = offset_y+TILE_SIZE-1;
 
             tiles.emplace_back(aabb_temp);
-
-            offset_x += TILE_SIZE;
+            std::cout << aabb_temp << '\n';
         }
-        offset_y += TILE_SIZE;
-        offset_x = 0;
     }
 }
 
