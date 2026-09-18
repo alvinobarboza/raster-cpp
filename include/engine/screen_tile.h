@@ -4,11 +4,18 @@
 #include "colliders/aabb.h"
 #include "model/triangle.h"
 
-class ScreenTile {
-    public:
-    AABB2D aabb{};
-    std::vector<int> triangles_id{};
-    bool is_active{false};
+//Compressed Sparse Row (CSR)
+struct Tile {
+    int counter{0};
+    int offset{0};
+    int cursor_offset{0};
+};
 
-    void bin_triangles(const std::vector<FullTriangle> &triangles) noexcept;
+struct Grid {
+    int width {};
+    int height {};
+    int total_tiles {};
+    int last_tri_count{0};
+    std::vector<Tile> tiles {};
+    std::vector<int> triangles_id {};
 };

@@ -17,7 +17,8 @@ class Viewport {
     float half_height {};
 public:
     static constexpr int TILE_SIZE = 32;
-    std::vector<ScreenTile> tiles{};
+    Grid grid {};
+
     int width {};
     int height {};
 
@@ -28,6 +29,7 @@ public:
     void clear_frame_buffer() noexcept;
     void update_tiles() noexcept;
     void reset_tiles() noexcept;
+    void bin_triangles(const std::vector<FullTriangle>& triangles) noexcept;
     void update_frame_buffer_size(int w, int h) noexcept;
     [[nodiscard]] Vec3 ndc_to_screen(const Vec3 &point) const;
     [[nodiscard]] float aspect_ratio() const;

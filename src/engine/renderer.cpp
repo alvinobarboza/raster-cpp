@@ -188,6 +188,7 @@ void RendererRaster::render_scene(SceneRaster &scene)
     if (render_deferred)
     {
         Timer time{"render-deferred"};
+        viewport.bin_triangles(tris_buffer);
         render_tiles(scene);
     }
 
@@ -278,8 +279,8 @@ Vec4 calculate_light(
 
         const Vec3 kD = Vec3{1.0f} - F;
 
-        // When using mettalic property
-        // kD *= 1.0 - mettalic;
+        // When using metallic property
+        // kD *= 1.0 - metallic;
 
         // Lo += (kD * albedo / PI + specular) * radiance * NdotL;
         const Vec3 kD_x_albedo {kD.x * albedo.x, kD.y * albedo.y, kD.z * albedo.z};
@@ -295,7 +296,7 @@ Vec4 calculate_light(
     const Vec3 ambient {albedo * ambient_intensity};
     Vec3 color = ambient + Lo;
 
-    // HDR tonemapping
+    // HDR tone mapping
     const float lum = 0.2126f * color.x + 0.7152f * color.y + 0.0722f * color.z;
     color = color / (1.0f + lum);
     // Gamma
@@ -317,140 +318,151 @@ Vec4 calculate_light(
 
 void RendererRaster::render_tiles(const SceneRaster &scene) noexcept
 {
-    for (auto& tile : viewport.tiles)
+    int offset_x { 0 };
+    int offset_y { 0 };
+    for (int g_y = 0; g_y < viewport.grid.height; ++g_y)
     {
-        tile.bin_triangles(tris_buffer);
-        if (tile.is_active)
+        for (int g_x = 0; g_x < viewport.grid.width; ++g_x)
         {
-            std::array<Gbuffer, Viewport::TILE_SIZE * Viewport::TILE_SIZE> g_buffer{};
+            const auto tile_i = g_y * viewport.grid.width + g_x;
 
-            for (const auto i : tile.triangles_id)
+            if (const auto& tile = viewport.grid.tiles[tile_i]; tile.counter > 0)
             {
-                const auto& tri = tris_buffer[i];
+                std::array<Gbuffer, Viewport::TILE_SIZE * Viewport::TILE_SIZE> g_buffer{};
 
-                const auto delta_w0_col = tri.screen_points[1].y - tri.screen_points[2].y;
-                const auto delta_w1_col = tri.screen_points[2].y - tri.screen_points[0].y;
-                const auto delta_w2_col = tri.screen_points[0].y - tri.screen_points[1].y;
-
-                const auto delta_w0_row = tri.screen_points[2].x - tri.screen_points[1].x;
-                const auto delta_w1_row = tri.screen_points[0].x - tri.screen_points[2].x;
-                const auto delta_w2_row = tri.screen_points[1].x - tri.screen_points[0].x;
-
-                float bias_0 = 0.0f, bias_1 = 0.0f, bias_2 = 0.0f;
-                if (triangle::is_edge_top_or_left(tri.screen_points[1], tri.screen_points[2]))
+                for (int i = tile.offset; i < tile.offset + tile.counter; ++i)
                 {
-                    bias_0 = -0.0001;
-                }
-                if (triangle::is_edge_top_or_left(tri.screen_points[2], tri.screen_points[0]))
-                {
-                    bias_1 = -0.0001;
-                }
-                if (triangle::is_edge_top_or_left(tri.screen_points[0], tri.screen_points[1]))
-                {
-                    bias_2 = -0.0001;
+                    const int triangle_id = viewport.grid.triangles_id[i];
+                    const auto& tri = tris_buffer[triangle_id];
+                    const auto delta_w0_col = tri.screen_points[1].y - tri.screen_points[2].y;
+                    const auto delta_w1_col = tri.screen_points[2].y - tri.screen_points[0].y;
+                    const auto delta_w2_col = tri.screen_points[0].y - tri.screen_points[1].y;
+
+                    const auto delta_w0_row = tri.screen_points[2].x - tri.screen_points[1].x;
+                    const auto delta_w1_row = tri.screen_points[0].x - tri.screen_points[2].x;
+                    const auto delta_w2_row = tri.screen_points[1].x - tri.screen_points[0].x;
+
+                    float bias_0 = 0.0f, bias_1 = 0.0f, bias_2 = 0.0f;
+                    if (triangle::is_edge_top_or_left(tri.screen_points[1], tri.screen_points[2]))
+                    {
+                        bias_0 = -0.0001;
+                    }
+                    if (triangle::is_edge_top_or_left(tri.screen_points[2], tri.screen_points[0]))
+                    {
+                        bias_1 = -0.0001;
+                    }
+                    if (triangle::is_edge_top_or_left(tri.screen_points[0], tri.screen_points[1]))
+                    {
+                        bias_2 = -0.0001;
+                    }
+
+                    const auto area = 1.0f / triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], tri.screen_points[2]);
+                    const Vec3 p = {static_cast<float>(offset_x) + 0.5f, static_cast<float>(offset_y) + 0.5f, 0.0f};
+
+                    auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p) + bias_0;
+                    auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p) + bias_1;
+                    auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p) + bias_2;
+
+                    for (int y = 0; y < Viewport::TILE_SIZE; y++)
+                    {
+                        auto w0 = w0_row;
+                        auto w1 = w1_row;
+                        auto w2 = w2_row;
+
+                        for (int x = 0; x < Viewport::TILE_SIZE; x++)
+                        {
+                            if (w0 >= 0.0f && w1 >= 0.0f && w2 >= 0.0f)
+                            {
+                                const auto alpha = w0 * area;
+                                const auto beta = w1 * area;
+                                const auto gamma = w2 * area;
+
+                                const int index = x + y * Viewport::TILE_SIZE;
+                                if (const float z_depth = tri.frag_depth_ndc(alpha, beta, gamma);
+                                    g_buffer[index].depth > z_depth && x < viewport.width && y < viewport.width)
+                                {
+                                    g_buffer[index].depth = z_depth;
+
+                                    const auto frag_depth = 1 / tri.frag_depth(alpha, beta, gamma);
+                                    const auto frag_uv = tri.frag_uv_coord(alpha, beta, gamma, frag_depth);
+                                    const auto frag_coord = tri.frag_coord(alpha, beta, gamma, frag_depth);
+                                    const auto frag_normal = tri.frag_normal(alpha, beta, gamma, frag_uv,frag_depth);
+                                    const auto frag_color = tri.frag_color(frag_uv);
+                                    const float frag_rough = tri.frag_roughness(frag_uv);
+
+                                    g_buffer[index].frag_coord = frag_coord;
+                                    g_buffer[index].albedo = frag_color;
+                                    g_buffer[index].normal = frag_normal;
+                                    g_buffer[index].roughness = frag_rough;
+                                }
+                            }
+                            w0 += delta_w0_col;
+                            w1 += delta_w1_col;
+                            w2 += delta_w2_col;
+                        }
+                        w0_row += delta_w0_row;
+                        w1_row += delta_w1_row;
+                        w2_row += delta_w2_row;
+                    }
                 }
 
-                const auto area = 1.0f / triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], tri.screen_points[2]);
-                const Vec3 p = {tile.aabb.min.x + 0.5f, tile.aabb.min.y + 0.5f, 0.0f};
-
-                auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p) + bias_0;
-                auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p) + bias_1;
-                auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p) + bias_2;
 
                 for (int y = 0; y < Viewport::TILE_SIZE; y++)
                 {
-                    auto w0 = w0_row;
-                    auto w1 = w1_row;
-                    auto w2 = w2_row;
-
                     for (int x = 0; x < Viewport::TILE_SIZE; x++)
                     {
-                        if (w0 >= 0.0f && w1 >= 0.0f && w2 >= 0.0f)
+                        const int index = x + y * Viewport::TILE_SIZE;
+                        const auto& gb = g_buffer[index];
+                        if (gb.depth > 2.0f) continue;
+
+                        const auto px = offset_x + x;
+                        const auto py = offset_y + y;
+
+                        if (px >= viewport.width || py >= viewport.height) continue;
+
+                        if (render_normal)
                         {
-                            const auto alpha = w0 * area;
-                            const auto beta = w1 * area;
-                            const auto gamma = w2 * area;
+                            const Vec4 final_color{
+                                gb.normal.x * .5f + .5f,
+                                gb.normal.y * .5f + .5f,
+                                -gb.normal.z * .5f + .5f,
+                                1.0f
+                            };
 
-                            const int index = x + y * Viewport::TILE_SIZE;
-                            if (const float z_depth = tri.frag_depth_ndc(alpha, beta, gamma);
-                                g_buffer[index].depth > z_depth && x < viewport.width && y < viewport.width)
-                            {
-                                g_buffer[index].depth = z_depth;
-
-                                const auto frag_depth = 1 / tri.frag_depth(alpha, beta, gamma);
-                                const auto frag_uv = tri.frag_uv_coord(alpha, beta, gamma, frag_depth);
-                                const auto frag_coord = tri.frag_coord(alpha, beta, gamma, frag_depth);
-                                const auto frag_normal = tri.frag_normal(alpha, beta, gamma, frag_uv,frag_depth);
-                                const auto frag_color = tri.frag_color(frag_uv);
-                                const float frag_rough = tri.frag_roughness(frag_uv);
-
-                                g_buffer[index].frag_coord = frag_coord;
-                                g_buffer[index].albedo = frag_color;
-                                g_buffer[index].normal = frag_normal;
-                                g_buffer[index].roughness = frag_rough;
-                            }
+                            viewport.put_pixel(px, py, final_color);
+                            continue;
                         }
-                        w0 += delta_w0_col;
-                        w1 += delta_w1_col;
-                        w2 += delta_w2_col;
+                        if (render_depth)
+                        {
+                            const Vec4 final_color{
+                                1-gb.depth,
+                                1-gb.depth,
+                                1-gb.depth,
+                                1.0f
+                            };
+                            viewport.put_pixel(px, py, final_color);
+                            continue;
+                        }
+                        if (!render_light)
+                        {
+                            viewport.put_pixel(px, py, gb.albedo);
+                            continue;
+                        }
+
+                        const auto view_normal = (-gb.frag_coord).normalized();
+                        const auto final_color = calculate_light(
+                            scene.lights, gb.roughness, gb.albedo,
+                            gb.normal, view_normal, scene.skybox.ambient_intensity);
+
+                        viewport.put_pixel(px, py, final_color);
                     }
-                    w0_row += delta_w0_row;
-                    w1_row += delta_w1_row;
-                    w2_row += delta_w2_row;
                 }
             }
 
-            for (int y = 0; y < Viewport::TILE_SIZE; y++)
-            {
-                for (int x = 0; x < Viewport::TILE_SIZE; x++)
-                {
-                    const int index = x + y * Viewport::TILE_SIZE;
-                    const auto& gb = g_buffer[index];
-                    if (gb.depth > 2.0f) continue;
-
-                    const int offset_x = x + static_cast<int>(tile.aabb.min.x);
-                    const int offset_y = y + static_cast<int>(tile.aabb.min.y);
-
-                    if (offset_x >= viewport.width || offset_y >= viewport.height) continue;
-
-                    if (render_normal)
-                    {
-                        const Vec4 final_color{
-                            gb.normal.x * .5f + .5f,
-                            gb.normal.y * .5f + .5f,
-                            -gb.normal.z * .5f + .5f,
-                            1.0f
-                        };
-
-                        viewport.put_pixel(offset_x, offset_y, final_color);
-                        continue;
-                    }
-                    if (render_depth)
-                    {
-                        const Vec4 final_color{
-                            1-gb.depth,
-                            1-gb.depth,
-                            1-gb.depth,
-                            1.0f
-                        };
-                        viewport.put_pixel(offset_x, offset_y, final_color);
-                        continue;
-                    }
-                    if (!render_light)
-                    {
-                        viewport.put_pixel(offset_x, offset_y, gb.albedo);
-                        continue;
-                    }
-
-                    const auto view_normal = (-gb.frag_coord).normalized();
-                    const auto final_color = calculate_light(
-                        scene.lights, gb.roughness, gb.albedo,
-                        gb.normal, view_normal, scene.skybox.ambient_intensity);
-
-                    viewport.put_pixel(offset_x, offset_y, final_color);
-                }
-            }
+            offset_x += Viewport::TILE_SIZE;
         }
+        offset_x = 0;
+        offset_y += Viewport::TILE_SIZE;
     }
 }
 
@@ -643,12 +655,29 @@ void RendererRaster::draw_triangle_aabb() noexcept
 
 void RendererRaster::draw_active_tiles() noexcept
 {
-    for (const auto& tile : viewport.tiles)
+    int offset_x { 0 };
+    int offset_y { 0 };
+    AABB2D temp_aabb {};
+    for (int g_y = 0; g_y < viewport.grid.height; ++g_y)
     {
-        if (tile.is_active)
+        for (int g_x = 0; g_x < viewport.grid.width; ++g_x)
         {
-            draw_aabb(tile.aabb);
+            const auto tile_i = g_y * viewport.grid.width + g_x;
+
+            if (const auto& tile = viewport.grid.tiles[tile_i]; tile.counter > 0)
+            {
+                temp_aabb.min.x = static_cast<float>(offset_x);
+                temp_aabb.min.y = static_cast<float>(offset_y);
+                temp_aabb.max.x = static_cast<float>(offset_x) + Viewport::TILE_SIZE;
+                temp_aabb.max.y = static_cast<float>(offset_y) + Viewport::TILE_SIZE;
+
+                draw_aabb(temp_aabb);
+            }
+
+            offset_x += Viewport::TILE_SIZE;
         }
+        offset_x = 0;
+        offset_y += Viewport::TILE_SIZE;
     }
 }
 

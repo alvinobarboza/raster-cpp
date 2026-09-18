@@ -22,42 +22,83 @@ void Viewport::update_tiles() noexcept
     const int tile_y = (height + TILE_SIZE - 1) / TILE_SIZE ;
     const int total_tiles = tile_x * tile_y;
 
-    tiles.clear();
-    tiles.reserve(total_tiles);
-
-    std::cout << "viewport_res: " << width << 'x' << height << '\n';
-    std::cout << "tile_size: " << TILE_SIZE << '\n';
-    std::cout << "tile_x: " << tile_x << '\n';
-    std::cout << "tile_y: " << tile_y << '\n';
-    std::cout << "total_tiles: " << total_tiles << '\n';
-
-    AABB2D aabb_temp;
-
-    for(int ty = 0; ty < tile_y; ++ty)
-    {
-        for(int tx = 0; tx < tile_x; ++tx)
-        {
-            const float offset_x = static_cast<float>(tx) * TILE_SIZE;
-            const float offset_y = static_cast<float>(ty) * TILE_SIZE;
-
-            aabb_temp.min.x = offset_x;
-            aabb_temp.min.y = offset_y;
-            aabb_temp.max.x = offset_x+TILE_SIZE-1;
-            aabb_temp.max.y = offset_y+TILE_SIZE-1;
-
-            tiles.emplace_back(aabb_temp);
-            //std::cout << aabb_temp << '\n';
-        }
-    }
+    grid.width = tile_x;
+    grid.height = tile_y;
+    grid.total_tiles = total_tiles;
+    grid.tiles.clear();
+    grid.tiles.resize(total_tiles);
 }
 
 void Viewport::reset_tiles() noexcept
 {
-    std::ranges::for_each(tiles, [](ScreenTile& tile)
+    std::ranges::for_each(grid.tiles, [](Tile& tile)
     {
-        tile.is_active = false;
-        tile.triangles_id.clear();
+        tile.counter = 0;
+        tile.offset = 0;
+        tile.cursor_offset = 0;
     });
+}
+
+void Viewport::bin_triangles(const std::vector<FullTriangle> &triangles) noexcept
+{
+    for (const FullTriangle &triangle : triangles)
+    {
+        const auto tri_min_y = std::max(static_cast<int>(triangle.aabb.min.y), 0);
+        const auto tri_max_y = std::min(static_cast<int>(triangle.aabb.max.y), height - 1);
+        const auto tri_min_x = std::max(static_cast<int>(triangle.aabb.min.x), 0);
+        const auto tri_max_x = std::min(static_cast<int>(triangle.aabb.max.x), width - 1);
+
+        const int grid_min_x {tri_min_x / TILE_SIZE}, grid_max_x {tri_max_x / TILE_SIZE};
+        const int grid_min_y {tri_min_y / TILE_SIZE}, grid_max_y {tri_max_y / TILE_SIZE};
+
+        for (int y = grid_min_y; y <= grid_max_y; ++y)
+        {
+            for (int x = grid_min_x; x <= grid_max_x; ++x)
+            {
+                // TODO: discard tiles that are outside of the triangle completely
+                // by calculating edge_cross: All fours w0 < 0.0f or all fours w1 < 0.0f or w2 < 0.0f
+                // by basically check the 3 edges
+                const auto index = x + grid.width * y;
+                grid.tiles[index].counter++;
+            }
+        }
+    }
+
+    int last_offset {0};
+    for (auto& tile : grid.tiles)
+    {
+        tile.offset = last_offset;
+        tile.cursor_offset = last_offset;
+        last_offset = tile.counter + tile.offset;
+    }
+
+    // Could be grid.triangles_id.size, but I don't want to be casting here
+    if (grid.last_tri_count < last_offset)
+    {
+        grid.triangles_id.resize(last_offset);
+        grid.last_tri_count = last_offset;
+    }
+
+    for (const auto [id, triangle] : std::views::enumerate(triangles))
+    {
+        const auto tri_min_y = std::max(static_cast<int>(triangle.aabb.min.y), 0);
+        const auto tri_max_y = std::min(static_cast<int>(triangle.aabb.max.y), height - 1);
+        const auto tri_min_x = std::max(static_cast<int>(triangle.aabb.min.x), 0);
+        const auto tri_max_x = std::min(static_cast<int>(triangle.aabb.max.x), width - 1);
+
+        const int grid_min_x {tri_min_x / TILE_SIZE}, grid_max_x {tri_max_x / TILE_SIZE};
+        const int grid_min_y {tri_min_y / TILE_SIZE}, grid_max_y {tri_max_y / TILE_SIZE};
+
+        for (int y = grid_min_y; y <= grid_max_y; ++y)
+        {
+            for (int x = grid_min_x; x <= grid_max_x; ++x)
+            {
+                const auto index = x + grid.width * y;
+                grid.triangles_id[grid.tiles[index].cursor_offset] = static_cast<int>(id);
+                grid.tiles[index].cursor_offset++;
+            }
+        }
+    }
 }
 
 Color* Viewport::frame_buffer_data() noexcept
