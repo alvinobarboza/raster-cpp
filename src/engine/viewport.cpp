@@ -2,6 +2,8 @@
 #include <ranges>
 
 #include "engine/viewport.h"
+
+#include "engine/timer.h"
 #include "material/color_convertion.h"
 
 Viewport::Viewport(
@@ -41,26 +43,94 @@ void Viewport::reset_tiles() noexcept
 
 void Viewport::bin_triangles(const std::vector<FullTriangle> &triangles) noexcept
 {
-    for (const FullTriangle &triangle : triangles)
+    for (const FullTriangle &tri : triangles)
     {
-        const auto tri_min_y = std::max(static_cast<int>(triangle.aabb.min.y), 0);
-        const auto tri_max_y = std::min(static_cast<int>(triangle.aabb.max.y), height - 1);
-        const auto tri_min_x = std::max(static_cast<int>(triangle.aabb.min.x), 0);
-        const auto tri_max_x = std::min(static_cast<int>(triangle.aabb.max.x), width - 1);
+        const auto tri_min_y = std::max(static_cast<int>(tri.aabb.min.y), 0);
+        const auto tri_max_y = std::min(static_cast<int>(tri.aabb.max.y), height - 1);
+        const auto tri_min_x = std::max(static_cast<int>(tri.aabb.min.x), 0);
+        const auto tri_max_x = std::min(static_cast<int>(tri.aabb.max.x), width - 1);
 
         const int grid_min_x {tri_min_x / TILE_SIZE}, grid_max_x {tri_max_x / TILE_SIZE};
         const int grid_min_y {tri_min_y / TILE_SIZE}, grid_max_y {tri_max_y / TILE_SIZE};
 
+        if (grid_min_x == grid_max_x && grid_min_y == grid_max_y)
+        {
+            const auto index = grid_min_x + grid.width * grid_max_y;
+            grid.tiles[index].counter++;
+            continue;
+        }
+
+        const auto delta_w0_col = (tri.screen_points[1].y - tri.screen_points[2].y) * TILE_SIZE;
+        const auto delta_w1_col = (tri.screen_points[2].y - tri.screen_points[0].y) * TILE_SIZE;
+        const auto delta_w2_col = (tri.screen_points[0].y - tri.screen_points[1].y) * TILE_SIZE;
+
+        const auto delta_w0_row = (tri.screen_points[2].x - tri.screen_points[1].x) * TILE_SIZE;
+        const auto delta_w1_row = (tri.screen_points[0].x - tri.screen_points[2].x) * TILE_SIZE;
+        const auto delta_w2_row = (tri.screen_points[1].x - tri.screen_points[0].x) * TILE_SIZE;
+
+        const auto min_x = static_cast<float>(grid_min_x * TILE_SIZE);
+        const auto min_y = static_cast<float>(grid_min_y * TILE_SIZE);
+
+        const Vec3 top_left{min_x, min_y, 0.0f};
+        auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], top_left);
+        auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], top_left);
+        auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], top_left);
+
         for (int y = grid_min_y; y <= grid_max_y; ++y)
         {
+            auto w0 = w0_row;
+            auto w1 = w1_row;
+            auto w2 = w2_row;
             for (int x = grid_min_x; x <= grid_max_x; ++x)
             {
-                // TODO: discard tiles that are outside of the triangle completely
-                // by calculating edge_cross: All fours w0 < 0.0f or all fours w1 < 0.0f or w2 < 0.0f
-                // by basically check the 3 edges
+                const auto tl_w0 = w0;
+                const auto tl_w1 = w1;
+                const auto tl_w2 = w2;
+
+                const auto tr_w0 = tl_w0 + delta_w0_col;
+                const auto tr_w1 = tl_w1 + delta_w1_col;
+                const auto tr_w2 = tl_w2 + delta_w2_col;
+
+                const auto bl_w0 = tl_w0 + delta_w0_row;
+                const auto bl_w1 = tl_w1 + delta_w1_row;
+                const auto bl_w2 = tl_w2 + delta_w2_row;
+
+                const auto br_w0 = bl_w0 + delta_w0_col;
+                const auto br_w1 = bl_w1 + delta_w1_col;
+                const auto br_w2 = bl_w2 + delta_w2_col;
+
+                if (tl_w0 < 0.0f && tr_w0 < 0.0f && bl_w0 < 0.0f && br_w0 < 0.0f)
+                {
+                    w0 += delta_w0_col;
+                    w1 += delta_w1_col;
+                    w2 += delta_w2_col;
+                    continue;
+                };
+                if (tl_w1 < 0.0f && tr_w1 < 0.0f && bl_w1 < 0.0f && br_w1 < 0.0f)
+                {
+                    w0 += delta_w0_col;
+                    w1 += delta_w1_col;
+                    w2 += delta_w2_col;
+                    continue;
+                };
+                if (tl_w2 < 0.0f && tr_w2 < 0.0f && bl_w2 < 0.0f && br_w2 < 0.0f)
+                {
+                    w0 += delta_w0_col;
+                    w1 += delta_w1_col;
+                    w2 += delta_w2_col;
+                    continue;
+                };
+
                 const auto index = x + grid.width * y;
                 grid.tiles[index].counter++;
+
+                w0 += delta_w0_col;
+                w1 += delta_w1_col;
+                w2 += delta_w2_col;
             }
+            w0_row += delta_w0_row;
+            w1_row += delta_w1_row;
+            w2_row += delta_w2_row;
         }
     }
 
@@ -79,24 +149,96 @@ void Viewport::bin_triangles(const std::vector<FullTriangle> &triangles) noexcep
         grid.last_tri_count = last_offset;
     }
 
-    for (const auto [id, triangle] : std::views::enumerate(triangles))
+    for (const auto [id, tri] : std::views::enumerate(triangles))
     {
-        const auto tri_min_y = std::max(static_cast<int>(triangle.aabb.min.y), 0);
-        const auto tri_max_y = std::min(static_cast<int>(triangle.aabb.max.y), height - 1);
-        const auto tri_min_x = std::max(static_cast<int>(triangle.aabb.min.x), 0);
-        const auto tri_max_x = std::min(static_cast<int>(triangle.aabb.max.x), width - 1);
+        const auto tri_min_y = std::max(static_cast<int>(tri.aabb.min.y), 0);
+        const auto tri_max_y = std::min(static_cast<int>(tri.aabb.max.y), height - 1);
+        const auto tri_min_x = std::max(static_cast<int>(tri.aabb.min.x), 0);
+        const auto tri_max_x = std::min(static_cast<int>(tri.aabb.max.x), width - 1);
 
         const int grid_min_x {tri_min_x / TILE_SIZE}, grid_max_x {tri_max_x / TILE_SIZE};
         const int grid_min_y {tri_min_y / TILE_SIZE}, grid_max_y {tri_max_y / TILE_SIZE};
 
+        if (grid_min_x == grid_max_x && grid_min_y == grid_max_y)
+        {
+            const auto index = grid_max_x + grid.width * grid_max_y;
+            grid.triangles_id[grid.tiles[index].cursor_offset] = static_cast<int>(id);
+            grid.tiles[index].cursor_offset++;
+            continue;
+        }
+
+        const auto delta_w0_col = (tri.screen_points[1].y - tri.screen_points[2].y) * TILE_SIZE;
+        const auto delta_w1_col = (tri.screen_points[2].y - tri.screen_points[0].y) * TILE_SIZE;
+        const auto delta_w2_col = (tri.screen_points[0].y - tri.screen_points[1].y) * TILE_SIZE;
+
+        const auto delta_w0_row = (tri.screen_points[2].x - tri.screen_points[1].x) * TILE_SIZE;
+        const auto delta_w1_row = (tri.screen_points[0].x - tri.screen_points[2].x) * TILE_SIZE;
+        const auto delta_w2_row = (tri.screen_points[1].x - tri.screen_points[0].x) * TILE_SIZE;
+
+        const auto min_x = static_cast<float>(grid_min_x * TILE_SIZE);
+        const auto min_y = static_cast<float>(grid_min_y * TILE_SIZE);
+
+        const Vec3 top_left{min_x, min_y, 0.0f};
+        auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], top_left);
+        auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], top_left);
+        auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], top_left);
+
         for (int y = grid_min_y; y <= grid_max_y; ++y)
         {
+            auto w0 = w0_row;
+            auto w1 = w1_row;
+            auto w2 = w2_row;
             for (int x = grid_min_x; x <= grid_max_x; ++x)
             {
+                const auto tl_w0 = w0;
+                const auto tl_w1 = w1;
+                const auto tl_w2 = w2;
+
+                const auto tr_w0 = tl_w0 + delta_w0_col;
+                const auto tr_w1 = tl_w1 + delta_w1_col;
+                const auto tr_w2 = tl_w2 + delta_w2_col;
+
+                const auto bl_w0 = tl_w0 + delta_w0_row;
+                const auto bl_w1 = tl_w1 + delta_w1_row;
+                const auto bl_w2 = tl_w2 + delta_w2_row;
+
+                const auto br_w0 = bl_w0 + delta_w0_col;
+                const auto br_w1 = bl_w1 + delta_w1_col;
+                const auto br_w2 = bl_w2 + delta_w2_col;
+
+                if (tl_w0 < 0.0f && tr_w0 < 0.0f && bl_w0 < 0.0f && br_w0 < 0.0f)
+                {
+                    w0 += delta_w0_col;
+                    w1 += delta_w1_col;
+                    w2 += delta_w2_col;
+                    continue;
+                };
+                if (tl_w1 < 0.0f && tr_w1 < 0.0f && bl_w1 < 0.0f && br_w1 < 0.0f)
+                {
+                    w0 += delta_w0_col;
+                    w1 += delta_w1_col;
+                    w2 += delta_w2_col;
+                    continue;
+                };
+                if (tl_w2 < 0.0f && tr_w2 < 0.0f && bl_w2 < 0.0f && br_w2 < 0.0f)
+                {
+                    w0 += delta_w0_col;
+                    w1 += delta_w1_col;
+                    w2 += delta_w2_col;
+                    continue;
+                };
+
                 const auto index = x + grid.width * y;
                 grid.triangles_id[grid.tiles[index].cursor_offset] = static_cast<int>(id);
                 grid.tiles[index].cursor_offset++;
+
+                w0 += delta_w0_col;
+                w1 += delta_w1_col;
+                w2 += delta_w2_col;
             }
+            w0_row += delta_w0_row;
+            w1_row += delta_w1_row;
+            w2_row += delta_w2_row;
         }
     }
 }
