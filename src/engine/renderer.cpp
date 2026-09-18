@@ -318,12 +318,12 @@ Vec4 calculate_light(
 
 void RendererRaster::render_tiles(const SceneRaster &scene) noexcept
 {
-    int offset_x { 0 };
-    int offset_y { 0 };
     for (int g_y = 0; g_y < viewport.grid.height; ++g_y)
     {
+        const int offset_y = g_y * Viewport::TILE_SIZE;
         for (int g_x = 0; g_x < viewport.grid.width; ++g_x)
         {
+            const int offset_x = g_x * Viewport::TILE_SIZE;
             const auto tile_i = g_y * viewport.grid.width + g_x;
 
             if (const auto& tile = viewport.grid.tiles[tile_i]; tile.counter > 0)
@@ -458,11 +458,7 @@ void RendererRaster::render_tiles(const SceneRaster &scene) noexcept
                     }
                 }
             }
-
-            offset_x += Viewport::TILE_SIZE;
         }
-        offset_x = 0;
-        offset_y += Viewport::TILE_SIZE;
     }
 }
 
