@@ -60,77 +60,77 @@ void Viewport::bin_triangles(const std::vector<FullTriangle> &triangles) noexcep
             continue;
         }
 
-        const auto delta_w0_col = (tri.screen_points[1].y - tri.screen_points[2].y) * TILE_SIZE;
-        const auto delta_w1_col = (tri.screen_points[2].y - tri.screen_points[0].y) * TILE_SIZE;
-        const auto delta_w2_col = (tri.screen_points[0].y - tri.screen_points[1].y) * TILE_SIZE;
+        const auto delta_w0_x = (tri.screen_points[1].y - tri.screen_points[2].y) * TILE_SIZE;
+        const auto delta_w1_x = (tri.screen_points[2].y - tri.screen_points[0].y) * TILE_SIZE;
+        const auto delta_w2_x = (tri.screen_points[0].y - tri.screen_points[1].y) * TILE_SIZE;
 
-        const auto delta_w0_row = (tri.screen_points[2].x - tri.screen_points[1].x) * TILE_SIZE;
-        const auto delta_w1_row = (tri.screen_points[0].x - tri.screen_points[2].x) * TILE_SIZE;
-        const auto delta_w2_row = (tri.screen_points[1].x - tri.screen_points[0].x) * TILE_SIZE;
+        const auto delta_w0_y = (tri.screen_points[2].x - tri.screen_points[1].x) * TILE_SIZE;
+        const auto delta_w1_y = (tri.screen_points[0].x - tri.screen_points[2].x) * TILE_SIZE;
+        const auto delta_w2_y = (tri.screen_points[1].x - tri.screen_points[0].x) * TILE_SIZE;
 
         const auto min_x = static_cast<float>(grid_min_x * TILE_SIZE);
         const auto min_y = static_cast<float>(grid_min_y * TILE_SIZE);
 
         const Vec3 top_left{min_x, min_y, 0.0f};
-        auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], top_left);
-        auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], top_left);
-        auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], top_left);
+        auto w0_y = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], top_left);
+        auto w1_y = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], top_left);
+        auto w2_y = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], top_left);
 
         for (int y = grid_min_y; y <= grid_max_y; ++y)
         {
-            auto w0 = w0_row;
-            auto w1 = w1_row;
-            auto w2 = w2_row;
+            auto w0 = w0_y;
+            auto w1 = w1_y;
+            auto w2 = w2_y;
             for (int x = grid_min_x; x <= grid_max_x; ++x)
             {
                 const auto tl_w0 = w0;
                 const auto tl_w1 = w1;
                 const auto tl_w2 = w2;
 
-                const auto tr_w0 = tl_w0 + delta_w0_col;
-                const auto tr_w1 = tl_w1 + delta_w1_col;
-                const auto tr_w2 = tl_w2 + delta_w2_col;
+                const auto tr_w0 = tl_w0 + delta_w0_x;
+                const auto tr_w1 = tl_w1 + delta_w1_x;
+                const auto tr_w2 = tl_w2 + delta_w2_x;
 
-                const auto bl_w0 = tl_w0 + delta_w0_row;
-                const auto bl_w1 = tl_w1 + delta_w1_row;
-                const auto bl_w2 = tl_w2 + delta_w2_row;
+                const auto bl_w0 = tl_w0 + delta_w0_y;
+                const auto bl_w1 = tl_w1 + delta_w1_y;
+                const auto bl_w2 = tl_w2 + delta_w2_y;
 
-                const auto br_w0 = bl_w0 + delta_w0_col;
-                const auto br_w1 = bl_w1 + delta_w1_col;
-                const auto br_w2 = bl_w2 + delta_w2_col;
+                const auto br_w0 = bl_w0 + delta_w0_x;
+                const auto br_w1 = bl_w1 + delta_w1_x;
+                const auto br_w2 = bl_w2 + delta_w2_x;
 
                 if (tl_w0 < 0.0f && tr_w0 < 0.0f && bl_w0 < 0.0f && br_w0 < 0.0f)
                 {
-                    w0 += delta_w0_col;
-                    w1 += delta_w1_col;
-                    w2 += delta_w2_col;
+                    w0 += delta_w0_x;
+                    w1 += delta_w1_x;
+                    w2 += delta_w2_x;
                     continue;
                 };
                 if (tl_w1 < 0.0f && tr_w1 < 0.0f && bl_w1 < 0.0f && br_w1 < 0.0f)
                 {
-                    w0 += delta_w0_col;
-                    w1 += delta_w1_col;
-                    w2 += delta_w2_col;
+                    w0 += delta_w0_x;
+                    w1 += delta_w1_x;
+                    w2 += delta_w2_x;
                     continue;
                 };
                 if (tl_w2 < 0.0f && tr_w2 < 0.0f && bl_w2 < 0.0f && br_w2 < 0.0f)
                 {
-                    w0 += delta_w0_col;
-                    w1 += delta_w1_col;
-                    w2 += delta_w2_col;
+                    w0 += delta_w0_x;
+                    w1 += delta_w1_x;
+                    w2 += delta_w2_x;
                     continue;
                 };
 
                 const auto index = x + grid.width * y;
                 grid.tiles[index].counter++;
 
-                w0 += delta_w0_col;
-                w1 += delta_w1_col;
-                w2 += delta_w2_col;
+                w0 += delta_w0_x;
+                w1 += delta_w1_x;
+                w2 += delta_w2_x;
             }
-            w0_row += delta_w0_row;
-            w1_row += delta_w1_row;
-            w2_row += delta_w2_row;
+            w0_y += delta_w0_y;
+            w1_y += delta_w1_y;
+            w2_y += delta_w2_y;
         }
     }
 
@@ -167,64 +167,64 @@ void Viewport::bin_triangles(const std::vector<FullTriangle> &triangles) noexcep
             continue;
         }
 
-        const auto delta_w0_col = (tri.screen_points[1].y - tri.screen_points[2].y) * TILE_SIZE;
-        const auto delta_w1_col = (tri.screen_points[2].y - tri.screen_points[0].y) * TILE_SIZE;
-        const auto delta_w2_col = (tri.screen_points[0].y - tri.screen_points[1].y) * TILE_SIZE;
+        const auto delta_w0_x = (tri.screen_points[1].y - tri.screen_points[2].y) * TILE_SIZE;
+        const auto delta_w1_x = (tri.screen_points[2].y - tri.screen_points[0].y) * TILE_SIZE;
+        const auto delta_w2_x = (tri.screen_points[0].y - tri.screen_points[1].y) * TILE_SIZE;
 
-        const auto delta_w0_row = (tri.screen_points[2].x - tri.screen_points[1].x) * TILE_SIZE;
-        const auto delta_w1_row = (tri.screen_points[0].x - tri.screen_points[2].x) * TILE_SIZE;
-        const auto delta_w2_row = (tri.screen_points[1].x - tri.screen_points[0].x) * TILE_SIZE;
+        const auto delta_w0_y = (tri.screen_points[2].x - tri.screen_points[1].x) * TILE_SIZE;
+        const auto delta_w1_y = (tri.screen_points[0].x - tri.screen_points[2].x) * TILE_SIZE;
+        const auto delta_w2_y = (tri.screen_points[1].x - tri.screen_points[0].x) * TILE_SIZE;
 
         const auto min_x = static_cast<float>(grid_min_x * TILE_SIZE);
         const auto min_y = static_cast<float>(grid_min_y * TILE_SIZE);
 
         const Vec3 top_left{min_x, min_y, 0.0f};
-        auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], top_left);
-        auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], top_left);
-        auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], top_left);
+        auto w0_y = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], top_left);
+        auto w1_y = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], top_left);
+        auto w2_y = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], top_left);
 
         for (int y = grid_min_y; y <= grid_max_y; ++y)
         {
-            auto w0 = w0_row;
-            auto w1 = w1_row;
-            auto w2 = w2_row;
+            auto w0 = w0_y;
+            auto w1 = w1_y;
+            auto w2 = w2_y;
             for (int x = grid_min_x; x <= grid_max_x; ++x)
             {
                 const auto tl_w0 = w0;
                 const auto tl_w1 = w1;
                 const auto tl_w2 = w2;
 
-                const auto tr_w0 = tl_w0 + delta_w0_col;
-                const auto tr_w1 = tl_w1 + delta_w1_col;
-                const auto tr_w2 = tl_w2 + delta_w2_col;
+                const auto tr_w0 = tl_w0 + delta_w0_x;
+                const auto tr_w1 = tl_w1 + delta_w1_x;
+                const auto tr_w2 = tl_w2 + delta_w2_x;
 
-                const auto bl_w0 = tl_w0 + delta_w0_row;
-                const auto bl_w1 = tl_w1 + delta_w1_row;
-                const auto bl_w2 = tl_w2 + delta_w2_row;
+                const auto bl_w0 = tl_w0 + delta_w0_y;
+                const auto bl_w1 = tl_w1 + delta_w1_y;
+                const auto bl_w2 = tl_w2 + delta_w2_y;
 
-                const auto br_w0 = bl_w0 + delta_w0_col;
-                const auto br_w1 = bl_w1 + delta_w1_col;
-                const auto br_w2 = bl_w2 + delta_w2_col;
+                const auto br_w0 = bl_w0 + delta_w0_x;
+                const auto br_w1 = bl_w1 + delta_w1_x;
+                const auto br_w2 = bl_w2 + delta_w2_x;
 
                 if (tl_w0 < 0.0f && tr_w0 < 0.0f && bl_w0 < 0.0f && br_w0 < 0.0f)
                 {
-                    w0 += delta_w0_col;
-                    w1 += delta_w1_col;
-                    w2 += delta_w2_col;
+                    w0 += delta_w0_x;
+                    w1 += delta_w1_x;
+                    w2 += delta_w2_x;
                     continue;
                 };
                 if (tl_w1 < 0.0f && tr_w1 < 0.0f && bl_w1 < 0.0f && br_w1 < 0.0f)
                 {
-                    w0 += delta_w0_col;
-                    w1 += delta_w1_col;
-                    w2 += delta_w2_col;
+                    w0 += delta_w0_x;
+                    w1 += delta_w1_x;
+                    w2 += delta_w2_x;
                     continue;
                 };
                 if (tl_w2 < 0.0f && tr_w2 < 0.0f && bl_w2 < 0.0f && br_w2 < 0.0f)
                 {
-                    w0 += delta_w0_col;
-                    w1 += delta_w1_col;
-                    w2 += delta_w2_col;
+                    w0 += delta_w0_x;
+                    w1 += delta_w1_x;
+                    w2 += delta_w2_x;
                     continue;
                 };
 
@@ -232,13 +232,13 @@ void Viewport::bin_triangles(const std::vector<FullTriangle> &triangles) noexcep
                 grid.triangles_id[grid.tiles[index].cursor_offset] = static_cast<int>(id);
                 grid.tiles[index].cursor_offset++;
 
-                w0 += delta_w0_col;
-                w1 += delta_w1_col;
-                w2 += delta_w2_col;
+                w0 += delta_w0_x;
+                w1 += delta_w1_x;
+                w2 += delta_w2_x;
             }
-            w0_row += delta_w0_row;
-            w1_row += delta_w1_row;
-            w2_row += delta_w2_row;
+            w0_y += delta_w0_y;
+            w1_y += delta_w1_y;
+            w2_y += delta_w2_y;
         }
     }
 }
