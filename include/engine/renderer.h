@@ -2,12 +2,11 @@
 #include "scene.h"
 #include "viewport.h"
 
-class alignas(16) Gbuffer {
-public:
+struct Gbuffer {
     Vec3 frag_coord {};
-    float roughness {};
-    Vec4 albedo {};
+    Vec3 albedo {};
     Vec3 normal {};
+    float roughness {};
     float depth{1e5f};
 };
 

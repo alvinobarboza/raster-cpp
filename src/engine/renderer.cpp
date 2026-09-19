@@ -356,7 +356,9 @@ void RendererRaster::render_tiles(const SceneRaster &scene) noexcept
                         bias_2 = -0.0001;
                     }
 
-                    const auto area = 1.0f / triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], tri.screen_points[2]);
+                    const auto cross = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], tri.screen_points[2]);
+                    if (cross < 1e-6f) continue; // possible edge case
+                    const auto area = 1.0f / cross;
                     const Vec3 p = {static_cast<float>(offset_x) + 0.5f, static_cast<float>(offset_y) + 0.5f, 0.0f};
 
                     auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p) + bias_0;
@@ -379,7 +381,7 @@ void RendererRaster::render_tiles(const SceneRaster &scene) noexcept
 
                                 const int index = x + y * Viewport::TILE_SIZE;
                                 if (const float z_depth = tri.frag_depth_ndc(alpha, beta, gamma);
-                                    g_buffer[index].depth > z_depth && x < viewport.width && y < viewport.width)
+                                    g_buffer[index].depth > z_depth)
                                 {
                                     g_buffer[index].depth = z_depth;
 
@@ -391,7 +393,7 @@ void RendererRaster::render_tiles(const SceneRaster &scene) noexcept
                                     const float frag_rough = tri.frag_roughness(frag_uv);
 
                                     g_buffer[index].frag_coord = frag_coord;
-                                    g_buffer[index].albedo = frag_color;
+                                    g_buffer[index].albedo = {frag_color.x, frag_color.y, frag_color.z};
                                     g_buffer[index].normal = frag_normal;
                                     g_buffer[index].roughness = frag_rough;
                                 }
@@ -445,13 +447,15 @@ void RendererRaster::render_tiles(const SceneRaster &scene) noexcept
                         }
                         if (!render_light)
                         {
-                            viewport.put_pixel(px, py, gb.albedo);
+                            const Vec4 final_color{gb.albedo.x, gb.albedo.y, gb.albedo.z, 1.0f};
+                            viewport.put_pixel(px, py, final_color);
                             continue;
                         }
 
                         const auto view_normal = (-gb.frag_coord).normalized();
+                        const Vec4 albedo{gb.albedo.x, gb.albedo.y, gb.albedo.z, 1.0f};
                         const auto final_color = calculate_light(
-                            scene.lights, gb.roughness, gb.albedo,
+                            scene.lights, gb.roughness, albedo,
                             gb.normal, view_normal, scene.skybox.ambient_intensity);
 
                         viewport.put_pixel(px, py, final_color);
