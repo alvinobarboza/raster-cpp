@@ -318,6 +318,7 @@ Vec4 calculate_light(
 
 void RendererRaster::render_tiles(const SceneRaster &scene) noexcept
 {
+    std::array<Gbuffer, Viewport::TILE_SIZE * Viewport::TILE_SIZE> g_buffer{};
     for (int g_y = 0; g_y < viewport.grid.height; ++g_y)
     {
         const int offset_y = g_y * Viewport::TILE_SIZE;
@@ -328,7 +329,7 @@ void RendererRaster::render_tiles(const SceneRaster &scene) noexcept
 
             if (const auto& tile = viewport.grid.tiles[tile_i]; tile.counter > 0)
             {
-                std::array<Gbuffer, Viewport::TILE_SIZE * Viewport::TILE_SIZE> g_buffer{};
+                g_buffer.fill({});
 
                 for (int i = tile.offset; i < tile.offset + tile.counter; ++i)
                 {
