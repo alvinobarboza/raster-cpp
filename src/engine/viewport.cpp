@@ -41,8 +41,9 @@ void Viewport::reset_tiles() noexcept
     });
 }
 
-void Viewport::bin_triangles(const std::vector<FullTriangle> &triangles) noexcept
+void Viewport::bin_triangles(std::span<FullTriangle> triangles) noexcept
 {
+    Timer time{"bin-triangles"};
     for (const FullTriangle &tri : triangles)
     {
         const auto tri_min_y = std::max(static_cast<int>(tri.aabb.min.y), 0);
