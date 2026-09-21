@@ -423,6 +423,8 @@ void RendererRaster::render_tiles(const SceneRaster &scene) noexcept
 
                         if (px >= viewport.width || py >= viewport.height) continue;
 
+                        viewport.depth_pass(px, py, gb.depth);
+
                         if (render_normal)
                         {
                             const Vec4 final_color{
@@ -517,10 +519,10 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                 const auto beta = w1 * area;
                 const auto gamma = w2 * area;
 
-                if (const float z_depth = tri.frag_depth(alpha, beta, gamma);
+                if (const float z_depth = tri.frag_depth_ndc(alpha, beta, gamma);
                     viewport.depth_pass(x, y, z_depth))
                 {
-                    const auto frag_depth = 1 / z_depth;
+                    const auto frag_depth = 1 / tri.frag_depth(alpha, beta, gamma);
                     const auto frag_uv = tri.frag_uv_coord(alpha, beta, gamma, frag_depth);
                     const auto frag_coord = tri.frag_coord(alpha, beta, gamma, frag_depth);
                     const auto frag_normal = tri.frag_normal(alpha, beta, gamma, frag_uv,frag_depth);
@@ -540,12 +542,7 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                     }
                     else if (render_depth)
                     {
-                        const float ndc_depth =
-                            tri.screen_points[0].z * alpha +
-                                tri.screen_points[1].z * beta +
-                                    tri.screen_points[2].z * gamma;
-
-                        float c = 1-ndc_depth;
+                        float c = 1-z_depth;
                         if (c < 0.01) c = 0.01;
 
                         const Vec4 final_color {
@@ -592,15 +589,19 @@ void RendererRaster::draw_line(Vec3 a, Vec3 b) noexcept
         }
 
         const auto ab_y = (b.y-a.y) / (b.x-a.x);
+        const auto ab_z = (b.z-a.z) / (b.x-a.x);
         auto ys = a.y;
+        auto zs = a.z - 0.01f;
         for (float x = a.x; x <= b.x; ++x) {
             if (
                 x > 0.0f && x < static_cast<float>(viewport.width) &&
-                ys > 0.0f && ys < static_cast<float>(viewport.height))
+                ys > 0.0f && ys < static_cast<float>(viewport.height) &&
+                viewport.depth_pass(static_cast<int>(x), static_cast<int>(ys), zs))
             {
                 viewport.put_pixel(static_cast<int>(x), static_cast<int>(ys), color);
             }
             ys += ab_y;
+            zs += ab_z;
         }
         return;
     }
@@ -610,25 +611,29 @@ void RendererRaster::draw_line(Vec3 a, Vec3 b) noexcept
     }
 
     const auto ab_x = (b.x-a.x) / (b.y-a.y);
+    const auto ab_z = (b.z-a.z) / (b.y-a.y);
     auto xs = a.x;
+    auto zs = a.z - 0.01f;
 
     for (float y = a.y; y <= b.y; ++y) {
         if (
                 xs > 0.0f && xs < static_cast<float>(viewport.width) &&
-                y > 0.0f && y < static_cast<float>(viewport.height))
+                y > 0.0f && y < static_cast<float>(viewport.height) &&
+                viewport.depth_pass(static_cast<int>(xs), static_cast<int>(y), zs))
         {
             viewport.put_pixel(static_cast<int>(xs), static_cast<int>(y), color);
         }
         xs += ab_x;
+        zs += ab_z;
     }
 }
 
 void RendererRaster::draw_aabb(const AABB2D &aabb) noexcept
 {
-    draw_line({aabb.min.x, aabb.min.y, 1.0f}, {aabb.min.x, aabb.max.y, 1.0f});
-    draw_line({aabb.min.x, aabb.max.y, 1.0f}, {aabb.max.x, aabb.max.y, 1.0f});
-    draw_line({aabb.max.x, aabb.max.y, 1.0f}, {aabb.max.x, aabb.min.y, 1.0f});
-    draw_line({aabb.max.x, aabb.min.y, 1.0f}, {aabb.min.x, aabb.min.y, 1.0f});
+    draw_line({aabb.min.x, aabb.min.y, -1.0f}, {aabb.min.x, aabb.max.y, -1.0f});
+    draw_line({aabb.min.x, aabb.max.y, -1.0f}, {aabb.max.x, aabb.max.y, -1.0f});
+    draw_line({aabb.max.x, aabb.max.y, -1.0f}, {aabb.max.x, aabb.min.y, -1.0f});
+    draw_line({aabb.max.x, aabb.min.y, -1.0f}, {aabb.min.x, aabb.min.y, -1.0f});
 }
 
 void RendererRaster::draw_wireframe_triangle(const FullTriangle &triangle) noexcept

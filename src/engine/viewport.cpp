@@ -15,7 +15,7 @@ Viewport::Viewport(
 void Viewport::clear_frame_buffer() noexcept
 {
     std::ranges::fill(frame_buffer, BLACK);
-    std::ranges::fill(depth_buffer, 0.0f);
+    std::ranges::fill(depth_buffer, 1e5f);
 }
 
 void Viewport::update_tiles() noexcept
@@ -278,7 +278,7 @@ float Viewport::aspect_ratio() const
 bool Viewport::depth_pass(const int x, const int y, const float z_depth) noexcept
 {
     const int index = y * width + x;
-    if (z_depth < depth_buffer[index]) return false;
+    if (z_depth > depth_buffer[index]) return false;
 
     depth_buffer[index] = z_depth;
     return true;
