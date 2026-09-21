@@ -656,13 +656,13 @@ void RendererRaster::draw_triangle_aabb() noexcept
 
 void RendererRaster::draw_active_tiles() noexcept
 {
-    int offset_x { 0 };
-    int offset_y { 0 };
     AABB2D temp_aabb {};
     for (int g_y = 0; g_y < viewport.grid.height; ++g_y)
     {
+        const int offset_y = g_y * Viewport::TILE_SIZE;
         for (int g_x = 0; g_x < viewport.grid.width; ++g_x)
         {
+            const int offset_x = g_x * Viewport::TILE_SIZE;
             const auto tile_i = g_y * viewport.grid.width + g_x;
 
             if (const auto& tile = viewport.grid.tiles[tile_i]; tile.counter > 0)
@@ -674,11 +674,7 @@ void RendererRaster::draw_active_tiles() noexcept
 
                 draw_aabb(temp_aabb);
             }
-
-            offset_x += Viewport::TILE_SIZE;
         }
-        offset_x = 0;
-        offset_y += Viewport::TILE_SIZE;
     }
 }
 
