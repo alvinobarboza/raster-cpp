@@ -81,7 +81,7 @@ void RendererRaster::render_scene(SceneRaster &scene)
 
     for (const auto& model: scene.models)
     {
-        auto m_transforms = scene.camera.transform.transformation_matrix * model->transforms.transformation_matrix;
+        const auto m_transforms = scene.camera.transform.transformation_matrix * model->transforms.transformation_matrix;
         model->boundingSphere.center_world = model->boundingSphere.center * m_transforms;
         model->to_render = scene.camera.frustum.is_inside_frustum(model->boundingSphere);
     }
@@ -92,11 +92,10 @@ void RendererRaster::render_scene(SceneRaster &scene)
     });
 
 
-    //int count_skipped_tris = 0;
     for (const auto& model : scene.models)
     {
-        auto m_rotation = scene.camera.transform.rotation_matrix * model->transforms.rotation_matrix;
-        auto m_transforms = scene.camera.transform.transformation_matrix * model->transforms.transformation_matrix;
+        const auto m_rotation = scene.camera.transform.rotation_matrix * model->transforms.rotation_matrix;
+        const auto m_transforms = scene.camera.transform.transformation_matrix * model->transforms.transformation_matrix;
 
         if (!model->to_render)
         {
@@ -114,7 +113,6 @@ void RendererRaster::render_scene(SceneRaster &scene)
             model->meshData.normals_word[i] = model->meshData.normals[i] * m_rotation;
         }
 
-
         for (const auto &t: model->meshData.triangles)
         {
             if (!t.is_back_facing(model->meshData.vertices_word, model->meshData.normals_word))
@@ -122,19 +120,23 @@ void RendererRaster::render_scene(SceneRaster &scene)
                 continue;
             }
 
-            const auto& v1 = Vertex(model->meshData.vertices_word[t.v1],
-                model->meshData.normals_word[t.n1], model->meshData.uvs[t.u1]);
-            const auto& v2 = Vertex(model->meshData.vertices_word[t.v2],
-                model->meshData.normals_word[t.n2], model->meshData.uvs[t.u2]);
-            const auto& v3 = Vertex(model->meshData.vertices_word[t.v3],
-                model->meshData.normals_word[t.n3], model->meshData.uvs[t.u3]);
-
             verts_out.clear();
             verts_in.clear();
 
-            verts_out.push_back(v1);
-            verts_out.push_back(v2);
-            verts_out.push_back(v3);
+            verts_out.emplace_back(
+                model->meshData.vertices_word[t.v1],
+                model->meshData.normals_word[t.n1],
+                model->meshData.uvs[t.u1]);
+
+            verts_out.emplace_back(
+                model->meshData.vertices_word[t.v2],
+                model->meshData.normals_word[t.n2],
+                model->meshData.uvs[t.u2]);
+
+            verts_out.emplace_back(
+                model->meshData.vertices_word[t.v3],
+                model->meshData.normals_word[t.n3],
+                model->meshData.uvs[t.u3]);
 
             clip_triangle(
             scene.camera.frustum.planes[NEAR_PLANE],
@@ -174,7 +176,6 @@ void RendererRaster::render_scene(SceneRaster &scene)
             }
         }
     }
-    //std::cout << "[SKIP] triangles: "<< count_skipped_tris <<"\n";
 
     if (render_forward)
     {
