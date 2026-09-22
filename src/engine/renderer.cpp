@@ -843,6 +843,8 @@ std::string RendererRaster::renderer_mode() const noexcept
             return "FORWARD_TILED";
         case RenderMode::DIFFERED_TILED:
             return "DIFFERED_TILED";
+        case RenderMode::MAX_VALUE:
+            return "Shouldn't happen!!";
     }
     return "";
 }
@@ -879,7 +881,7 @@ void RendererRaster::toggle_render_active_tiles()
 
 void RendererRaster::toggle_render_mode()
 {
-    render_mode = static_cast<RenderMode>((static_cast<int>(render_mode)+1)%3);
+    render_mode = static_cast<RenderMode>((static_cast<int>(render_mode)+1)%static_cast<int>(RenderMode::MAX_VALUE));
 }
 
 void RendererRaster::handle_input()

@@ -13,7 +13,9 @@ struct Gbuffer {
 enum class RenderMode {
     FORWARD,
     FORWARD_TILED,
-    DIFFERED_TILED
+    DIFFERED_TILED,
+
+    MAX_VALUE
 };
 
 class RendererRaster {
