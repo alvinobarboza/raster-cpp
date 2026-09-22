@@ -322,15 +322,19 @@ Vec4 calculate_light(
     };
 }
 
-void RendererRaster::render_tiles(const SceneRaster &scene) noexcept
+void RendererRaster::render_tiles_deferred(const SceneRaster &scene) noexcept
 {
     std::array<Gbuffer, Viewport::TILE_SIZE * Viewport::TILE_SIZE> g_buffer{};
     for (int g_y = 0; g_y < viewport.grid.height; ++g_y)
     {
         const int offset_y = g_y * Viewport::TILE_SIZE;
+        const int max_offset_y = std::min(offset_y+Viewport::TILE_SIZE, viewport.height);
+
         for (int g_x = 0; g_x < viewport.grid.width; ++g_x)
         {
             const int offset_x = g_x * Viewport::TILE_SIZE;
+            const int max_offset_x = std::min(offset_x+Viewport::TILE_SIZE, viewport.width);
+
             const auto tile_i = g_y * viewport.grid.width + g_x;
 
             if (const auto& tile = viewport.grid.tiles[tile_i]; tile.counter > 0)
@@ -341,6 +345,12 @@ void RendererRaster::render_tiles(const SceneRaster &scene) noexcept
                 {
                     const int triangle_id = viewport.grid.triangles_id[i];
                     const auto& tri = tris_buffer[triangle_id];
+
+                    const auto min_y = std::max(static_cast<int>(tri.aabb.min.y), offset_y);
+                    const auto max_y = std::min(static_cast<int>(tri.aabb.max.y), max_offset_y);
+                    const auto min_x = std::max(static_cast<int>(tri.aabb.min.x), offset_x);
+                    const auto max_x = std::min(static_cast<int>(tri.aabb.max.x), max_offset_x);
+
                     const auto delta_w0_col = tri.screen_points[1].y - tri.screen_points[2].y;
                     const auto delta_w1_col = tri.screen_points[2].y - tri.screen_points[0].y;
                     const auto delta_w2_col = tri.screen_points[0].y - tri.screen_points[1].y;
@@ -366,19 +376,19 @@ void RendererRaster::render_tiles(const SceneRaster &scene) noexcept
                     const auto cross = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], tri.screen_points[2]);
                     if (cross < 1e-6f) continue; // possible edge case
                     const auto area = 1.0f / cross;
-                    const Vec3 p = {static_cast<float>(offset_x) + 0.5f, static_cast<float>(offset_y) + 0.5f, 0.0f};
+                    const Vec3 p = {static_cast<float>(min_x) + 0.5f, static_cast<float>(min_y) + 0.5f, 0.0f};
 
                     auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p) + bias_0;
                     auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p) + bias_1;
                     auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p) + bias_2;
 
-                    for (int y = 0; y < Viewport::TILE_SIZE; y++)
+                    for (int y = min_y; y < max_y; y++)
                     {
                         auto w0 = w0_row;
                         auto w1 = w1_row;
                         auto w2 = w2_row;
 
-                        for (int x = 0; x < Viewport::TILE_SIZE; x++)
+                        for (int x = min_x; x < max_x; x++)
                         {
                             if (w0 >= 0.0f && w1 >= 0.0f && w2 >= 0.0f)
                             {
@@ -386,7 +396,9 @@ void RendererRaster::render_tiles(const SceneRaster &scene) noexcept
                                 const auto beta = w1 * area;
                                 const auto gamma = w2 * area;
 
-                                const int index = x + y * Viewport::TILE_SIZE;
+                                const int tile_x = x - offset_x;
+                                const int tile_y = y - offset_y;
+                                const int index = tile_x + tile_y * Viewport::TILE_SIZE;
                                 if (const float z_depth = tri.frag_depth_ndc(alpha, beta, gamma);
                                     g_buffer[index].depth > z_depth)
                                 {
