@@ -19,7 +19,7 @@ public:
         const auto duration_milli = std::chrono::duration_cast<std::chrono::milliseconds>(diff);
         const auto duration_micro = std::chrono::duration_cast<std::chrono::microseconds>(diff);
         const auto duration_nano = std::chrono::duration_cast<std::chrono::nanoseconds>(diff);
-        std::cout << t_name << "\t: " << duration_milli.count() << " ms ";
+        std::cout << t_name << ": \t" << duration_milli.count() << " ms ";
         std::cout << duration_micro.count() << " us ";
         std::cout << duration_nano.count() << " ns" << std::endl;
     }
