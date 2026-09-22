@@ -10,6 +10,12 @@ struct Gbuffer {
     float depth{1e5f};
 };
 
+enum class RenderMode {
+    FORWARD,
+    FORWARD_TILED,
+    DIFFERED_TILED
+};
+
 class RendererRaster {
     bool render_light {};
     bool render_depth {};
@@ -17,8 +23,7 @@ class RendererRaster {
     bool render_wireframe {};
     bool render_triangle_aabb {};
     bool render_active_tiles {};
-    bool render_forward { true };
-    bool render_deferred {};
+    RenderMode render_mode {RenderMode::FORWARD};
 
     // Sutherland–Hodgman tmp vars
     std::vector<Vertex> verts_in {};
@@ -37,7 +42,8 @@ class RendererRaster {
     void draw_wireframe_from_tri_buffer() noexcept;
     void draw_triangle_aabb() noexcept;
     void render_triangle(const FullTriangle &tri, const SceneRaster &scene) noexcept;
-    void render_tiles(const SceneRaster &scene) noexcept;
+    void render_tiles_deferred(const SceneRaster &scene) noexcept;
+    void render_tiles_forward(const SceneRaster &scene) noexcept;
     void draw_active_tiles() noexcept;
 public:
     Viewport viewport {};
@@ -51,8 +57,9 @@ public:
     void toggle_render_light();
     void toggle_render_triangle_aabb();
     void toggle_render_active_tiles();
-    void toggle_render_forward();
-    void toggle_render_deferred();
+    void toggle_render_mode();
+
+    std::string renderer_mode() const noexcept;
 
     void handle_input();
 };
