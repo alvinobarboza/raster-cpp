@@ -111,6 +111,10 @@ int main() {
                     camera.transform.position.x, camera.transform.position.y, camera.transform.position.z,
                     camera.transform.rotation.x, camera.transform.rotation.y, camera.transform.rotation.z),
                 10, 60, 20, DARKGRAY);
+            DrawText(
+                TextFormat("RenderMode: %s", renderer.renderer_mode().c_str() ),
+                10, 125, 20, DARKGRAY
+                );
         EndDrawing();
         //break;
     }
