@@ -78,7 +78,7 @@ int main() {
         camera.handle_input();
 
         const std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-        renderer.render_scene(scene);
+        renderer.render_scene(&scene);
         const std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
         UpdateTexture(render_texture, renderer.viewport.frame_buffer_data());
@@ -100,12 +100,7 @@ int main() {
                 TextFormat("Canvas: %dx%d Screen: %dx%d", renderer.viewport.width, renderer.viewport.height, w, h),
                 0,h - 20, 20, DARKGRAY);
             DrawFPS(10, 20);
-            DrawText(
-                TextFormat(
-                    "Frame time: %d MS",
-                    std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count()
-                ),
-                10, 40, 10, DARKGRAY);
+
             DrawText(
                 TextFormat("Camera:\n %02.2f Y: %02.2f Z: %02.2f\n X: %02.2f' Y: %02.2f' Z: %02.2f'",
                     camera.transform.position.x, camera.transform.position.y, camera.transform.position.z,
@@ -115,6 +110,12 @@ int main() {
                 TextFormat("RenderMode: %s", renderer.renderer_mode().c_str() ),
                 10, 125, 20, DARKGRAY
                 );
+            DrawText(
+                TextFormat(
+                    "Frame time: %d MS",
+                    std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count()
+                ),
+                10, 150, 20, DARKGRAY);
         EndDrawing();
         //break;
     }

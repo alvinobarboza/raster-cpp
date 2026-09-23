@@ -9,7 +9,22 @@
 #include "transforms/constants.h"
 
 RendererRaster::RendererRaster(const int w, const int h, const int res_factor) noexcept:
-viewport(w, h, res_factor) {}
+viewport(w, h, res_factor)
+{
+    const auto threads = std::thread::hardware_concurrency();
+    workers.reserve(threads);
+    for (unsigned int i = 0; i < threads; ++i)
+    {
+        workers.emplace_back(&RendererRaster::render_multithread, this);
+    }
+}
+
+RendererRaster::~RendererRaster() noexcept
+{
+    stop_flag.store(true);
+    frame_counter.fetch_add(1);
+    frame_counter.notify_all();
+}
 
 void RendererRaster::clip_triangle(const Plane& near, const Plane& far) noexcept
 {
@@ -65,37 +80,44 @@ bool RendererRaster::is_outside_screen(const Vec3 &ndc0, const Vec3 &ndc1, const
     return false;
 }
 
-void RendererRaster::render_scene(SceneRaster &scene)
+void RendererRaster::render_scene(SceneRaster* const s)
 {
+    scene = s;
     viewport.clear_frame_buffer();
     viewport.reset_tiles();
     tris_buffer.clear();
 
+    if (scene == nullptr)
+    {
+        std::cout << "shouldn't be null here \n";
+        return;
+    }
+
     //update lights
-    for (auto &light: scene.lights)
+    for (auto &light: scene->lights)
     {
         // Since this is used only for the dot product between the light and triangle normal, I'm inverting here
         // Normal UP * actual light direction, will always produce negative value for a correct light setup.
-        light.direction_world = -(light.direction * scene.camera.transform.rotation_matrix).normalized();
+        light.direction_world = -(light.direction * scene->camera.transform.rotation_matrix).normalized();
     }
 
-    for (const auto& model: scene.models)
+    for (const auto& model: scene->models)
     {
-        const auto m_transforms = scene.camera.transform.transformation_matrix * model->transforms.transformation_matrix;
+        const auto m_transforms = scene->camera.transform.transformation_matrix * model->transforms.transformation_matrix;
         model->boundingSphere.center_world = model->boundingSphere.center * m_transforms;
-        model->to_render = scene.camera.frustum.is_inside_frustum(model->boundingSphere);
+        model->to_render = scene->camera.frustum.is_inside_frustum(model->boundingSphere);
     }
 
 
-    std::ranges::sort(scene.models, []( ModelRaster*& a, ModelRaster*& b) {
+    std::ranges::sort(scene->models, []( ModelRaster*& a, ModelRaster*& b) {
         return a->boundingSphere.center_world.length() > b->boundingSphere.center_world.length();
     });
 
 
-    for (const auto& model : scene.models)
+    for (const auto& model : scene->models)
     {
-        const auto m_rotation = scene.camera.transform.rotation_matrix * model->transforms.rotation_matrix;
-        const auto m_transforms = scene.camera.transform.transformation_matrix * model->transforms.transformation_matrix;
+        const auto m_rotation = scene->camera.transform.rotation_matrix * model->transforms.rotation_matrix;
+        const auto m_transforms = scene->camera.transform.transformation_matrix * model->transforms.transformation_matrix;
 
         if (!model->to_render)
         {
@@ -139,8 +161,8 @@ void RendererRaster::render_scene(SceneRaster &scene)
                 model->meshData.uvs[t.u3]);
 
             clip_triangle(
-            scene.camera.frustum.planes[NEAR_PLANE],
-            scene.camera.frustum.planes[FAR_PLANE]);
+            scene->camera.frustum.planes[NEAR_PLANE],
+            scene->camera.frustum.planes[FAR_PLANE]);
 
 
             if (verts_out.size() > 2) {
@@ -155,9 +177,9 @@ void RendererRaster::render_scene(SceneRaster &scene)
                         t.smooth
                     };
 
-                    const auto ndc0 = scene.camera.vertex_to_ndc(p1.point);
-                    const auto ndc1 = scene.camera.vertex_to_ndc(p2.point);
-                    const auto ndc2 = scene.camera.vertex_to_ndc(p3.point);
+                    const auto ndc0 = scene->camera.vertex_to_ndc(p1.point);
+                    const auto ndc1 = scene->camera.vertex_to_ndc(p2.point);
+                    const auto ndc2 = scene->camera.vertex_to_ndc(p3.point);
 
                     if (is_outside_screen(ndc0, ndc1, ndc2))
                     {
@@ -179,23 +201,30 @@ void RendererRaster::render_scene(SceneRaster &scene)
 
     if (render_mode == RenderMode::FORWARD)
     {
-        Timer time{"render-forward"};
+        //Timer time{"render-forward"};
         for (const auto& tri: tris_buffer)
         {
-            render_triangle(tri, scene);
+            render_triangle(tri);
         }
     }
     else if (render_mode == RenderMode::FORWARD_TILED)
     {
         viewport.bin_triangles(tris_buffer);
-        Timer time{"render-tile-forward"};
-        render_tiles_forward(scene);
+        //Timer time{"render-tile-forward"};
+        render_tiles_forward();
     }
-    else if (render_mode == RenderMode::DIFFERED_TILED)
+    else if (render_mode == RenderMode::DEFERRED_TILED)
     {
         viewport.bin_triangles(tris_buffer);
-        Timer time{"render-tile-deferred"};
-        render_tiles_deferred(scene);
+        //Timer time{"render-tile-deferred"};
+        render_tiles_deferred();
+    }
+    else if (render_mode == RenderMode::DEFERRED_TILED_M || render_mode == RenderMode::FORWARD_TILED_M)
+    {
+        viewport.bin_triangles(tris_buffer);
+        //std::string msg = render_mode == RenderMode::DEFERRED_TILED_M ? "render-multi-deferred" : "render-multi-forward";
+        //Timer time{msg};
+        woke_threads();
     }
 
     if (render_wireframe)
@@ -211,6 +240,21 @@ void RendererRaster::render_scene(SceneRaster &scene)
     if (render_active_tiles)
     {
         draw_active_tiles();
+    }
+}
+
+void RendererRaster::woke_threads() noexcept
+{
+    tile_index.store(0);
+    active_workers.store(workers.size());
+
+    frame_counter.fetch_add(1);
+    frame_counter.notify_all();
+
+    int current = active_workers.load();
+    while (current > 0) {
+        active_workers.wait(current);
+        current = active_workers.load();
     }
 }
 
@@ -322,7 +366,7 @@ Vec4 calculate_light(
     };
 }
 
-void RendererRaster::render_tile_deferred(const SceneRaster &scene, const Tile& tile, std::span<Gbuffer> g_buffer) noexcept
+void RendererRaster::render_tile_deferred(const Tile& tile, std::span<Gbuffer> g_buffer) noexcept
 {
     const int max_offset_y = std::min(tile.offset_y+Viewport::TILE_SIZE, viewport.height);
     const int max_offset_x = std::min(tile.offset_x+Viewport::TILE_SIZE, viewport.width);
@@ -461,15 +505,15 @@ void RendererRaster::render_tile_deferred(const SceneRaster &scene, const Tile& 
             const auto view_normal = (-gb.frag_coord).normalized();
             const Vec4 albedo{gb.albedo.x, gb.albedo.y, gb.albedo.z, 1.0f};
             const auto final_color = calculate_light(
-                scene.lights, gb.roughness, albedo,
-                gb.normal, view_normal, scene.skybox.ambient_intensity);
+                scene->lights, gb.roughness, albedo,
+                gb.normal, view_normal, scene->skybox.ambient_intensity);
 
             viewport.put_pixel(px, py, final_color);
         }
     }
 }
 
-void RendererRaster::render_tiles_deferred(const SceneRaster &scene) noexcept
+void RendererRaster::render_tiles_deferred() noexcept
 {
     std::array<Gbuffer, Viewport::TILE_SIZE * Viewport::TILE_SIZE> g_buffer{};
 
@@ -477,11 +521,11 @@ void RendererRaster::render_tiles_deferred(const SceneRaster &scene) noexcept
     {
         if (tile.counter < 1) continue;
         g_buffer.fill({});
-        render_tile_deferred(scene, tile, g_buffer);
+        render_tile_deferred(tile, g_buffer);
     }
 }
 
-void RendererRaster::render_tile_forward(const SceneRaster &scene, const Tile &tile) noexcept
+void RendererRaster::render_tile_forward(const Tile &tile) noexcept
 {
 
         const int max_offset_y = std::min(tile.offset_y+Viewport::TILE_SIZE, viewport.height);
@@ -577,8 +621,8 @@ void RendererRaster::render_tile_forward(const SceneRaster &scene, const Tile &t
                             {
                                 const auto view_normal = (-frag_coord).normalized();
                                 const auto final_color = calculate_light(
-                                    scene.lights, frag_rough, frag_color, frag_normal,
-                                    view_normal, scene.skybox.ambient_intensity);
+                                    scene->lights, frag_rough, frag_color, frag_normal,
+                                    view_normal, scene->skybox.ambient_intensity);
 
                                 viewport.put_pixel(x, y, final_color);
                             }
@@ -599,16 +643,16 @@ void RendererRaster::render_tile_forward(const SceneRaster &scene, const Tile &t
         }
 }
 
-void RendererRaster::render_tiles_forward(const SceneRaster &scene) noexcept
+void RendererRaster::render_tiles_forward() noexcept
 {
     for (const auto& tile : viewport.grid.tiles)
     {
         if (tile.counter < 1) continue;
-        render_tile_forward(scene, tile);
+        render_tile_forward(tile);
     }
 }
 
-void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster &scene) noexcept
+void RendererRaster::render_triangle(const FullTriangle &tri) noexcept
 {
     const auto minY = std::max(tri.aabb.min.y, 0.0f);
     const auto maxY = std::min(tri.aabb.max.y, static_cast<float>(viewport.height));
@@ -694,8 +738,8 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
                     {
                         const auto view_normal = (-frag_coord).normalized();
                         const auto final_color = calculate_light(
-                            scene.lights, frag_rough, frag_color, frag_normal,
-                            view_normal, scene.skybox.ambient_intensity);
+                            scene->lights, frag_rough, frag_color, frag_normal,
+                            view_normal, scene->skybox.ambient_intensity);
 
                         viewport.put_pixel(x, y, final_color);
                     }
@@ -713,6 +757,41 @@ void RendererRaster::render_triangle(const FullTriangle &tri, const SceneRaster 
         w0_row += delta_w0_row;
         w1_row += delta_w1_row;
         w2_row += delta_w2_row;
+    }
+}
+
+void RendererRaster::render_multithread() noexcept
+{
+    std::array<Gbuffer, Viewport::TILE_SIZE * Viewport::TILE_SIZE> g_buffer{};
+    int last_seen_frame = 0;
+    while (!stop_flag.load(std::memory_order_relaxed)) {
+        frame_counter.wait(last_seen_frame);
+        last_seen_frame = frame_counter.load(std::memory_order_relaxed);
+
+        if (stop_flag.load(std::memory_order_relaxed)) break;
+
+        while (true) {
+            constexpr int CHUNK_SIZE = 8;
+            const int t_start = tile_index.fetch_add(CHUNK_SIZE, std::memory_order_relaxed);
+            if (t_start >= viewport.grid.total_tiles) break;
+
+            const int t_end = std::min(t_start + CHUNK_SIZE, viewport.grid.total_tiles);
+            for (int t = t_start; t < t_end; ++t)
+            {
+                const auto& tile = viewport.grid.tiles[t];
+                if (tile.counter < 1) continue;
+                if (render_mode == RenderMode::DEFERRED_TILED_M)
+                {
+                    g_buffer.fill({});
+                    render_tile_deferred(tile, g_buffer);
+                };
+                if (render_mode == RenderMode::FORWARD_TILED_M) render_tile_forward(tile);
+            }
+        }
+
+        if (active_workers.fetch_sub(1) == 1) {
+            active_workers.notify_one();
+        }
     }
 }
 
@@ -801,24 +880,16 @@ void RendererRaster::draw_triangle_aabb() noexcept
 void RendererRaster::draw_active_tiles() noexcept
 {
     AABB2D temp_aabb {};
-    for (int g_y = 0; g_y < viewport.grid.height; ++g_y)
+
+    for (const auto& tile : viewport.grid.tiles)
     {
-        const int offset_y = g_y * Viewport::TILE_SIZE;
-        for (int g_x = 0; g_x < viewport.grid.width; ++g_x)
-        {
-            const int offset_x = g_x * Viewport::TILE_SIZE;
-            const auto tile_i = g_y * viewport.grid.width + g_x;
+        if (tile.counter < 1) continue;
+        temp_aabb.min.x = static_cast<float>(tile.offset_x);
+        temp_aabb.min.y = static_cast<float>(tile.offset_y);
+        temp_aabb.max.x = static_cast<float>(tile.offset_x) + Viewport::TILE_SIZE;
+        temp_aabb.max.y = static_cast<float>(tile.offset_y) + Viewport::TILE_SIZE;
 
-            if (const auto& tile = viewport.grid.tiles[tile_i]; tile.counter > 0)
-            {
-                temp_aabb.min.x = static_cast<float>(offset_x);
-                temp_aabb.min.y = static_cast<float>(offset_y);
-                temp_aabb.max.x = static_cast<float>(offset_x) + Viewport::TILE_SIZE;
-                temp_aabb.max.y = static_cast<float>(offset_y) + Viewport::TILE_SIZE;
-
-                draw_aabb(temp_aabb);
-            }
-        }
+        draw_aabb(temp_aabb);
     }
 }
 
@@ -830,8 +901,12 @@ std::string RendererRaster::renderer_mode() const noexcept
             return "FORWARD";
         case RenderMode::FORWARD_TILED:
             return "FORWARD_TILED";
-        case RenderMode::DIFFERED_TILED:
+        case RenderMode::DEFERRED_TILED:
             return "DIFFERED_TILED";
+        case RenderMode::FORWARD_TILED_M:
+            return "FORWARD_TILED - threaded";
+        case RenderMode::DEFERRED_TILED_M:
+            return "DIFFERED_TILED - threaded";
         case RenderMode::MAX_VALUE:
             return "Shouldn't happen!!";
     }
