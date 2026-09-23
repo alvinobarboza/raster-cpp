@@ -29,6 +29,18 @@ void Viewport::update_tiles() noexcept
     grid.total_tiles = total_tiles;
     grid.tiles.clear();
     grid.tiles.resize(total_tiles);
+
+    for (int g_y = 0; g_y < tile_y; ++g_y)
+    {
+        const int offset_y = g_y * TILE_SIZE;
+        for (int g_x = 0; g_x < tile_x; ++g_x)
+        {
+            const int offset_x = g_x * TILE_SIZE;
+            const auto tile_i = g_y * tile_x + g_x;
+            grid.tiles[tile_i].offset_x = offset_x;
+            grid.tiles[tile_i].offset_y = offset_y;
+        }
+    }
 }
 
 void Viewport::reset_tiles() noexcept

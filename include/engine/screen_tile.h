@@ -6,6 +6,7 @@
 
 //Compressed Sparse Row (CSR)
 struct Tile {
+    int offset_x {0}, offset_y{0};
     int counter{0};
     int offset{0};
     int cursor_offset{0};
