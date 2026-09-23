@@ -43,7 +43,12 @@ class RendererRaster {
     void draw_wireframe_triangle(const FullTriangle& triangle) noexcept;
     void draw_wireframe_from_tri_buffer() noexcept;
     void draw_triangle_aabb() noexcept;
+
     void render_triangle(const FullTriangle &tri, const SceneRaster &scene) noexcept;
+
+    void render_tile_deferred(const SceneRaster &scene, const Tile& tile, std::span<Gbuffer> g_buffer) noexcept;
+    void render_tile_forward(const SceneRaster &scene, const Tile& tile) noexcept;
+
     void render_tiles_deferred(const SceneRaster &scene) noexcept;
     void render_tiles_forward(const SceneRaster &scene) noexcept;
     void draw_active_tiles() noexcept;
