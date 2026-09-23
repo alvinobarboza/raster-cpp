@@ -9,8 +9,8 @@
 #include "material/color_convertion.h"
 
 int main() {
-    constexpr auto width = 1280;
-    constexpr auto height = 720;
+    constexpr auto width = 1000;
+    constexpr auto height = 1000;
 
     constexpr auto resolution_factor = 1;
 
