@@ -17,7 +17,7 @@ class Viewport {
     float half_width {};
     float half_height {};
 public:
-    static constexpr int TILE_SIZE = 28;
+    static constexpr int TILE_SIZE = 16;
     Grid grid {};
 
     int width {};
