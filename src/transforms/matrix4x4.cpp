@@ -62,6 +62,17 @@ void Matrix4x4::to_perspective(const float fov_scale, const float aspect_ratio, 
     };
 }
 
+void Matrix4x4::to_orthographic(
+    const float left, const float right, const float bottom, const float top, const float near, const float far)
+{
+    data = {
+        2.0f / (right-left), 0.0f,                0.0f,              -((right + left) / (right - left)),
+        0.0f,                2.0f / (top-bottom), 0.0f,              -((top + bottom) / (top - bottom)),
+        0.0f,                0.0f,                2.0f / (far-near), -((far + near) / (far - near)),
+        0.0f,                0.0f,                0.0f,              1.0f,
+    };
+}
+
 float Matrix4x4::operator()(const std::size_t x, const std::size_t y) const
 {
     return data[y * length + x];

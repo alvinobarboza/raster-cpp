@@ -28,6 +28,7 @@ public:
     void to_rotation(const Vec3& angle);
     void to_translation(const Vec3& translation);
     void to_perspective(float fov_scale, float aspect_ratio, float z_near, float z_far);
+    void to_orthographic(float left, float right, float bottom, float top, float near, float far);
 
     [[nodiscard]] Matrix4x4 transpose() const;
     [[nodiscard]] Matrix4x4 operator*( const Matrix4x4& rhs) const;
