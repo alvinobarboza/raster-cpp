@@ -27,6 +27,6 @@ bool Frustum::is_inside_frustum(const BoundingSphere &sphere) const {
           planes.cbegin(),
           planes.cend(),
           [&sphere](const Plane &plane) {
-               return plane.signed_distance_to_point(sphere.center_world) > -sphere.radius;
+               return plane.signed_distance_to_point(sphere.center_view_space) > -sphere.radius;
      });
 }

@@ -10,7 +10,7 @@ class Light {
     float intensity {};
 
     Vec3 direction {};
-    Vec3 direction_world {};
+    Vec3 direction_view_space {};
 
     Light() = default;
     Light(const LightType type, const Vec4 &color, const float intensity, const Vec3 &direction):

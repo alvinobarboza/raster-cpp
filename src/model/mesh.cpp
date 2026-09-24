@@ -14,8 +14,8 @@ normals(std::move(normals)),
 uvs(std::move(uvs)),
 materials(std::move(materials))
 {
-    vertices_word.resize(this->vertices.size());
-    normals_word.resize(this->normals.size());
+    vertices_view_space.resize(this->vertices.size());
+    normals_view_space.resize(this->normals.size());
 }
 
 ModelRaster::ModelRaster(
@@ -32,5 +32,5 @@ void ModelRaster::update_transforms()
 {
     transforms.update_transforms();
     boundingSphere.calculate_boundaries(meshData.vertices, transforms.scale_matrix);
-    boundingSphere.center_world = boundingSphere.center * transforms.transformation_matrix;
+    boundingSphere.center_view_space = boundingSphere.center * transforms.transformation_matrix;
 }

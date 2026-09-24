@@ -6,7 +6,7 @@
 class BoundingSphere {
 public:
     float radius {};
-    Vec3 center {}, center_world {};
+    Vec3 center {}, center_view_space {};
 
     BoundingSphere() = default;
 

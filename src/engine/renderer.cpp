@@ -98,19 +98,19 @@ void RendererRaster::render_scene(SceneRaster* const s)
     {
         // Since this is used only for the dot product between the light and triangle normal, I'm inverting here
         // Normal UP * actual light direction, will always produce negative value for a correct light setup.
-        light.direction_world = -(light.direction * scene->camera.transform.rotation_matrix).normalized();
+        light.direction_view_space = -(light.direction * scene->camera.transform.rotation_matrix).normalized();
     }
 
     for (const auto& model: scene->models)
     {
         const auto m_transforms = scene->camera.transform.transformation_matrix * model->transforms.transformation_matrix;
-        model->boundingSphere.center_world = model->boundingSphere.center * m_transforms;
+        model->boundingSphere.center_view_space = model->boundingSphere.center * m_transforms;
         model->to_render = scene->camera.frustum.is_inside_frustum(model->boundingSphere);
     }
 
 
     std::ranges::sort(scene->models, []( ModelRaster*& a, ModelRaster*& b) {
-        return a->boundingSphere.center_world.length() > b->boundingSphere.center_world.length();
+        return a->boundingSphere.center_view_space.length() > b->boundingSphere.center_view_space.length();
     });
 
 
@@ -127,17 +127,17 @@ void RendererRaster::render_scene(SceneRaster* const s)
 
         for (size_t i = 0; i < model->meshData.vertices.size(); ++i)
         {
-            model->meshData.vertices_word[i] = model->meshData.vertices[i] * m_transforms;
+            model->meshData.vertices_view_space[i] = model->meshData.vertices[i] * m_transforms;
         }
 
         for (size_t i = 0; i < model->meshData.normals.size(); ++i)
         {
-            model->meshData.normals_word[i] = model->meshData.normals[i] * m_rotation;
+            model->meshData.normals_view_space[i] = model->meshData.normals[i] * m_rotation;
         }
 
         for (const auto &t: model->meshData.triangles)
         {
-            if (!t.is_back_facing(model->meshData.vertices_word, model->meshData.normals_word))
+            if (!t.is_back_facing(model->meshData.vertices_view_space, model->meshData.normals_view_space))
             {
                 continue;
             }
@@ -146,18 +146,18 @@ void RendererRaster::render_scene(SceneRaster* const s)
             verts_in.clear();
 
             verts_out.emplace_back(
-                model->meshData.vertices_word[t.v1],
-                model->meshData.normals_word[t.n1],
+                model->meshData.vertices_view_space[t.v1],
+                model->meshData.normals_view_space[t.n1],
                 model->meshData.uvs[t.u1]);
 
             verts_out.emplace_back(
-                model->meshData.vertices_word[t.v2],
-                model->meshData.normals_word[t.n2],
+                model->meshData.vertices_view_space[t.v2],
+                model->meshData.normals_view_space[t.n2],
                 model->meshData.uvs[t.u2]);
 
             verts_out.emplace_back(
-                model->meshData.vertices_word[t.v3],
-                model->meshData.normals_word[t.n3],
+                model->meshData.vertices_view_space[t.v3],
+                model->meshData.normals_view_space[t.n3],
                 model->meshData.uvs[t.u3]);
 
             clip_triangle(
@@ -304,7 +304,7 @@ Vec4 calculate_light(
     for (const auto& light : lights)
     {
         // Also (light_pos - frag_pos) for point light
-        const Vec3 L = light.direction_world;
+        const Vec3 L = light.direction_view_space;
         const Vec3 H = (view_normal + L).normalized();
 
         // This a direction light, no attenuation will be applied now

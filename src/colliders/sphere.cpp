@@ -4,7 +4,7 @@ void BoundingSphere::calculate_boundaries(const std::vector<Vec3> &verts, const 
 {
     radius = 0.0f;
     center = {};
-    center_world = {};
+    center_view_space = {};
 
     for (const auto &vert : verts) {
         center += vert;
@@ -27,6 +27,6 @@ void BoundingSphere::calculate_boundaries(const std::vector<Vec3> &verts, const 
 
 std::ostream& operator<<(std::ostream &os, const BoundingSphere &s)
 {
-    os << "[ center:" << s.center << ", radius:" << s.radius << ", world:" << s.center_world << " ]";
+    os << "[ center:" << s.center << ", radius:" << s.radius << ", world:" << s.center_view_space << " ]";
     return os;
 }
