@@ -14,7 +14,11 @@ public:
     int width_mask {}, height_mask {};
     float f_width {}, f_height {};
 
-    [[nodiscard]] Vec4 texel_color(const Vec2 &uv) const;
-    [[nodiscard]] Vec3 texel_normal(const Vec2 &uv) const;
-    [[nodiscard]] float texel_intensity(const Vec2 &uv) const;
+    Vec2 texel_coord(Vec2 uv) const noexcept;
+
+    [[nodiscard]] Vec4 texel_color(Vec2 uv) const noexcept;
+    [[nodiscard]] Vec3 texel_normal(Vec2 uv) const noexcept;
+    [[nodiscard]] float texel_intensity(Vec2 uv) const noexcept;
+
+    [[nodiscard]] Vec4 bilinear_color(Vec2 uv) const noexcept;
 };

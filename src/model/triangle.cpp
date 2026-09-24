@@ -119,7 +119,7 @@ Vec3 FullTriangle::frag_normal(
 Vec4 FullTriangle::frag_color(const Vec2 uv) const noexcept
 {
     return material->map_diffuse ?
-        material->map_diffuse->texel_color(uv) : material->diffuse;
+        material->map_diffuse->bilinear_color(uv) : material->diffuse;
 }
 
 
