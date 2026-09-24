@@ -84,7 +84,7 @@ public:
     void toggle_render_active_tiles();
     void toggle_render_mode();
 
-    std::string renderer_mode() const noexcept;
+    [[nodiscard]] std::string renderer_mode() const noexcept;
 
     void handle_input();
 };
