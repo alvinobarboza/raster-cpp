@@ -67,6 +67,7 @@ add_executable(${PROJECT_NAME}
         src/engine/viewport.cpp
         include/engine/screen_tile.h
         src/transforms/constants.cpp
+        src/lights/light.cpp
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Werror -Wpedantic -Wextra)
