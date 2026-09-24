@@ -3,6 +3,8 @@
 
 #include <cmath>
 
+#include "transforms/constants.h"
+
 float Vec3::operator*(const Vec3 &rhs) const
 {
     return x*rhs.x + y*rhs.y + z*rhs.z;
@@ -108,7 +110,11 @@ Vec3 Vec3::lerp_to(const Vec3 &rhs, const float t) const
     if (t >= 1.0f) {
         return rhs;
     }
-    return *this + (rhs - *this) * t;
+    return {
+        transforms::lerp(this->x, rhs.x, t),
+        transforms::lerp(this->y, rhs.y, t),
+        transforms::lerp(this->z, rhs.z, t),
+    };
 }
 
 std::ostream& operator<<(std::ostream &os, const Vec3 &v)

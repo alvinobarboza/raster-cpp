@@ -1,4 +1,5 @@
 #include "transforms/vec2.h"
+#include "transforms/constants.h"
 
 #include <cmath>
 
@@ -72,7 +73,10 @@ Vec2 Vec2::lerp_to(const Vec2 &rhs, const float t) const {
     if (t >= 1.0f) {
         return rhs;
     }
-    return *this + (rhs - *this) * t;
+    return {
+        transforms::lerp(this->x, rhs.x, t),
+        transforms::lerp(this->y, rhs.y, t),
+    };
 }
 
 std::ostream& operator<<(std::ostream &os, const Vec2 &v)

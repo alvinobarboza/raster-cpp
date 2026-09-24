@@ -5,4 +5,6 @@ namespace transforms {
     constexpr float TAU = 2.0 * PI_R;
     constexpr float DEG_TO_RAD = TAU / 360.0f;
     constexpr float RAD_TO_DEG = 360.0f / TAU;
+
+    float lerp(float a, float b, float t) noexcept;
 }
