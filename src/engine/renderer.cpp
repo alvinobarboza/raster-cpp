@@ -797,7 +797,7 @@ void RendererRaster::render_multithread() noexcept
 
 void RendererRaster::draw_line(Vec3 a, Vec3 b) noexcept
 {
-    const Vec4 color = {0.4f,0.2f,0.2f, 1.0f};
+    const Vec4 color = {0.2f,0.4f,0.2f, 1.0f};
     const auto dx = b.x - a.x;
     const auto dy = b.y - a.y;
 
