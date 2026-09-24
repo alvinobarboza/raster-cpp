@@ -12,7 +12,7 @@ int main() {
     constexpr auto width = 1000;
     constexpr auto height = 1000;
 
-    constexpr auto resolution_factor = 1;
+    constexpr auto resolution_factor = 2;
 
     CameraRaster camera{
          2.0f, 53, 0.2, 15,
@@ -56,7 +56,7 @@ int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 
     InitWindow(width, height, "Software renderer");
-    SetTargetFPS(30);
+    SetTargetFPS(45);
 
     auto img = GenImageColor(renderer.viewport.width, renderer.viewport.height, RAYWHITE);
     auto render_texture = LoadTextureFromImage(img);
