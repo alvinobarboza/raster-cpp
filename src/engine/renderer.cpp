@@ -66,6 +66,40 @@ void RendererRaster::clip_triangle(const Plane& near, const Plane& far) noexcept
     }
 }
 
+void RendererRaster::clip_triangle_sm(const Plane& near, const Plane& far) noexcept
+{
+    for (const std::array planes = {near, far}; auto& plane : planes) {
+        std::swap(verts_in_sm, verts_out_sm);
+        verts_out_sm.clear();
+
+        size_t prev_index = verts_in_sm.size() - 1;
+        for (size_t i = 0; i < verts_in_sm.size(); i++)
+        {
+            const auto current_point = verts_in_sm[i];
+            const auto point = verts_in_sm[prev_index];
+
+            const auto distance_current_point = plane.signed_distance_to_point(current_point);
+            const auto distance_prev_point = plane.signed_distance_to_point(point);
+
+            if (distance_current_point > 0.0f)
+            {
+                if (distance_prev_point <= 0.0f)
+                {
+                    const auto ratio = distance_current_point / (distance_current_point - distance_prev_point);
+                    verts_out_sm.emplace_back(current_point.lerp_to(point, ratio));
+                }
+                verts_out_sm.push_back(current_point);
+            }
+            else if (distance_prev_point > 0)
+            {
+                const auto ratio = distance_current_point / (distance_current_point - distance_prev_point);
+                verts_out_sm.emplace_back(current_point.lerp_to(point, ratio));
+            }
+            prev_index = i;
+        }
+    }
+}
+
 bool RendererRaster::is_outside_screen(const Vec3 &ndc0, const Vec3 &ndc1, const Vec3 &ndc2) noexcept
 {
     //UP
@@ -102,7 +136,8 @@ void RendererRaster::render_scene(SceneRaster* const s)
         {
             const auto light_world_dir = light.transform.forward_direction * light.transform.rotation_matrix;
             light.direction_view_space = -(light_world_dir * scene->camera.transform.transposed_rotation_matrix).normalized();
-            light.project_view_matrix = scene->camera.transform.world_matrix * light.transform.view_matrix * light.projection_matrix;
+            light.project_view_matrix = light.projection_matrix * light.transform.view_matrix * scene->camera.transform.world_matrix;
+            shadow_mapping(light);
         }
     }
 
@@ -113,22 +148,20 @@ void RendererRaster::render_scene(SceneRaster* const s)
         model->to_render = scene->camera.frustum.is_inside_frustum(model->boundingSphere);
     }
 
-
     std::ranges::sort(scene->models, []( ModelRaster*& a, ModelRaster*& b) {
         return a->boundingSphere.center_view_space.length() > b->boundingSphere.center_view_space.length();
     });
 
-
     for (const auto& model : scene->models)
     {
-        const auto m_rotation = scene->camera.transform.transposed_rotation_matrix * model->transforms.rotation_matrix;
-        const auto m_transforms = scene->camera.transform.view_matrix * model->transforms.world_matrix;
-
         if (!model->to_render)
         {
             //std::cout << "[SKIP] " << model->name << "\n";
             continue;
         }
+
+        const auto m_rotation = scene->camera.transform.transposed_rotation_matrix * model->transforms.rotation_matrix;
+        const auto m_transforms = scene->camera.transform.view_matrix * model->transforms.world_matrix;
 
         for (size_t i = 0; i < model->meshData.vertices.size(); ++i)
         {
@@ -293,8 +326,12 @@ Vec3 fresnelSchlick(const float HdotV, const Vec3 baseReflectivity)
 
 Vec4 calculate_light(
     const std::vector<Light>& lights,
-    const float frag_rough, const Vec4 frag_color,const Vec3 frag_normal,
-    const Vec3 view_normal, const float ambient_intensity) noexcept
+    const float frag_rough,
+    const Vec3& frag_pos,
+    const Vec4& frag_color,
+    const Vec3& frag_normal,
+    const Vec3& view_normal,
+    const float ambient_intensity) noexcept
 {
     const Vec3 albedo = {
         std::pow(frag_color.x, 2.2f),
@@ -308,6 +345,21 @@ Vec4 calculate_light(
     Vec3 Lo {};
     for (const auto& light : lights)
     {
+        if (const float d {frag_normal * light.direction_view_space}; d <= 0.0f) continue;
+
+        if (light.has_shadows)
+        {
+            const Vec3 frag_light_pos {frag_pos * light.project_view_matrix };
+            const float depth_light {(frag_light_pos.z + 1.0f) * 0.5f};
+            constexpr float bias_depth {0.0008f};
+            const Vec2 uv_light_coord {(frag_light_pos.x + 1.0f) * 0.5f, (1.0f - frag_light_pos.y) * 0.5f};
+
+            if (const auto shadow {light.shadow.sample(uv_light_coord)}; frag_light_pos.z <= 1.0f && (depth_light - bias_depth) > shadow)
+            {
+                continue;
+            }
+        }
+
         // Also (light_pos - frag_pos) for point light
         const Vec3 L = light.direction_view_space;
         const Vec3 H = (view_normal + L).normalized();
@@ -510,7 +562,7 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<Gbuffer> g
             const auto view_normal = (-gb.frag_coord).normalized();
             const Vec4 albedo{gb.albedo.x, gb.albedo.y, gb.albedo.z, 1.0f};
             const auto final_color = calculate_light(
-                scene->lights, gb.roughness, albedo,
+                scene->lights, gb.roughness, gb.frag_coord, albedo,
                 gb.normal, view_normal, scene->skybox.ambient_intensity);
 
             viewport.put_pixel(px, py, final_color);
@@ -626,7 +678,7 @@ void RendererRaster::render_tile_forward(const Tile &tile) noexcept
                             {
                                 const auto view_normal = (-frag_coord).normalized();
                                 const auto final_color = calculate_light(
-                                    scene->lights, frag_rough, frag_color, frag_normal,
+                                    scene->lights, frag_rough, frag_coord, frag_color, frag_normal,
                                     view_normal, scene->skybox.ambient_intensity);
 
                                 viewport.put_pixel(x, y, final_color);
@@ -743,7 +795,7 @@ void RendererRaster::render_triangle(const FullTriangle &tri) noexcept
                     {
                         const auto view_normal = (-frag_coord).normalized();
                         const auto final_color = calculate_light(
-                            scene->lights, frag_rough, frag_color, frag_normal,
+                            scene->lights, frag_rough, frag_coord, frag_color, frag_normal,
                             view_normal, scene->skybox.ambient_intensity);
 
                         viewport.put_pixel(x, y, final_color);
@@ -753,6 +805,155 @@ void RendererRaster::render_triangle(const FullTriangle &tri) noexcept
                         viewport.put_pixel(x, y, frag_color);
                     }
                 }
+            }
+
+            w0 += delta_w0_col;
+            w1 += delta_w1_col;
+            w2 += delta_w2_col;
+        }
+        w0_row += delta_w0_row;
+        w1_row += delta_w1_row;
+        w2_row += delta_w2_row;
+    }
+}
+
+void RendererRaster::shadow_mapping(Light& light) noexcept
+{
+    if (!light.has_shadows) return;
+
+    light.shadow.clear();
+
+    for (const auto& model: scene->models)
+    {
+        const auto m_transforms = light.transform.view_matrix * model->transforms.world_matrix;
+        model->boundingSphere.center_view_space = model->boundingSphere.center * m_transforms;
+        model->to_render = light.frustum.is_inside_frustum(model->boundingSphere);
+    }
+
+    std::ranges::sort(scene->models, []( ModelRaster*& a, ModelRaster*& b) {
+        return a->boundingSphere.center_view_space.length() > b->boundingSphere.center_view_space.length();
+    });
+
+    for (const auto& model : scene->models)
+    {
+        if (!model->to_render)
+        {
+            continue;
+        }
+
+        const auto m_rotation = light.transform.transposed_rotation_matrix * model->transforms.rotation_matrix;
+        const auto m_transforms = light.transform.view_matrix * model->transforms.world_matrix;
+
+        for (size_t i = 0; i < model->meshData.vertices.size(); ++i)
+        {
+            model->meshData.vertices_view_space[i] = model->meshData.vertices[i] * m_transforms;
+        }
+
+        for (size_t i = 0; i < model->meshData.normals.size(); ++i)
+        {
+            model->meshData.normals_view_space[i] = model->meshData.normals[i] * m_rotation;
+        }
+
+        for (const auto &t: model->meshData.triangles)
+        {
+            if (!t.is_back_facing(model->meshData.vertices_view_space, model->meshData.normals_view_space))
+            {
+                continue;
+            }
+
+            verts_out_sm.clear();
+            verts_in_sm.clear();
+
+            verts_out_sm.emplace_back(model->meshData.vertices_view_space[t.v1]);
+            verts_out_sm.emplace_back(model->meshData.vertices_view_space[t.v2]);
+            verts_out_sm.emplace_back(model->meshData.vertices_view_space[t.v3]);
+
+            clip_triangle_sm(
+            light.frustum.planes[NEAR_PLANE],
+            light.frustum.planes[FAR_PLANE]);
+
+
+            if (verts_out_sm.size() > 2) {
+                for (size_t j = 1; j < verts_out_sm.size() - 1; ++j) {
+                    const auto p1 = verts_out_sm[0];
+                    const auto p2 = verts_out_sm[j];
+                    const auto p3 = verts_out_sm[j + 1];
+
+                    ShadowTriangle sf {};
+
+                    const auto ndc0 = light.vertex_to_ndc(p1);
+                    const auto ndc1 = light.vertex_to_ndc(p2);
+                    const auto ndc2 = light.vertex_to_ndc(p3);
+
+                    if (is_outside_screen(ndc0, ndc1, ndc2))
+                    {
+                        continue;
+                    }
+
+                    sf.screen_points[0] = light.ndc_to_canvas(ndc0);
+                    sf.screen_points[1] = light.ndc_to_canvas(ndc1);
+                    sf.screen_points[2] = light.ndc_to_canvas(ndc2);
+
+                    sf.calculate_tri_aabb();
+                    render_shadow_map_triangle(light, sf);
+                }
+            }
+        }
+    }
+}
+
+void RendererRaster::render_shadow_map_triangle(Light& light, const ShadowTriangle &tri) noexcept
+{
+    const auto min_y = std::max(tri.aabb.min.y, 0.0f);
+    const auto max_y = std::min(tri.aabb.max.y, static_cast<float>(light.shadow.height));
+    const auto min_x = std::max(tri.aabb.min.x, 0.0f);
+    const auto max_x = std::min(tri.aabb.max.x, static_cast<float>(light.shadow.width));
+
+    const auto delta_w0_col = tri.screen_points[1].y - tri.screen_points[2].y;
+    const auto delta_w1_col = tri.screen_points[2].y - tri.screen_points[0].y;
+    const auto delta_w2_col = tri.screen_points[0].y - tri.screen_points[1].y;
+
+    const auto delta_w0_row = tri.screen_points[2].x - tri.screen_points[1].x;
+    const auto delta_w1_row = tri.screen_points[0].x - tri.screen_points[2].x;
+    const auto delta_w2_row = tri.screen_points[1].x - tri.screen_points[0].x;
+
+    float bias_0 = 0.0f, bias_1 = 0.0f, bias_2 = 0.0f;
+    if (triangle::is_edge_top_or_left(tri.screen_points[1], tri.screen_points[2]))
+    {
+        bias_0 = -0.0001;
+    }
+    if (triangle::is_edge_top_or_left(tri.screen_points[2], tri.screen_points[0]))
+    {
+        bias_1 = -0.0001;
+    }
+    if (triangle::is_edge_top_or_left(tri.screen_points[0], tri.screen_points[1]))
+    {
+        bias_2 = -0.0001;
+    }
+
+    const auto area = 1.0f / triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], tri.screen_points[2]);
+    const Vec3 p = {min_x + 0.5f, min_y + 0.5f, 0.0f};
+
+    auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p) + bias_0;
+    auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p) + bias_1;
+    auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p) + bias_2;
+
+    for (int y = min_y; y < max_y; y++)
+    {
+        auto w0 = w0_row;
+        auto w1 = w1_row;
+        auto w2 = w2_row;
+
+        for (int x = min_x; x < max_x; x++)
+        {
+            if (w0 >= 0.0f && w1 >= 0.0f && w2 >= 0.0f)
+            {
+                const auto alpha = w0 * area;
+                const auto beta = w1 * area;
+                const auto gamma = w2 * area;
+
+                const float z_depth = tri.frag_depth_ndc(alpha, beta, gamma);
+                light.shadow.depth_test(x, y, z_depth);
             }
 
             w0 += delta_w0_col;

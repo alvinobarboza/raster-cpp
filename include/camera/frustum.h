@@ -26,7 +26,7 @@ public:
 
 class Frustum {
 public:
-    std::array<Plane, PLANES> planes;
+    std::array<Plane, PLANES> planes{};
 
     Frustum() = default;
 

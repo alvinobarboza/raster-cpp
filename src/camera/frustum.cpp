@@ -1,7 +1,6 @@
 #include "camera/frustum.h"
 
 #include <algorithm>
-#include <iostream>
 
 Plane::Plane(const float d, const Vec3 &n)
 {

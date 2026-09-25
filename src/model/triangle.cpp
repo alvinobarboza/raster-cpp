@@ -90,11 +90,11 @@ Vec2 FullTriangle::frag_uv_coord(const float alpha, const float beta, const floa
             projected_uv[2] * gamma) * depth;
 }
 
-Vec3 FullTriangle::frag_coord(const float alpha, const float beta, const float gamma, const float depth) const noexcept
+Vec3 FullTriangle::frag_coord(const float alpha, const float beta, const float gamma, [[maybe_unused]]const float depth) const noexcept
 {
     return (vertices[0].point * alpha +
             vertices[1].point * beta +
-            vertices[2].point * gamma) * depth;
+            vertices[2].point * gamma) ;
 }
 
 Vec3 FullTriangle::frag_normal(
@@ -129,6 +129,35 @@ float FullTriangle::frag_roughness(const Vec2 uv) const noexcept
     return material->map_roughness ?
             material->map_roughness->texel_intensity(uv)
             : material->specular * 0.001f;
+}
+
+
+
+void ShadowTriangle::calculate_tri_aabb()
+{
+    aabb = {
+        {
+            std::floor(
+                std::min(screen_points[0].x, std::min(screen_points[1].x, screen_points[2].x))
+            ),
+            std::floor(
+                std::min(screen_points[0].y, std::min(screen_points[1].y, screen_points[2].y))
+            )
+        },
+        {
+            std::ceil(
+                std::max(screen_points[0].x, std::max(screen_points[1].x, screen_points[2].x))
+            ),
+            std::ceil(
+                std::max(screen_points[0].y, std::max(screen_points[1].y, screen_points[2].y))
+            )
+        }
+    };
+}
+
+float ShadowTriangle::frag_depth_ndc(const float alpha, const float beta, const float gamma) const noexcept
+{
+    return screen_points[0].z * alpha + screen_points[1].z * beta + screen_points[2].z * gamma;
 }
 
 bool triangle::is_edge_top_or_left(const Vec3 &p1, const Vec3 &p2)

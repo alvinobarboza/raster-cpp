@@ -1,7 +1,7 @@
 #pragma once
 #include "transforms/vec2.h"
 
-class alignas(16) AABB2D {
+class AABB2D {
 public:
     Vec2 min {}, max {};
 

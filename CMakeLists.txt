@@ -68,6 +68,8 @@ add_executable(${PROJECT_NAME}
         include/engine/screen_tile.h
         src/transforms/constants.cpp
         src/lights/light.cpp
+        include/lights/shadow.h
+        src/lights/shadow.cpp
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Werror -Wpedantic -Wextra)

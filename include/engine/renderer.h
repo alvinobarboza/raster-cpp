@@ -38,6 +38,9 @@ class RendererRaster {
     std::vector<Vertex> verts_in {};
     std::vector<Vertex> verts_out {};
 
+    std::vector<Vec3> verts_in_sm {}; // for shadow mapping
+    std::vector<Vec3> verts_out_sm {}; // for shadow mapping
+
     std::vector<std::jthread> workers{};
     std::vector<FullTriangle> tris_buffer {};
 
@@ -48,6 +51,7 @@ class RendererRaster {
 
     // just near and far for now
     void clip_triangle(const Plane& near, const Plane& far) noexcept;
+    void clip_triangle_sm(const Plane& near, const Plane& far) noexcept; // for shadows
 
     static bool is_outside_screen(const Vec3& ndc0, const Vec3& ndc1, const Vec3& ndc2) noexcept;
 
@@ -68,6 +72,9 @@ class RendererRaster {
 
     void woke_threads() noexcept;
     void render_multithread() noexcept;
+
+    void shadow_mapping(Light& light) noexcept;
+    static void render_shadow_map_triangle(Light& light, const ShadowTriangle &tri) noexcept;
 public:
     Viewport viewport {};
 

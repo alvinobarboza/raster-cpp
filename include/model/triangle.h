@@ -59,6 +59,15 @@ public:
 
 };
 
+class ShadowTriangle {
+public:
+    AABB2D aabb {};
+    std::array<Vec3, 3> screen_points {};
+
+    void calculate_tri_aabb();
+    float frag_depth_ndc(float alpha, float beta, float gamma) const noexcept;
+};
+
 namespace triangle {
     [[nodiscard]] bool is_edge_top_or_left(const Vec3 &p1, const Vec3 &p2);
     [[nodiscard]] float edge_cross(const Vec3 &a, const Vec3 &b, const Vec3 &p);
