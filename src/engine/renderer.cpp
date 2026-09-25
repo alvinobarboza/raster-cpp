@@ -98,7 +98,11 @@ void RendererRaster::render_scene(SceneRaster* const s)
     {
         // Since this is used only for the dot product between the light and triangle normal, I'm inverting here
         // Normal UP * actual light direction, will always produce negative value for a correct light setup.
-        light.direction_view_space = -(light.direction * scene->camera.transform.rotation_matrix).normalized();
+        if (light.type == LightType::DIRECTIONAL)
+        {
+            const auto light_world_dir = light.transform.forward_direction * light.transform.rotation_matrix.transpose();
+            light.direction_view_space = -(light_world_dir * scene->camera.transform.rotation_matrix).normalized();
+        }
     }
 
     for (const auto& model: scene->models)
