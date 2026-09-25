@@ -100,14 +100,15 @@ void RendererRaster::render_scene(SceneRaster* const s)
         // Normal UP * actual light direction, will always produce negative value for a correct light setup.
         if (light.type == LightType::DIRECTIONAL)
         {
-            const auto light_world_dir = light.transform.forward_direction * light.transform.rotation_matrix.transpose();
-            light.direction_view_space = -(light_world_dir * scene->camera.transform.rotation_matrix).normalized();
+            const auto light_world_dir = light.transform.forward_direction * light.transform.rotation_matrix;
+            light.direction_view_space = -(light_world_dir * scene->camera.transform.transposed_rotation_matrix).normalized();
+            light.project_view_matrix = scene->camera.transform.world_matrix * light.transform.view_matrix * light.projection_matrix;
         }
     }
 
     for (const auto& model: scene->models)
     {
-        const auto m_transforms = scene->camera.transform.transformation_matrix * model->transforms.transformation_matrix;
+        const auto m_transforms = scene->camera.transform.view_matrix * model->transforms.world_matrix;
         model->boundingSphere.center_view_space = model->boundingSphere.center * m_transforms;
         model->to_render = scene->camera.frustum.is_inside_frustum(model->boundingSphere);
     }
@@ -120,8 +121,8 @@ void RendererRaster::render_scene(SceneRaster* const s)
 
     for (const auto& model : scene->models)
     {
-        const auto m_rotation = scene->camera.transform.rotation_matrix * model->transforms.rotation_matrix;
-        const auto m_transforms = scene->camera.transform.transformation_matrix * model->transforms.transformation_matrix;
+        const auto m_rotation = scene->camera.transform.transposed_rotation_matrix * model->transforms.rotation_matrix;
+        const auto m_transforms = scene->camera.transform.view_matrix * model->transforms.world_matrix;
 
         if (!model->to_render)
         {

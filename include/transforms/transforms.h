@@ -11,8 +11,10 @@ public:
 
     Matrix4x4 scale_matrix {};
     Matrix4x4 rotation_matrix {};
+    Matrix4x4 transposed_rotation_matrix {};
     Matrix4x4 translation_matrix {};
-    Matrix4x4 transformation_matrix {};
+    Matrix4x4 world_matrix {};
+    Matrix4x4 view_matrix {};
 
     Transforms() = default;
     Transforms(

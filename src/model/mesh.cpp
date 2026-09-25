@@ -32,5 +32,5 @@ void ModelRaster::update_transforms()
 {
     transforms.update_transforms();
     boundingSphere.calculate_boundaries(meshData.vertices, transforms.scale_matrix);
-    boundingSphere.center_view_space = boundingSphere.center * transforms.transformation_matrix;
+    boundingSphere.center_view_space = boundingSphere.center * transforms.world_matrix;
 }

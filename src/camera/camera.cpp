@@ -54,7 +54,7 @@ Vec3 CameraRaster::vertex_to_ndc(const Vec3 &vertex) const
 void CameraRaster::move_forward_backwards(const float unit)
 {
     // transformations are stored to apply during projection, not really for camera movement.
-    const Matrix4x4 rot_mat = transform.rotation_matrix.transpose();
+    const Matrix4x4 rot_mat = transform.rotation_matrix;
 
     const Vec3 direction = transform.forward_direction * rot_mat;
     const Vec3 normalized_dir = direction.normalized();
@@ -65,7 +65,7 @@ void CameraRaster::move_forward_backwards(const float unit)
 
 void CameraRaster::move_left_right(const float unit)
 {
-    const Matrix4x4 rot_mat = transform.rotation_matrix.transpose();
+    const Matrix4x4 rot_mat = transform.rotation_matrix;
 
     const Vec3 direction = transform.forward_direction * rot_mat;
     const Vec3 cross_up = direction.cross({0.0f, 0.1f, 0.0f});
