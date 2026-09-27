@@ -12,5 +12,5 @@ public:
     explicit ShadowMap(int width = 1024, int height = 1024) noexcept;
     void clear() noexcept;
     void depth_test(int x, int y, float z) noexcept;
-    float sample(Vec2 uv) const noexcept;
+    [[nodiscard]] float sample(Vec2 uv) const noexcept;
 };
