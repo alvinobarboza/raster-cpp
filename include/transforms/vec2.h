@@ -1,7 +1,7 @@
 #pragma once
 #include <iostream>
 
-class alignas(8) Vec2 {
+class Vec2 {
 public:
     float x {};
     float y {};

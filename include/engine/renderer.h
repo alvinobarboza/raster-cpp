@@ -31,7 +31,7 @@ class RendererRaster {
     bool render_wireframe {};
     bool render_triangle_aabb {};
     bool render_active_tiles {};
-    RenderMode render_mode {RenderMode::FORWARD};
+    RenderMode render_mode {RenderMode::DEFERRED_TILED_M};
     int shadow_index {0};
 
     SceneRaster* scene {nullptr};

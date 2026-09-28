@@ -7,7 +7,6 @@
 #include "engine/shader.h"
 #include "engine/timer.h"
 #include "material/color_convertion.h"
-#include "transforms/constants.h"
 
 RendererRaster::RendererRaster(const int w, const int h, const int res_factor) noexcept:
 viewport(w, h, res_factor)

@@ -19,28 +19,32 @@ FullTriangle::FullTriangle(
     const MaterialRaster &material,
     const bool smooth) : smooth(smooth), material(&material)
 {
-    vertices[0] = v1;
-    vertices[1] = v2;
-    vertices[2] = v3;
-
     depth_z[0] = 1 / v1.point.z;
     depth_z[1] = 1 / v2.point.z;
     depth_z[2] = 1 / v3.point.z;
 
-    projected_uv[0] = v1.uv * depth_z[0];
-    projected_uv[1] = v2.uv * depth_z[1];
-    projected_uv[2] = v3.uv * depth_z[2];
+    projected_vertices[0].point = v1.point * depth_z[0];
+    projected_vertices[1].point = v2.point * depth_z[1];
+    projected_vertices[2].point = v3.point * depth_z[2];
+
+    projected_vertices[0].normal = v1.normal * depth_z[0];
+    projected_vertices[1].normal = v2.normal * depth_z[1];
+    projected_vertices[2].normal = v3.normal * depth_z[2];
+
+    projected_vertices[0].uv = v1.uv * depth_z[0];
+    projected_vertices[1].uv = v2.uv * depth_z[1];
+    projected_vertices[2].uv = v3.uv * depth_z[2];
 
     const auto ba = v2.point - v1.point;
     const auto ca = v3.point - v1.point;
 
     normal = ba.cross(ca).normalized();
 
-    const auto edge1 = vertices[1].point - vertices[0].point;
-    const auto edge2 = vertices[2].point - vertices[0].point;
+    const auto edge1 = v2.point - v1.point;
+    const auto edge2 = v3.point - v1.point;
 
-    const auto deltaUV1 = vertices[1].uv - vertices[0].uv;
-    const auto deltaUV2 = vertices[2].uv - vertices[0].uv;
+    const auto deltaUV1 = v2.uv - v1.uv;
+    const auto deltaUV2 = v3.uv - v1.uv;
 
     const auto f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
 
@@ -85,16 +89,16 @@ float FullTriangle::frag_depth(const float alpha, const float beta, const float 
 
 Vec2 FullTriangle::frag_uv_coord(const float alpha, const float beta, const float gamma, const float depth) const noexcept
 {
-    return (projected_uv[0] * alpha +
-            projected_uv[1] * beta +
-            projected_uv[2] * gamma) * depth;
+    return (projected_vertices[0].uv * alpha +
+            projected_vertices[1].uv * beta +
+            projected_vertices[2].uv * gamma) * depth;
 }
 
-Vec3 FullTriangle::frag_coord(const float alpha, const float beta, const float gamma, [[maybe_unused]]const float depth) const noexcept
+Vec3 FullTriangle::frag_coord(const float alpha, const float beta, const float gamma, const float depth) const noexcept
 {
-    return (vertices[0].point * alpha +
-            vertices[1].point * beta +
-            vertices[2].point * gamma) ;
+    return (projected_vertices[0].point * alpha +
+            projected_vertices[1].point * beta +
+            projected_vertices[2].point * gamma) * depth ;
 }
 
 Vec3 FullTriangle::frag_normal(
@@ -102,9 +106,9 @@ Vec3 FullTriangle::frag_normal(
     const Vec2 uv, const float depth) const noexcept
 {
     const auto _normal = !smooth ? normal :
-                    ((vertices[0].normal * alpha +
-                    vertices[1].normal * beta +
-                    vertices[2].normal * gamma) * depth).normalized();
+                    ((projected_vertices[0].normal * alpha +
+                    projected_vertices[1].normal * beta +
+                    projected_vertices[2].normal * gamma) * depth).normalized();
 
     if (!material->map_normal) return _normal;
 

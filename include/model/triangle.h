@@ -20,7 +20,7 @@ public:
     [[nodiscard]] bool is_back_facing(const std::vector<Vec3> &vertices, const std::vector<Vec3> &normals) const;
 };
 
-struct alignas(16) Vertex {
+struct Vertex {
     Vec3 point;
     Vec3 normal;
     Vec2 uv;
@@ -28,8 +28,7 @@ struct alignas(16) Vertex {
 
 class FullTriangle {
 public:
-    std::array<Vertex, 3> vertices {};
-    std::array<Vec2, 3> projected_uv {};
+    std::array<Vertex, 3> projected_vertices {};
     std::array<Vec3, 3> screen_points {};
     std::array<float, 3> depth_z {};
     AABB2D aabb {};
