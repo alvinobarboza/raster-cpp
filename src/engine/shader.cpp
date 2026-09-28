@@ -49,7 +49,7 @@ Vec4 shader::calculate_light(
     const Vec3& view_normal,
     const float ambient_intensity) noexcept
 {
-    const Vec3 albedo = {
+    const Vec3 albedo = { //TODO: compute LUT for this
         std::pow(frag_color.x, 2.2f),
         std::pow(frag_color.y, 2.2f),
         std::pow(frag_color.z, 2.2f)
