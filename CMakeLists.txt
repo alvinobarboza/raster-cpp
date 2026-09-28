@@ -70,6 +70,8 @@ add_executable(${PROJECT_NAME}
         src/lights/light.cpp
         include/lights/shadow.h
         src/lights/shadow.cpp
+        include/engine/shader.h
+        src/engine/shader.cpp
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Werror -Wpedantic -Wextra)
