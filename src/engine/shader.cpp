@@ -52,11 +52,12 @@ Vec4 shader::calculate_light(
     Vec3 Lo {};
     for (const auto& light : lights)
     {
-        if (const float d {frag_normal * light.direction_view_space}; d <= 0.0f) continue;
+        const float d {frag_normal * light.direction_view_space};
+        if ( d <= 0.0f) continue;
 
         if (light.has_shadows)
         {
-            const Vec3 frag_light_pos {frag_pos * light.project_view_matrix };
+            const Vec3 frag_light_pos {frag_pos * light.project_view_matrix }; //TODO: try to interpolate frag position in the triangle stage
             const float depth_light {(frag_light_pos.z + 1.0f) * 0.5f};
             constexpr float bias_depth {0.0008f};
             const Vec2 uv_light_coord {(frag_light_pos.x + 1.0f) * 0.5f, (1.0f - frag_light_pos.y) * 0.5f};
@@ -81,7 +82,7 @@ Vec4 shader::calculate_light(
 
         // Cook-Torrance BRDF
         const float NdotV = std::max(frag_normal * view_normal, 0.0000001f);
-        const float NdotL = std::max(frag_normal * L, 0.0000001f);
+        const float NdotL = std::max(d, 0.0000001f);
         const float HdotV = std::max(H * view_normal, 0.0f);
         const float NdotH = std::max(frag_normal * H, 0.0f);
 
@@ -98,7 +99,8 @@ Vec4 shader::calculate_light(
 
         // Lo += (kD * albedo / PI + specular) * radiance * NdotL;
         const Vec3 kD_x_albedo {kD.x * albedo.x, kD.y * albedo.y, kD.z * albedo.z};
-        const Vec3 divided_pi_specular = kD_x_albedo / transforms::PI_R + specular;
+        constexpr float INV_PI {1.0f / transforms::PI_R};
+        const Vec3 divided_pi_specular = kD_x_albedo * INV_PI + specular;
         const Vec3 mul_radiance {
             divided_pi_specular.x * radiance.x,
             divided_pi_specular.y * radiance.y,
