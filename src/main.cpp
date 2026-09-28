@@ -33,6 +33,8 @@ int main() {
         color_convertion::color_to_vec4(WHITE),
         4.0f,
         Vec3(-30.0f, 45.0f, 0.0f), Vec3(5.0f,5.0f,0.0f),
+        4.0f,
+        20.0f,
         true);
 
     RendererRaster renderer{width, height, resolution_factor};

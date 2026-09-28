@@ -11,6 +11,8 @@ class Light {
     LightType type {};
     Vec4 color {};
     float intensity {};
+    float ortho_size {}; // half box extent
+    float focus_distance {}; // from camera view
 
     Vec3 direction_view_space {};
     Transforms transform {};
@@ -28,7 +30,10 @@ class Light {
         const Vec4 &color,
         float intensity,
         const Vec3 &rotation,
-        const Vec3& position, bool shadows = false) noexcept;
+        const Vec3& position,
+        float orthographic_size,
+        float focus_distance,
+        bool shadows = false) noexcept;
 
     Vec3 vertex_to_ndc(const Vec3& point) const noexcept;
     Vec3 ndc_to_canvas(const Vec3 &point) const noexcept;

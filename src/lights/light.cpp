@@ -5,10 +5,15 @@ Light::Light(
     const Vec4 &color,
     const float intensity,
     const Vec3 &rotation,
-    const Vec3 &position, const bool shadows) noexcept:
+    const Vec3 &position,
+    const float orthographic_size,
+    const float focus_distance,
+    const bool shadows) noexcept:
 type(type),
 color(color),
 intensity(intensity),
+ortho_size(orthographic_size),
+focus_distance(focus_distance),
 shadow(shadows ? ShadowMap():ShadowMap{0,0}),
 has_shadows(shadows)
 {
@@ -22,11 +27,10 @@ has_shadows(shadows)
 
     if (type == LightType::DIRECTIONAL)
     {
-        constexpr float box_size {5.0f};
-        constexpr float left { -box_size };
-        constexpr float right { box_size };
-        constexpr float bottom { -box_size };
-        constexpr float top { box_size };
+        const float left { -ortho_size };
+        const float right { ortho_size };
+        const float bottom { -ortho_size };
+        const float top { ortho_size };
         constexpr float near { 1.0f };
         constexpr float far { 30.0f };
 

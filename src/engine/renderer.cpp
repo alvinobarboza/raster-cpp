@@ -135,7 +135,14 @@ void RendererRaster::render_scene(SceneRaster* const s)
         // Normal UP * actual light direction, will always produce negative value for a correct light setup.
         if (light.type == LightType::DIRECTIONAL)
         {
+            const auto light_target = ((
+                scene->camera.transform.forward_direction *
+                scene->camera.transform.rotation_matrix) * light.ortho_size) + scene->camera.transform.position;
+
             const auto light_world_dir = light.transform.forward_direction * light.transform.rotation_matrix;
+            light.transform.position = light_target - light_world_dir * light.focus_distance;
+            light.transform.update_transforms(true);
+
             light.direction_view_space = -(light_world_dir * scene->camera.transform.transposed_rotation_matrix).normalized();
             light.project_view_matrix = light.projection_matrix * light.transform.view_matrix * scene->camera.transform.world_matrix;
             shadow_mapping(light);
