@@ -23,6 +23,15 @@ float shader::geometrySmith(const float NdotV, const float NdotL, const float ro
     return ggx1 * ggx2;
 }
 
+float shader::visibilitySchlickGGX(const float NdotV, const float NdotL, const float roughness) noexcept
+{
+    const float r = roughness + 1.0f;
+    const float k = r * r / 8.0f;
+    const float ggx1 = (NdotV * (1.0f - k) + k);
+    const float ggx2 = (NdotL * (1.0f - k) + k);
+    return 1.0f / (4.0f * ggx1 * ggx2);
+}
+
 Vec3 shader::fresnelSchlick(const float HdotV, const Vec3& baseReflectivity) noexcept
 {
     const Vec3 inverse_reflectivity {1.0f - baseReflectivity.x, 1.0f - baseReflectivity.y, 1.0f - baseReflectivity.z};
@@ -87,10 +96,10 @@ Vec4 shader::calculate_light(
         const float NdotH = std::max(frag_normal * H, 0.0f);
 
         const float D = distributionGGX(NdotH, frag_rough);
-        const float G = geometrySmith(NdotV, NdotL, frag_rough);
+        const float V = visibilitySchlickGGX(NdotV, NdotL, frag_rough);
         const Vec3 F = fresnelSchlick(HdotV, base_reflectivity);
 
-        const Vec3 specular = F * D * G / (4.0f * NdotV * NdotL);
+        const Vec3 specular = F * (D * V);
 
         const Vec3 kD = Vec3{1.0f} - F;
 

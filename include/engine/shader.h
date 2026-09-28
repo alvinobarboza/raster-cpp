@@ -13,6 +13,7 @@ namespace shader
 {
     float distributionGGX(float NdotH, float roughness) noexcept;
     float geometrySmith(float NdotV, float NdotL, float roughness) noexcept;
+    float visibilitySchlickGGX(float NdotV, float NdotL, float roughness) noexcept;
     Vec3 fresnelSchlick(float HdotV, const Vec3& baseReflectivity) noexcept;
     Vec4 calculate_light(
         const std::vector<Light>& lights,
