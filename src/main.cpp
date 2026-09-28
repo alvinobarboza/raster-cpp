@@ -12,7 +12,7 @@ int main() {
     constexpr auto width = 1000;
     constexpr auto height = 1000;
 
-    constexpr auto resolution_factor = 2;
+    constexpr auto resolution_factor = 1;
 
     CameraRaster camera{
          2.0f, 53, 0.2, 15,

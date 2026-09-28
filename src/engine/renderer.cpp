@@ -331,28 +331,18 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<Gbuffer> g
         const auto delta_w1_row = tri.screen_points[0].x - tri.screen_points[2].x;
         const auto delta_w2_row = tri.screen_points[1].x - tri.screen_points[0].x;
 
-        float bias_0 = 0.0f, bias_1 = 0.0f, bias_2 = 0.0f;
-        if (triangle::is_edge_top_or_left(tri.screen_points[1], tri.screen_points[2]))
-        {
-            bias_0 = -0.0001;
-        }
-        if (triangle::is_edge_top_or_left(tri.screen_points[2], tri.screen_points[0]))
-        {
-            bias_1 = -0.0001;
-        }
-        if (triangle::is_edge_top_or_left(tri.screen_points[0], tri.screen_points[1]))
-        {
-            bias_2 = -0.0001;
-        }
+        const auto bias_0 {triangle::is_edge_top_or_left(tri.screen_points[1], tri.screen_points[2])};
+        const auto bias_1 {triangle::is_edge_top_or_left(tri.screen_points[2], tri.screen_points[0])};
+        const auto bias_2 {triangle::is_edge_top_or_left(tri.screen_points[0], tri.screen_points[1])};
 
         const auto cross = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], tri.screen_points[2]);
         if (cross < 1e-6f) continue; // possible edge case
         const auto area = 1.0f / cross;
         const Vec3 p = {static_cast<float>(min_x) + 0.5f, static_cast<float>(min_y) + 0.5f, 0.0f};
 
-        auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p) + bias_0;
-        auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p) + bias_1;
-        auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p) + bias_2;
+        auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p);
+        auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p);
+        auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p);
 
         for (int y = min_y; y < max_y; y++)
         {
@@ -362,7 +352,11 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<Gbuffer> g
 
             for (int x = min_x; x < max_x; x++)
             {
-                if (w0 >= 0.0f && w1 >= 0.0f && w2 >= 0.0f)
+                const auto w0_check = bias_0 ? w0 >= 0.0f : w0 > 0.0f;
+                const auto w1_check = bias_1 ? w1 >= 0.0f : w1 > 0.0f;
+                const auto w2_check = bias_2 ? w2 >= 0.0f : w2 > 0.0f;
+
+                if (w0_check && w1_check && w2_check)
                 {
                     const auto alpha = w0 * area;
                     const auto beta = w1 * area;
@@ -490,28 +484,18 @@ void RendererRaster::render_tile_forward(const Tile &tile) noexcept
             const auto delta_w1_row = tri.screen_points[0].x - tri.screen_points[2].x;
             const auto delta_w2_row = tri.screen_points[1].x - tri.screen_points[0].x;
 
-            float bias_0 = 0.0f, bias_1 = 0.0f, bias_2 = 0.0f;
-            if (triangle::is_edge_top_or_left(tri.screen_points[1], tri.screen_points[2]))
-            {
-                bias_0 = -0.0001;
-            }
-            if (triangle::is_edge_top_or_left(tri.screen_points[2], tri.screen_points[0]))
-            {
-                bias_1 = -0.0001;
-            }
-            if (triangle::is_edge_top_or_left(tri.screen_points[0], tri.screen_points[1]))
-            {
-                bias_2 = -0.0001;
-            }
+            const auto bias_0 {triangle::is_edge_top_or_left(tri.screen_points[1], tri.screen_points[2])};
+            const auto bias_1 {triangle::is_edge_top_or_left(tri.screen_points[2], tri.screen_points[0])};
+            const auto bias_2 {triangle::is_edge_top_or_left(tri.screen_points[0], tri.screen_points[1])};
 
             const auto cross = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], tri.screen_points[2]);
             if (cross < 1e-6f) continue; // possible edge case
             const auto area = 1.0f / cross;
             const Vec3 p = {static_cast<float>(min_x) + 0.5f, static_cast<float>(min_y) + 0.5f, 0.0f};
 
-            auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p) + bias_0;
-            auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p) + bias_1;
-            auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p) + bias_2;
+            auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p);
+            auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p);
+            auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p);
 
             for (int y = min_y; y < max_y; y++)
             {
@@ -521,7 +505,11 @@ void RendererRaster::render_tile_forward(const Tile &tile) noexcept
 
                 for (int x = min_x; x < max_x; x++)
                 {
-                    if (w0 >= 0.0f && w1 >= 0.0f && w2 >= 0.0f)
+                    const auto w0_check = bias_0 ? w0 >= 0.0f : w0 > 0.0f;
+                    const auto w1_check = bias_1 ? w1 >= 0.0f : w1 > 0.0f;
+                    const auto w2_check = bias_2 ? w2 >= 0.0f : w2 > 0.0f;
+
+                    if (w0_check && w1_check && w2_check)
                     {
                         const auto alpha = w0 * area;
                         const auto beta = w1 * area;
@@ -609,26 +597,16 @@ void RendererRaster::render_triangle(const FullTriangle &tri) noexcept
     const auto delta_w1_row = tri.screen_points[0].x - tri.screen_points[2].x;
     const auto delta_w2_row = tri.screen_points[1].x - tri.screen_points[0].x;
 
-    float bias_0 = 0.0f, bias_1 = 0.0f, bias_2 = 0.0f;
-    if (triangle::is_edge_top_or_left(tri.screen_points[1], tri.screen_points[2]))
-    {
-        bias_0 = -0.0001;
-    }
-    if (triangle::is_edge_top_or_left(tri.screen_points[2], tri.screen_points[0]))
-    {
-        bias_1 = -0.0001;
-    }
-    if (triangle::is_edge_top_or_left(tri.screen_points[0], tri.screen_points[1]))
-    {
-        bias_2 = -0.0001;
-    }
+    const auto bias_0 {triangle::is_edge_top_or_left(tri.screen_points[1], tri.screen_points[2])};
+    const auto bias_1 {triangle::is_edge_top_or_left(tri.screen_points[2], tri.screen_points[0])};
+    const auto bias_2 {triangle::is_edge_top_or_left(tri.screen_points[0], tri.screen_points[1])};
 
     const auto area = 1.0f / triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], tri.screen_points[2]);
     const Vec3 p = {minX + 0.5f, minY + 0.5f, 0.0f};
 
-    auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p) + bias_0;
-    auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p) + bias_1;
-    auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p) + bias_2;
+    auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p);
+    auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p);
+    auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p);
 
     for (int y = minY; y < maxY; y++)
     {
@@ -638,7 +616,11 @@ void RendererRaster::render_triangle(const FullTriangle &tri) noexcept
 
         for (int x = minX; x < maxX; x++)
         {
-            if (w0 >= 0.0f && w1 >= 0.0f && w2 >= 0.0f)
+            const auto w0_check = bias_0 ? w0 >= 0.0f : w0 > 0.0f;
+            const auto w1_check = bias_1 ? w1 >= 0.0f : w1 > 0.0f;
+            const auto w2_check = bias_2 ? w2 >= 0.0f : w2 > 0.0f;
+
+            if (w0_check && w1_check && w2_check)
             {
                 const auto alpha = w0 * area;
                 const auto beta = w1 * area;
@@ -802,26 +784,16 @@ void RendererRaster::render_shadow_map_triangle(Light& light, const ShadowTriang
     const auto delta_w1_row = tri.screen_points[0].x - tri.screen_points[2].x;
     const auto delta_w2_row = tri.screen_points[1].x - tri.screen_points[0].x;
 
-    float bias_0 = 0.0f, bias_1 = 0.0f, bias_2 = 0.0f;
-    if (triangle::is_edge_top_or_left(tri.screen_points[1], tri.screen_points[2]))
-    {
-        bias_0 = -0.0001;
-    }
-    if (triangle::is_edge_top_or_left(tri.screen_points[2], tri.screen_points[0]))
-    {
-        bias_1 = -0.0001;
-    }
-    if (triangle::is_edge_top_or_left(tri.screen_points[0], tri.screen_points[1]))
-    {
-        bias_2 = -0.0001;
-    }
+    const auto bias_0 {triangle::is_edge_top_or_left(tri.screen_points[1], tri.screen_points[2])};
+    const auto bias_1 {triangle::is_edge_top_or_left(tri.screen_points[2], tri.screen_points[0])};
+    const auto bias_2 {triangle::is_edge_top_or_left(tri.screen_points[0], tri.screen_points[1])};
 
     const auto area = 1.0f / triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], tri.screen_points[2]);
     const Vec3 p = {min_x + 0.5f, min_y + 0.5f, 0.0f};
 
-    auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p) + bias_0;
-    auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p) + bias_1;
-    auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p) + bias_2;
+    auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p);
+    auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p);
+    auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p);
 
     for (int y = min_y; y < max_y; y++)
     {
@@ -831,7 +803,11 @@ void RendererRaster::render_shadow_map_triangle(Light& light, const ShadowTriang
 
         for (int x = min_x; x < max_x; x++)
         {
-            if (w0 >= 0.0f && w1 >= 0.0f && w2 >= 0.0f)
+            const auto w0_check = bias_0 ? w0 >= 0.0f : w0 > 0.0f;
+            const auto w1_check = bias_1 ? w1 >= 0.0f : w1 > 0.0f;
+            const auto w2_check = bias_2 ? w2 >= 0.0f : w2 > 0.0f;
+
+            if (w0_check && w1_check && w2_check)
             {
                 const auto alpha = w0 * area;
                 const auto beta = w1 * area;
@@ -917,6 +893,8 @@ void RendererRaster::draw_line(Vec3 a, Vec3 b) noexcept
     const auto dx = b.x - a.x;
     const auto dy = b.y - a.y;
 
+    constexpr float depth_bias = 0.0001f;
+
     if (std::abs(dx) > std::abs(dy)) {
         if (dx < 0.0f) {
             std::swap(a,b);
@@ -925,7 +903,7 @@ void RendererRaster::draw_line(Vec3 a, Vec3 b) noexcept
         const auto ab_y = (b.y-a.y) / (b.x-a.x);
         const auto ab_z = (b.z-a.z) / (b.x-a.x);
         auto ys = a.y;
-        auto zs = a.z - 0.01f;
+        auto zs = a.z - depth_bias;
         for (float x = a.x; x <= b.x; ++x) {
             if (
                 x > 0.0f && x < static_cast<float>(viewport.width) &&
@@ -947,7 +925,7 @@ void RendererRaster::draw_line(Vec3 a, Vec3 b) noexcept
     const auto ab_x = (b.x-a.x) / (b.y-a.y);
     const auto ab_z = (b.z-a.z) / (b.y-a.y);
     auto xs = a.x;
-    auto zs = a.z - 0.01f;
+    auto zs = a.z - depth_bias;
 
     for (float y = a.y; y <= b.y; ++y) {
         if (
