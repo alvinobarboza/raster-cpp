@@ -26,7 +26,9 @@ float shader::geometrySmith(const float NdotV, const float NdotL, const float ro
 Vec3 shader::fresnelSchlick(const float HdotV, const Vec3& baseReflectivity) noexcept
 {
     const Vec3 inverse_reflectivity {1.0f - baseReflectivity.x, 1.0f - baseReflectivity.y, 1.0f - baseReflectivity.z};
-    return baseReflectivity + inverse_reflectivity * std::pow(1.0f - HdotV, 5.0f);
+    const auto t1 = 1.0f - HdotV;
+    const auto t = t1*t1*t1*t1*t1;
+    return baseReflectivity + inverse_reflectivity * t;
 }
 
 Vec4 shader::calculate_light(
