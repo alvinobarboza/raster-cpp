@@ -849,18 +849,20 @@ void RendererRaster::render_shadow_map(const Light &value) noexcept {
     const int min_value = std::min(viewport.width, viewport.height);
     const int max_value = std::max(viewport.width, viewport.height);
     const int offset = (max_value - min_value) / 2;
-    const float delta = 100.0f/static_cast<float>(min_value);
+    const float delta = 1.0f/static_cast<float>(min_value);
 
     Vec2 uv{};
     for (int y = 0; y < min_value; ++y)
     {
         for (int x = 0; x < min_value; ++x)
         {
-            const auto depth = value.shadow.sample(uv);
-            const Vec4 color = {
-                depth, depth, depth, 1.0f
-            };
-            viewport.put_pixel(x+offset, y, color);
+            if (const auto depth = value.shadow.sample(uv); depth < 1.0f)
+            {
+                const Vec4 color = {
+                    depth, depth, depth, 1.0f
+                };
+                viewport.put_pixel(x+offset, y, color);
+            }
             uv.x += delta;
         }
         uv.x = 0.0f;
