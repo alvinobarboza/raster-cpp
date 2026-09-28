@@ -19,6 +19,7 @@ enum class RenderMode {
     DEFERRED_TILED,
     FORWARD_TILED_M,
     DEFERRED_TILED_M,
+    SHADOW_MAPPING,
 
     MAX_VALUE
 };
@@ -31,6 +32,7 @@ class RendererRaster {
     bool render_triangle_aabb {};
     bool render_active_tiles {};
     RenderMode render_mode {RenderMode::FORWARD};
+    int shadow_index {0};
 
     SceneRaster* scene {nullptr};
 
@@ -75,6 +77,7 @@ class RendererRaster {
 
     void shadow_mapping(Light& light) noexcept;
     static void render_shadow_map_triangle(Light& light, const ShadowTriangle &tri) noexcept;
+    void render_shadow_map(const Light& value) noexcept;
 public:
     Viewport viewport {};
 
@@ -90,6 +93,7 @@ public:
     void toggle_render_triangle_aabb();
     void toggle_render_active_tiles();
     void toggle_render_mode();
+    void cycle_shadow_index();
 
     [[nodiscard]] std::string renderer_mode() const noexcept;
 

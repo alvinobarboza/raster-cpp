@@ -264,6 +264,11 @@ void RendererRaster::render_scene(SceneRaster* const s)
         //Timer time{msg};
         woke_threads();
     }
+    else if (render_mode == RenderMode::SHADOW_MAPPING)
+    {
+        const auto& light = scene->lights[shadow_index];
+        render_shadow_map(light);
+    }
 
     if (render_wireframe)
     {
@@ -300,7 +305,7 @@ void RendererRaster::woke_threads() noexcept
  * Brian Will -> ?v=5p0e7YNONr8
  */
 
-float distributionGGX(const float NdotH, const float roughness)
+static float distributionGGX(const float NdotH, const float roughness)
 {
     const float a = roughness * roughness;
     const float a2 = a * a;
@@ -309,7 +314,7 @@ float distributionGGX(const float NdotH, const float roughness)
     return a2 / std::ranges::max(denom, 0.0000001f); // Prevent divide by zero
 }
 
-float geometrySmith(const float NdotV, const float NdotL, const float roughness)
+static float geometrySmith(const float NdotV, const float NdotL, const float roughness)
 {
     const float r = roughness + 1.0f;
     const float k = r * r / 8.0f;
@@ -318,13 +323,13 @@ float geometrySmith(const float NdotV, const float NdotL, const float roughness)
     return ggx1 * ggx2;
 }
 
-Vec3 fresnelSchlick(const float HdotV, const Vec3 baseReflectivity)
+static Vec3 fresnelSchlick(const float HdotV, const Vec3 baseReflectivity)
 {
     const Vec3 inverse_reflectivity {1.0f - baseReflectivity.x, 1.0f - baseReflectivity.y, 1.0f - baseReflectivity.z};
     return baseReflectivity + inverse_reflectivity * std::pow(1.0f - HdotV, 5.0f);
 }
 
-Vec4 calculate_light(
+static Vec4 calculate_light(
     const std::vector<Light>& lights,
     const float frag_rough,
     const Vec3& frag_pos,
@@ -966,6 +971,29 @@ void RendererRaster::render_shadow_map_triangle(Light& light, const ShadowTriang
     }
 }
 
+void RendererRaster::render_shadow_map(const Light &value) noexcept {
+    const int min_value = std::min(viewport.width, viewport.height);
+    const int max_value = std::max(viewport.width, viewport.height);
+    const int offset = (max_value - min_value) / 2;
+    const float delta = 100.0f/static_cast<float>(min_value);
+
+    Vec2 uv{};
+    for (int y = 0; y < min_value; ++y)
+    {
+        for (int x = 0; x < min_value; ++x)
+        {
+            const auto depth = value.shadow.sample(uv);
+            const Vec4 color = {
+                depth, depth, depth, 1.0f
+            };
+            viewport.put_pixel(x+offset, y, color);
+            uv.x += delta;
+        }
+        uv.x = 0.0f;
+        uv.y += delta;
+    }
+}
+
 void RendererRaster::render_multithread() noexcept
 {
     std::array<Gbuffer, Viewport::TILE_SIZE * Viewport::TILE_SIZE> g_buffer{};
@@ -1113,6 +1141,8 @@ std::string RendererRaster::renderer_mode() const noexcept
             return "FORWARD_TILED - threaded";
         case RenderMode::DEFERRED_TILED_M:
             return "DIFFERED_TILED - threaded";
+        case RenderMode::SHADOW_MAPPING:
+            return "SHADOW_MAPPING - mode";
         case RenderMode::MAX_VALUE:
             return "Shouldn't happen!!";
     }
@@ -1151,7 +1181,16 @@ void RendererRaster::toggle_render_active_tiles()
 
 void RendererRaster::toggle_render_mode()
 {
+    shadow_index = 0;
     render_mode = static_cast<RenderMode>((static_cast<int>(render_mode)+1)%static_cast<int>(RenderMode::MAX_VALUE));
+}
+
+void RendererRaster::cycle_shadow_index()
+{
+    if (scene)
+    {
+        shadow_index = (shadow_index+1) % static_cast<int>(scene->lights.size());
+    }
 }
 
 void RendererRaster::handle_input()
@@ -1163,4 +1202,5 @@ void RendererRaster::handle_input()
     if (IsKeyPressed(KEY_T)) toggle_render_triangle_aabb();
     if (IsKeyPressed(KEY_C)) toggle_render_active_tiles();
     if (IsKeyPressed(KEY_F)) toggle_render_mode();
+    if (IsKeyPressed(KEY_R)) cycle_shadow_index();
 }
