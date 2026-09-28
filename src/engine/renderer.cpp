@@ -698,7 +698,7 @@ void RendererRaster::shadow_mapping(Light& light) noexcept
     }
 
     std::ranges::sort(scene->models, []( ModelRaster*& a, ModelRaster*& b) {
-        return a->boundingSphere.center_view_space.length() > b->boundingSphere.center_view_space.length();
+        return a->boundingSphere.center_view_space.length() < b->boundingSphere.center_view_space.length();
     });
 
     for (const auto& model : scene->models)
