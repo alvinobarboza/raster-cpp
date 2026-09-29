@@ -49,10 +49,11 @@ Vec4 shader::calculate_light(
     const Vec3& view_normal,
     const float ambient_intensity) noexcept
 {
+    // here it was optimized from pow(a, 2.2) to pow(a,2) to be sqrt at the end
     const Vec3 albedo = { //TODO: compute LUT for this
-        std::pow(frag_color.x, 2.2f),
-        std::pow(frag_color.y, 2.2f),
-        std::pow(frag_color.z, 2.2f)
+        frag_color.x*frag_color.x,
+        frag_color.y*frag_color.y,
+        frag_color.z*frag_color.z,
     };
 
     // If I add metallic property, lerp from 0.04 to albedo/diffuse using the range[0,1] of metallic
@@ -125,12 +126,12 @@ Vec4 shader::calculate_light(
     const float lum = 0.2126f * color.x + 0.7152f * color.y + 0.0722f * color.z;
     color = color / (1.0f + lum);
     // Gamma
-    constexpr float gamma_const {1.0f/2.2f};
+    //constexpr float gamma_const {1.0f/2.2f};
 
     color = {
-        std::pow(color.x, gamma_const),
-        std::pow(color.y, gamma_const),
-        std::pow(color.z, gamma_const)
+        std::sqrt(color.x),
+        std::sqrt(color.y),
+        std::sqrt(color.z)
     };
 
     return {
