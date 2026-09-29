@@ -250,30 +250,26 @@ TextureRaster *ResourceManager::load_texture(const std::string &path, const bool
     tex->height_mask = img.height - 1;
 
     const int total_pixels = img.width * img.height;
-    is_intensity ? tex->buffer_float.resize(total_pixels) : tex->buffer.resize(total_pixels);
+    is_intensity ? tex->buffer_value.resize(total_pixels) : tex->buffer.resize(total_pixels);
 
     const auto* raw_bytes = static_cast<const unsigned char*>(img.data);
-    constexpr float inv255 = 1.0f / 255.0f;
 
     for (int i = 0; i < total_pixels; ++i) {
         const int idx = i * 4;
         if (is_intensity)
         {
-            tex->buffer_float[i] = static_cast<float>(raw_bytes[idx + 0]) * inv255;
+            tex->buffer_value[i] = raw_bytes[idx + 0];
             continue;
         }
 
-        tex->buffer[i] = Vec4(
-            static_cast<float>(raw_bytes[idx + 0]) * inv255, // R
-            static_cast<float>(raw_bytes[idx + 1]) * inv255, // G
-            static_cast<float>(raw_bytes[idx + 2]) * inv255, // B
-            static_cast<float>(raw_bytes[idx + 3]) * inv255  // A
-        );
+        tex->buffer[i].r = raw_bytes[idx + 0];
+        tex->buffer[i].g = raw_bytes[idx + 1];
+        tex->buffer[i].b = raw_bytes[idx + 2];
+        tex->buffer[i].a = raw_bytes[idx + 3];
     }
 
     UnloadImage(img);
 
-    TextureRaster* ptr = tex.get();
     textures.push_back(std::move(tex));
-    return ptr;
+    return textures.back().get();
 }

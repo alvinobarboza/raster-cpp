@@ -5,5 +5,5 @@
 
 namespace color_convertion {
     Color vec4_to_color(const Vec4 &vec);
-    Vec4 color_to_vec4(const Color &color);
+    Vec4 color_to_vec4(Color color);
 }

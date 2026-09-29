@@ -49,11 +49,11 @@ Vec4 shader::calculate_light(
     const Vec3& view_normal,
     const float ambient_intensity) noexcept
 {
-    // here it was optimized from pow(a, 2.2) to pow(a,2) to be sqrt at the end
-    const Vec3 albedo = { //TODO: compute LUT for this
-        frag_color.x*frag_color.x,
-        frag_color.y*frag_color.y,
-        frag_color.z*frag_color.z,
+    // samples from LUT already gamma corrected
+    const Vec3 albedo = {
+        frag_color.x,
+        frag_color.y,
+        frag_color.z,
     };
 
     // If I add metallic property, lerp from 0.04 to albedo/diffuse using the range[0,1] of metallic
@@ -128,11 +128,9 @@ Vec4 shader::calculate_light(
     // Gamma
     //constexpr float gamma_const {1.0f/2.2f};
 
-    color = {
-        std::sqrt(color.x),
-        std::sqrt(color.y),
-        std::sqrt(color.z)
-    };
+    color.x = std::sqrt(color.x);
+    color.y = std::sqrt(color.y);
+    color.z = std::sqrt(color.z);
 
     return {
         std::clamp(color.x, 0.0f, 1.0f),

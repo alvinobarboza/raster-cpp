@@ -433,7 +433,11 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<Gbuffer> g
             }
             if (!render_light)
             {
-                const Vec4 final_color{gb.albedo.x, gb.albedo.y, gb.albedo.z, 1.0f};
+                const Vec4 final_color{
+                    std::sqrt(gb.albedo.x),
+                    std::sqrt(gb.albedo.y),
+                    std::sqrt(gb.albedo.z),
+                    1.0f};
                 viewport.put_pixel(px, py, final_color);
                 continue;
             }
