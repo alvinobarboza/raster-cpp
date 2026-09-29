@@ -9,8 +9,8 @@
 #include "material/color_convertion.h"
 
 int main() {
-    constexpr auto width = 1000;
-    constexpr auto height = 1000;
+    constexpr auto width = 1600;
+    constexpr auto height = 900;
 
     constexpr auto resolution_factor = 1;
 
@@ -59,7 +59,7 @@ int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 
     InitWindow(width, height, "Software renderer");
-    SetTargetFPS(45);
+    SetTargetFPS(60);
 
     auto img = GenImageColor(renderer.viewport.width, renderer.viewport.height, RAYWHITE);
     auto render_texture = LoadTextureFromImage(img);
