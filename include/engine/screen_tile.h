@@ -4,19 +4,14 @@
 #include "colliders/aabb.h"
 #include "model/triangle.h"
 
-//Compressed Sparse Row (CSR)
 struct Tile {
     int offset_x {0}, offset_y{0};
-    int counter{0};
-    int offset{0};
-    int cursor_offset{0};
+    std::vector<int> triangles_id {};
 };
 
 struct Grid {
     int width {};
     int height {};
     int total_tiles {};
-    int last_tri_count{0};
     std::vector<Tile> tiles {};
-    std::vector<int> triangles_id {};
 };

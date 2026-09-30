@@ -307,9 +307,8 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<Gbuffer> g
     const int max_offset_y = std::min(tile.offset_y+Viewport::TILE_SIZE, viewport.height);
     const int max_offset_x = std::min(tile.offset_x+Viewport::TILE_SIZE, viewport.width);
 
-    for (int i = tile.offset; i < tile.offset + tile.counter; ++i)
+    for (const auto triangle_id : tile.triangles_id)
     {
-        const int triangle_id = viewport.grid.triangles_id[i];
         const auto& tri = tris_buffer[triangle_id];
 
         const auto min_y = std::max(static_cast<int>(tri.aabb.min.y), tile.offset_y);
@@ -494,12 +493,10 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<Gbuffer> g
 
 void RendererRaster::render_tile_forward(const Tile &tile) noexcept
 {
-
         const int max_offset_y = std::min(tile.offset_y+Viewport::TILE_SIZE, viewport.height);
         const int max_offset_x = std::min(tile.offset_x+Viewport::TILE_SIZE, viewport.width);
-        for (int i = tile.offset; i < tile.offset + tile.counter; ++i)
+        for (const auto triangle_id : tile.triangles_id)
         {
-            const int triangle_id = viewport.grid.triangles_id[i];
             const auto& tri = tris_buffer[triangle_id];
 
             const auto min_y = std::max(static_cast<int>(tri.aabb.min.y), tile.offset_y);
@@ -809,7 +806,7 @@ void RendererRaster::render_multithread() noexcept
             for (int t = t_start; t < t_end; ++t)
             {
                 const auto& tile = viewport.grid.tiles[t];
-                if (tile.counter < 1) continue;
+                if (tile.triangles_id.empty()) continue;
                 if (render_mode == RenderMode::DEFERRED_TILED_M)
                 {
                     g_buffer.fill({});
@@ -915,7 +912,7 @@ void RendererRaster::draw_active_tiles() noexcept
 
     for (const auto& tile : viewport.grid.tiles)
     {
-        if (tile.counter < 1) continue;
+        if (tile.triangles_id.empty()) continue;
         temp_aabb.min.x = static_cast<float>(tile.offset_x);
         temp_aabb.min.y = static_cast<float>(tile.offset_y);
         temp_aabb.max.x = static_cast<float>(tile.offset_x) + Viewport::TILE_SIZE;

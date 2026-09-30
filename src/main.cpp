@@ -47,14 +47,26 @@ int main() {
     scene.models[0]->transforms.rotation = {-90.0f, 0.0f, 0.0f};
     scene.models[0]->update_transforms();
 
-    scene.models.push_back(rm.load_model("../assets/polyhaven_rico_b3d/marble_bust.obj", true));
-    scene.models[1]->transforms.position = {0.0f, 0.0f, 1.0f};
+    scene.models.push_back(rm.load_model("../assets/cube.obj", true));
+    scene.models[1]->transforms.position = {1.0f, 0.5f, 1.0f};
+    scene.models[1]->transforms.scale = {.5f, .5f, .5f};
     scene.models[1]->update_transforms();
 
-    scene.models.push_back(rm.load_model("../assets/cube.obj", true));
-    scene.models[2]->transforms.position = {1.0f, 0.5f, 1.0f};
-    scene.models[2]->transforms.scale = {.5f, .5f, .5f};
+    scene.models.push_back(rm.load_model("../assets/polyhaven_rico_b3d/marble_bust.obj", true));
+    scene.models[2]->transforms.position = {0.0f, 0.0f, 1.0f};
     scene.models[2]->update_transforms();
+
+    scene.models.push_back(rm.load_model("../assets/polyhaven_rico_b3d/marble_bust.obj", true));
+    scene.models[3]->transforms.position = {0.0f, 0.0f, 1.5f};
+    scene.models[3]->update_transforms();
+
+    scene.models.push_back(rm.load_model("../assets/polyhaven_rico_b3d/marble_bust.obj", true));
+    scene.models[4]->transforms.position = {-0.5f, 0.0f, 1.0f};
+    scene.models[4]->update_transforms();
+
+    scene.models.push_back(rm.load_model("../assets/polyhaven_rico_b3d/marble_bust.obj", true));
+    scene.models[5]->transforms.position = {-0.5f, 0.0f, 1.5f};
+    scene.models[5]->update_transforms();
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 
