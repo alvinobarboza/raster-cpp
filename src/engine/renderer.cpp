@@ -375,7 +375,6 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<Gbuffer> g
 
                 if (w0_check && w1_check && w2_check)
                 {
-
                     if (g_buffer[row_index].depth > z_depth)
                     {
                         const auto frag_depth { 1 / frag_z };
@@ -596,6 +595,7 @@ void RendererRaster::render_tile_forward(const Tile &tile) noexcept
 
 void RendererRaster::shadow_mapping(Light& light) noexcept
 {
+    Timer time{"shadow"};
     if (!light.has_shadows) return;
 
     light.shadow.clear();
@@ -705,13 +705,30 @@ void RendererRaster::render_shadow_map_triangle(Light& light, const ShadowTriang
     auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p);
     auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p);
 
-    for (int y = min_y; y < max_y; y++)
-    {
-        auto w0 = w0_row;
-        auto w1 = w1_row;
-        auto w2 = w2_row;
+    // Deltas to step over all ndc_depth
+    const auto delta_alpha_x { delta_w0_col * area };
+    const auto delta_beta_x { delta_w1_col * area };
+    const auto delta_gamma_x { delta_w2_col * area };
 
-        for (int x = min_x; x < max_x; x++)
+    const auto delta_alpha_y { delta_w0_row * area };
+    const auto delta_beta_y { delta_w1_row * area };
+    const auto delta_gamma_y { delta_w2_row * area };
+
+    // Attribute delta
+    const auto delta_ndc_z_x { tri.screen_points[0].z * delta_alpha_x + tri.screen_points[1].z * delta_beta_x + tri.screen_points[2].z * delta_gamma_x };
+    const auto delta_ndc_z_y { tri.screen_points[0].z * delta_alpha_y + tri.screen_points[1].z * delta_beta_y + tri.screen_points[2].z * delta_gamma_y };
+
+    // Attribute first value
+    auto ndc_z_row { (tri.screen_points[0].z * w0_row + tri.screen_points[1].z * w1_row + tri.screen_points[2].z * w2_row) * area };
+
+    for (int y = static_cast<int>(min_y); y < max_y; y++)
+    {
+        auto w0 { w0_row };
+        auto w1 { w1_row };
+        auto w2 { w2_row };
+        auto z_depth { ndc_z_row };
+
+        for (int x = static_cast<int>(min_x); x < max_x; x++)
         {
             const auto w0_check = bias_0 ? w0 >= 0.0f : w0 > 0.0f;
             const auto w1_check = bias_1 ? w1 >= 0.0f : w1 > 0.0f;
@@ -719,21 +736,20 @@ void RendererRaster::render_shadow_map_triangle(Light& light, const ShadowTriang
 
             if (w0_check && w1_check && w2_check)
             {
-                const auto alpha = w0 * area;
-                const auto beta = w1 * area;
-                const auto gamma = w2 * area;
-
-                const float z_depth = tri.frag_depth_ndc(alpha, beta, gamma);
                 light.shadow.depth_test(x, y, z_depth);
             }
 
             w0 += delta_w0_col;
             w1 += delta_w1_col;
             w2 += delta_w2_col;
+
+            z_depth += delta_ndc_z_x;
         }
         w0_row += delta_w0_row;
         w1_row += delta_w1_row;
         w2_row += delta_w2_row;
+
+        ndc_z_row += delta_ndc_z_y;
     }
 }
 
