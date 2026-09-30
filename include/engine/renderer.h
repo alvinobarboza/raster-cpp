@@ -14,9 +14,6 @@ struct Gbuffer {
 };
 
 enum class RenderMode {
-    FORWARD,
-    FORWARD_TILED,
-    DEFERRED_TILED,
     FORWARD_TILED_M,
     DEFERRED_TILED_M,
     SHADOW_MAPPING,
@@ -63,13 +60,9 @@ class RendererRaster {
     void draw_wireframe_from_tri_buffer() noexcept;
     void draw_triangle_aabb() noexcept;
 
-    void render_triangle(const FullTriangle &tri) noexcept;
-
     void render_tile_deferred(const Tile& tile, std::span<Gbuffer> g_buffer) noexcept;
     void render_tile_forward(const Tile& tile) noexcept;
 
-    void render_tiles_deferred() noexcept;
-    void render_tiles_forward() noexcept;
     void draw_active_tiles() noexcept;
 
     void woke_threads() noexcept;
