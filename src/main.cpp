@@ -64,6 +64,10 @@ int main() {
     auto img = GenImageColor(renderer.viewport.width, renderer.viewport.height, RAYWHITE);
     auto render_texture = LoadTextureFromImage(img);
 
+    long long avg_time{};
+    long long min_time{};
+    long long max_time{};
+    int frame_count {1};
     while (!WindowShouldClose()) {
         const auto w = GetScreenWidth();
         const auto h = GetScreenHeight();
@@ -83,6 +87,19 @@ int main() {
         const std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
         renderer.render_scene(&scene);
         const std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+        const auto time = std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count();
+        avg_time += time;
+        if (max_time < time)
+        {
+            max_time = time;
+        }
+        if (min_time > time)
+        {
+            min_time = time;
+        } else if (min_time == 0)
+        {
+            min_time = time;
+        }
 
         UpdateTexture(render_texture, renderer.viewport.frame_buffer_data());
 
@@ -115,12 +132,20 @@ int main() {
                 );
             DrawText(
                 TextFormat(
-                    "Frame time: %d MS",
-                    std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count()
+                    "Frame time: %3d ms AVG %3d ms MIN %3d ms MAX %3d ms ",
+                    time,
+                     avg_time / frame_count,
+                     min_time, max_time
                 ),
                 10, 150, 20, DARKGRAY);
         EndDrawing();
-        //break;
+        if (frame_count % 240 == 0) {
+            avg_time = 0;
+            frame_count = 0;
+            min_time = 0;
+            max_time = 0;
+        };
+        ++frame_count;
     }
 
     CloseWindow();
