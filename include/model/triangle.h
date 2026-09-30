@@ -53,6 +53,7 @@ public:
     [[nodiscard]] Vec2 frag_uv_coord(float alpha, float beta, float gamma, float depth) const noexcept;
     [[nodiscard]] Vec3 frag_coord(float alpha, float beta, float gamma, float depth) const noexcept;
     [[nodiscard]] Vec3 frag_normal(float alpha, float beta, float gamma, Vec2 uv, float depth) const noexcept;
+    [[nodiscard]] Vec3 frag_normal(const Vec3& n, Vec2 uv) const noexcept;
     [[nodiscard]] Vec4 frag_color(Vec2 uv) const noexcept;
     [[nodiscard]] float frag_roughness(Vec2 uv) const noexcept;
 };

@@ -120,6 +120,21 @@ Vec3 FullTriangle::frag_normal(
     return (t * normal_map.x) + (b * normal_map.y) + (_normal * normal_map.z);
 }
 
+Vec3 FullTriangle::frag_normal(
+    const Vec3& n, const Vec2 uv) const noexcept
+{
+    const auto _normal = smooth ? n.normalized() : normal;
+
+    if (!material->map_normal) return _normal;
+
+    const auto normal_map = material->map_normal->texel_normal(uv);
+    const auto nt = _normal * tangent;
+    const auto t = (tangent - (_normal * nt)).normalized();
+    const auto b = t.cross(_normal);
+
+    return (t * normal_map.x) + (b * normal_map.y) + (_normal * normal_map.z);
+}
+
 Vec4 FullTriangle::frag_color(const Vec2 uv) const noexcept
 {
     return material->map_diffuse ?
