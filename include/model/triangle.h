@@ -16,6 +16,7 @@ public:
     int n1 {}, n2 {}, n3 {};
     int material_id { -1 };
     bool smooth {};
+    Vec3 normal{}, tangent{};
 
     [[nodiscard]] bool is_back_facing(const std::vector<Vec3> &vertices, const std::vector<Vec3> &normals) const;
 };
@@ -38,12 +39,12 @@ public:
 
     const MaterialRaster *material;
 
-
     FullTriangle(
         const Vertex &v1,
         const Vertex &v2,
         const Vertex &v3,
         const MaterialRaster &material,
+        const Vec3& n, const Vec3& t,
         bool smooth);
 
     void calculate_tri_aabb();
@@ -64,7 +65,7 @@ public:
     std::array<Vec3, 3> screen_points {};
 
     void calculate_tri_aabb();
-    float frag_depth_ndc(float alpha, float beta, float gamma) const noexcept;
+    [[nodiscard]] float frag_depth_ndc(float alpha, float beta, float gamma) const noexcept;
 };
 
 namespace triangle {

@@ -17,6 +17,7 @@ FullTriangle::FullTriangle(
     const Vertex &v2,
     const Vertex &v3,
     const MaterialRaster &material,
+    const Vec3& n, const Vec3& t,
     const bool smooth) : smooth(smooth), material(&material)
 {
     depth_z[0] = 1 / v1.point.z;
@@ -35,24 +36,8 @@ FullTriangle::FullTriangle(
     projected_vertices[1].uv = v2.uv * depth_z[1];
     projected_vertices[2].uv = v3.uv * depth_z[2];
 
-    const auto ba = v2.point - v1.point;
-    const auto ca = v3.point - v1.point;
-
-    normal = ba.cross(ca).normalized();
-
-    const auto edge1 = v2.point - v1.point;
-    const auto edge2 = v3.point - v1.point;
-
-    const auto deltaUV1 = v2.uv - v1.uv;
-    const auto deltaUV2 = v3.uv - v1.uv;
-
-    const auto f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
-
-    tangent = Vec3(
-        f*(deltaUV2.y*edge1.x - deltaUV1.y*edge2.x),
-        f*(deltaUV2.y*edge1.y - deltaUV1.y*edge2.y),
-        f*(deltaUV2.y*edge1.z - deltaUV1.y*edge2.z)
-    ).normalized();
+    normal = n;
+    tangent = t;
 }
 
 void FullTriangle::calculate_tri_aabb()

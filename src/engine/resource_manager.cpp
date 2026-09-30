@@ -124,6 +124,28 @@ ModelRaster* ResourceManager::load_model(const std::string& path, bool flip_hand
     }
     ifs.close();
 
+    for (auto& t: tris)
+    {
+        const auto ba = verts[t.v2] - verts[t.v1];
+        const auto ca = verts[t.v3] - verts[t.v1];
+
+        t.normal = ba.cross(ca).normalized();
+
+        const auto edge1 = verts[t.v2] - verts[t.v1];
+        const auto edge2 = verts[t.v3] - verts[t.v1];
+
+        const auto deltaUV1 = uvs[t.u2] - uvs[t.u1];
+        const auto deltaUV2 = uvs[t.u3] - uvs[t.u1];
+
+        const auto f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+
+        t.tangent = Vec3(
+            f*(deltaUV2.y*edge1.x - deltaUV1.y*edge2.x),
+            f*(deltaUV2.y*edge1.y - deltaUV1.y*edge2.y),
+            f*(deltaUV2.y*edge1.z - deltaUV1.y*edge2.z)
+        ).normalized();
+    }
+
     const auto mesh = MeshData(tris, verts, normals, uvs, materials);
     const auto scale = Vec3(1.0f, 1.0f, 1.0f);
     const auto position = Vec3(1.0f, 1.0f, 1.0f);

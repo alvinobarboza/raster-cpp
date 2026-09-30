@@ -28,17 +28,6 @@ RendererRaster::~RendererRaster() noexcept
 
 void RendererRaster::clip_triangle(const Plane& near) noexcept
 {
-    const auto p0_d {near.signed_distance_to_point(verts_out[0].point)};
-    const auto p1_d {near.signed_distance_to_point(verts_out[1].point)};
-    const auto p2_d {near.signed_distance_to_point(verts_out[2].point)};
-
-    if (p0_d >= 0.0f && p1_d >= 0.0f && p2_d >= 0.0f) return;
-    if (p0_d <= 0.0f && p1_d <= 0.0f && p2_d <= 0.0f)
-    {
-        verts_out.clear();
-        return;
-    }
-
     std::swap(verts_in, verts_out);
     verts_out.clear();
 
@@ -200,10 +189,17 @@ void RendererRaster::render_scene(SceneRaster* const s)
 
         for (const auto &t: model->meshData.triangles)
         {
-            if (!t.is_back_facing(model->meshData.vertices_view_space, model->meshData.normals_view_space))
-            {
-                continue;
-            }
+            const auto p0_d {scene->camera.frustum.planes[NEAR_PLANE].signed_distance_to_point(model->meshData.vertices_view_space[t.v1])};
+            const auto p1_d {scene->camera.frustum.planes[NEAR_PLANE].signed_distance_to_point(model->meshData.vertices_view_space[t.v2])};
+            const auto p2_d {scene->camera.frustum.planes[NEAR_PLANE].signed_distance_to_point(model->meshData.vertices_view_space[t.v3])};
+
+            if (p0_d <= 0.0f && p1_d <= 0.0f && p2_d <= 0.0f) continue;
+
+            const auto normal {t.normal * m_rotation};
+
+            if ((normal * -model->meshData.vertices_view_space[t.v1]) <= 0.0f) continue;
+
+            const auto tangent {t.tangent * m_rotation};
 
             verts_out.clear();
             verts_in.clear();
@@ -223,7 +219,11 @@ void RendererRaster::render_scene(SceneRaster* const s)
                 model->meshData.normals_view_space[t.n3],
                 model->meshData.uvs[t.u3]);
 
-            clip_triangle(scene->camera.frustum.planes[NEAR_PLANE]);
+
+            if (!(p0_d >= 0.0f && p1_d >= 0.0f && p2_d >= 0.0f))
+            {
+                clip_triangle(scene->camera.frustum.planes[NEAR_PLANE]);
+            }
 
             if (verts_out.size() > 2) {
                 for (size_t j = 1; j < verts_out.size() - 1; ++j) {
@@ -234,6 +234,7 @@ void RendererRaster::render_scene(SceneRaster* const s)
                     FullTriangle tf {
                         p1,p2,p3,
                         model->meshData.materials[t.material_id],
+                        normal, tangent,
                         t.smooth
                     };
 
