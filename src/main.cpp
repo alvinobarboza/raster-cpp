@@ -63,12 +63,14 @@ int main() {
 
     auto img = GenImageColor(renderer.viewport.width, renderer.viewport.height, RAYWHITE);
     auto render_texture = LoadTextureFromImage(img);
+    auto roboto = LoadFont("../assets/fonts/RobotoMono-Regular.ttf");
 
     long long avg_time{};
     long long min_time{};
     long long max_time{};
     int frame_count {1};
-    while (!WindowShouldClose()) {
+    while (!WindowShouldClose())
+    {
         const auto w = GetScreenWidth();
         const auto h = GetScreenHeight();
 
@@ -104,40 +106,52 @@ int main() {
         UpdateTexture(render_texture, renderer.viewport.frame_buffer_data());
 
         BeginDrawing();
-            ClearBackground(RAYWHITE);
+        ClearBackground(RAYWHITE);
 
-            DrawTexturePro(
-                render_texture,
-                {0.0f, 0.0f, static_cast<float>(renderer.viewport.width), static_cast<float>(renderer.viewport.height)},
-                {0.0f, 0.0f, static_cast<float>(w), static_cast<float>(h)},
-                { 0.0f, 0.0f },
-                0,
-                WHITE
+        DrawTexturePro(
+            render_texture,
+            {0.0f, 0.0f, static_cast<float>(renderer.viewport.width), static_cast<float>(renderer.viewport.height)},
+            {0.0f, 0.0f, static_cast<float>(w), static_cast<float>(h)},
+            { 0.0f, 0.0f },
+            0,
+            WHITE
+        );
+
+        const auto font_size {static_cast<float>(roboto.baseSize)};
+        DrawTextEx(
+            roboto,
+            "raster",
+            {static_cast<float>(w - 90), static_cast<float>(h - 30)},
+            font_size,0.0f, RAYWHITE);
+
+        Vector2 pos {10.0f, font_size*2.0f};
+
+        DrawTextEx(
+            roboto,
+            TextFormat("Canvas: %dx%d Screen: %dx%d", renderer.viewport.width, renderer.viewport.height, w, h),
+            {5.0f,static_cast<float>(h - roboto.baseSize)}, font_size, 0.0f, RAYWHITE);
+
+        DrawFPS(10, 20);
+
+        DrawTextEx( roboto,
+            TextFormat("Camera:\n %02.2f Y: %02.2f Z: %02.2f\n X: %02.2f' Y: %02.2f' Z: %02.2f'",
+                camera.transform.position.x, camera.transform.position.y, camera.transform.position.z,
+                camera.transform.rotation.x, camera.transform.rotation.y, camera.transform.rotation.z),
+            pos, font_size, 0.0f, RAYWHITE);
+        pos.y += font_size * 3;
+        DrawTextEx( roboto,
+            TextFormat("RenderMode: %s", renderer.renderer_mode().c_str() ),
+            pos, font_size, 0.0f, RAYWHITE
             );
-
-            DrawText("raster", w - 70, h - 20, 20, DARKGRAY);
-            DrawText(
-                TextFormat("Canvas: %dx%d Screen: %dx%d", renderer.viewport.width, renderer.viewport.height, w, h),
-                0,h - 20, 20, DARKGRAY);
-            DrawFPS(10, 20);
-
-            DrawText(
-                TextFormat("Camera:\n %02.2f Y: %02.2f Z: %02.2f\n X: %02.2f' Y: %02.2f' Z: %02.2f'",
-                    camera.transform.position.x, camera.transform.position.y, camera.transform.position.z,
-                    camera.transform.rotation.x, camera.transform.rotation.y, camera.transform.rotation.z),
-                10, 60, 20, DARKGRAY);
-            DrawText(
-                TextFormat("RenderMode: %s", renderer.renderer_mode().c_str() ),
-                10, 125, 20, DARKGRAY
-                );
-            DrawText(
-                TextFormat(
-                    "Frame time: %3d ms AVG %3d ms MIN %3d ms MAX %3d ms ",
-                    time,
-                     avg_time / frame_count,
-                     min_time, max_time
-                ),
-                10, 150, 20, DARKGRAY);
+        pos.y += font_size;
+        DrawTextEx(roboto,
+            TextFormat(
+                "Frame time: %2dms \nAVG: %2dms \nMIN: %2dms \nMAX: %2dms ",
+                time,
+                 avg_time / frame_count,
+                 min_time, max_time
+            ),
+            pos, font_size, 0.0f, RAYWHITE);
         EndDrawing();
         if (frame_count % 240 == 0) {
             avg_time = 0;
@@ -151,6 +165,7 @@ int main() {
     CloseWindow();
     UnloadTexture(render_texture);
     UnloadImage(img);
+    UnloadFont(roboto);
 
     return 0;
 }

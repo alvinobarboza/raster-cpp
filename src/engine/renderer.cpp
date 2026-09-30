@@ -902,11 +902,11 @@ std::string RendererRaster::renderer_mode() const noexcept
     switch (render_mode)
     {
         case RenderMode::FORWARD_TILED_M:
-            return "FORWARD_TILED - threaded";
+            return "forward - threaded";
         case RenderMode::DEFERRED_TILED_M:
-            return "DIFFERED_TILED - threaded";
+            return "differed - threaded";
         case RenderMode::SHADOW_MAPPING:
-            return "SHADOW_MAPPING - mode";
+            return "shadows - mode";
         case RenderMode::MAX_VALUE:
             return "Shouldn't happen!!";
     }
