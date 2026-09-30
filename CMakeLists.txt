@@ -30,8 +30,6 @@ add_executable(${PROJECT_NAME}
         include/transforms/matrix4x4.h
         include/transforms/constants.h
         include/transforms/transforms.h
-        src/transforms/vec3.cpp
-        src/transforms/vec2.cpp
         src/transforms/matrix4x4.cpp
         src/transforms/transforms.cpp
         include/camera/frustum.h
@@ -44,7 +42,6 @@ add_executable(${PROJECT_NAME}
         include/model/triangle.h
         include/material/texture.h
         include/transforms/vec4.h
-        src/transforms/vec4.cpp
         src/material/texture.cpp
         src/model/triangle.cpp
         src/camera/camera.cpp
