@@ -26,34 +26,34 @@ RendererRaster::~RendererRaster() noexcept
     frame_counter.notify_all();
 }
 
-void RendererRaster::clip_triangle(const Plane& near, const Plane& far) noexcept
+void RendererRaster::clip_triangle(const Plane& near) noexcept
 {
-    for (const std::array planes = {near, far}; auto& plane : planes) {
-        std::swap(verts_in, verts_out);
+    const auto p0_d {near.signed_distance_to_point(verts_out[0].point)};
+    const auto p1_d {near.signed_distance_to_point(verts_out[1].point)};
+    const auto p2_d {near.signed_distance_to_point(verts_out[2].point)};
+
+    if (p0_d >= 0.0f && p1_d >= 0.0f && p2_d >= 0.0f) return;
+    if (p0_d <= 0.0f && p1_d <= 0.0f && p2_d <= 0.0f)
+    {
         verts_out.clear();
+        return;
+    }
 
-        size_t prev_index = verts_in.size() - 1;
-        for (size_t i = 0; i < verts_in.size(); i++)
+    std::swap(verts_in, verts_out);
+    verts_out.clear();
+
+    size_t prev_index = verts_in.size() - 1;
+    for (size_t i = 0; i < verts_in.size(); i++)
+    {
+        const auto current_point = verts_in[i];
+        const auto [point, normal, uv] = verts_in[prev_index];
+
+        const auto distance_current_point = near.signed_distance_to_point(current_point.point);
+        const auto distance_prev_point = near.signed_distance_to_point(point);
+
+        if (distance_current_point > 0.0f)
         {
-            const auto current_point = verts_in[i];
-            const auto [point, normal, uv] = verts_in[prev_index];
-
-            const auto distance_current_point = plane.signed_distance_to_point(current_point.point);
-            const auto distance_prev_point = plane.signed_distance_to_point(point);
-
-            if (distance_current_point > 0.0f)
-            {
-                if (distance_prev_point <= 0.0f)
-                {
-                    const auto ratio = distance_current_point / (distance_current_point - distance_prev_point);
-                    verts_out.emplace_back(
-                        current_point.point.interpolate(point, ratio),
-                        current_point.normal.interpolate(normal, ratio),
-                        current_point.uv.interpolate(uv, ratio));
-                }
-                verts_out.push_back(current_point);
-            }
-            else if (distance_prev_point > 0)
+            if (distance_prev_point <= 0.0f)
             {
                 const auto ratio = distance_current_point / (distance_current_point - distance_prev_point);
                 verts_out.emplace_back(
@@ -61,42 +61,60 @@ void RendererRaster::clip_triangle(const Plane& near, const Plane& far) noexcept
                     current_point.normal.interpolate(normal, ratio),
                     current_point.uv.interpolate(uv, ratio));
             }
-            prev_index = i;
+            verts_out.push_back(current_point);
         }
+        else if (distance_prev_point > 0)
+        {
+            const auto ratio = distance_current_point / (distance_current_point - distance_prev_point);
+            verts_out.emplace_back(
+                current_point.point.interpolate(point, ratio),
+                current_point.normal.interpolate(normal, ratio),
+                current_point.uv.interpolate(uv, ratio));
+        }
+        prev_index = i;
     }
 }
 
-void RendererRaster::clip_triangle_sm(const Plane& near, const Plane& far) noexcept
+void RendererRaster::clip_triangle_sm(const Plane& near) noexcept
 {
-    for (const std::array planes = {near, far}; auto& plane : planes) {
-        std::swap(verts_in_sm, verts_out_sm);
+    const auto p0_d {near.signed_distance_to_point(verts_out_sm[0])};
+    const auto p1_d {near.signed_distance_to_point(verts_out_sm[1])};
+    const auto p2_d {near.signed_distance_to_point(verts_out_sm[2])};
+
+    if (p0_d >= 0.0f && p1_d >= 0.0f && p2_d >= 0.0f) return;
+    if (p0_d <= 0.0f && p1_d <= 0.0f && p2_d <= 0.0f)
+    {
         verts_out_sm.clear();
+        return;
+    }
 
-        size_t prev_index = verts_in_sm.size() - 1;
-        for (size_t i = 0; i < verts_in_sm.size(); i++)
+    std::swap(verts_in_sm, verts_out_sm);
+    verts_out_sm.clear();
+
+    size_t prev_index = verts_in_sm.size() - 1;
+    for (size_t i = 0; i < verts_in_sm.size(); i++)
+    {
+        const auto current_point = verts_in_sm[i];
+        const auto point = verts_in_sm[prev_index];
+
+        const auto distance_current_point = near.signed_distance_to_point(current_point);
+        const auto distance_prev_point = near.signed_distance_to_point(point);
+
+        if (distance_current_point > 0.0f)
         {
-            const auto current_point = verts_in_sm[i];
-            const auto point = verts_in_sm[prev_index];
-
-            const auto distance_current_point = plane.signed_distance_to_point(current_point);
-            const auto distance_prev_point = plane.signed_distance_to_point(point);
-
-            if (distance_current_point > 0.0f)
-            {
-                if (distance_prev_point <= 0.0f)
-                {
-                    const auto ratio = distance_current_point / (distance_current_point - distance_prev_point);
-                    verts_out_sm.emplace_back(current_point.interpolate(point, ratio));
-                }
-                verts_out_sm.push_back(current_point);
-            }
-            else if (distance_prev_point > 0)
+            if (distance_prev_point <= 0.0f)
             {
                 const auto ratio = distance_current_point / (distance_current_point - distance_prev_point);
                 verts_out_sm.emplace_back(current_point.interpolate(point, ratio));
             }
-            prev_index = i;
+            verts_out_sm.push_back(current_point);
         }
+        else if (distance_prev_point > 0)
+        {
+            const auto ratio = distance_current_point / (distance_current_point - distance_prev_point);
+            verts_out_sm.emplace_back(current_point.interpolate(point, ratio));
+        }
+        prev_index = i;
     }
 }
 
@@ -205,10 +223,7 @@ void RendererRaster::render_scene(SceneRaster* const s)
                 model->meshData.normals_view_space[t.n3],
                 model->meshData.uvs[t.u3]);
 
-            clip_triangle(
-            scene->camera.frustum.planes[NEAR_PLANE],
-            scene->camera.frustum.planes[FAR_PLANE]);
-
+            clip_triangle(scene->camera.frustum.planes[NEAR_PLANE]);
 
             if (verts_out.size() > 2) {
                 for (size_t j = 1; j < verts_out.size() - 1; ++j) {
@@ -422,7 +437,7 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<Gbuffer> g
         {
             const int index = x + y * Viewport::TILE_SIZE;
             const auto& gb = g_buffer[index];
-            if (gb.depth > 2.0f) continue;
+            if (gb.depth >= 1.0f) continue;
 
             const auto px = tile.offset_x + x;
             const auto py = tile.offset_y + y;
@@ -595,7 +610,6 @@ void RendererRaster::render_tile_forward(const Tile &tile) noexcept
 
 void RendererRaster::shadow_mapping(Light& light) noexcept
 {
-    Timer time{"shadow"};
     if (!light.has_shadows) return;
 
     light.shadow.clear();
@@ -645,10 +659,7 @@ void RendererRaster::shadow_mapping(Light& light) noexcept
             verts_out_sm.emplace_back(model->meshData.vertices_view_space[t.v2]);
             verts_out_sm.emplace_back(model->meshData.vertices_view_space[t.v3]);
 
-            clip_triangle_sm(
-            light.frustum.planes[NEAR_PLANE],
-            light.frustum.planes[FAR_PLANE]);
-
+            clip_triangle_sm(light.frustum.planes[NEAR_PLANE]);
 
             if (verts_out_sm.size() > 2) {
                 for (size_t j = 1; j < verts_out_sm.size() - 1; ++j) {

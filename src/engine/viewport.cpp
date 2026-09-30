@@ -15,7 +15,7 @@ Viewport::Viewport(
 void Viewport::clear_frame_buffer() noexcept
 {
     std::ranges::fill(frame_buffer, BLACK);
-    std::ranges::fill(depth_buffer, 1e5f);
+    std::ranges::fill(depth_buffer, 1.0f);
 }
 
 void Viewport::update_tiles() noexcept

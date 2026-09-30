@@ -25,7 +25,7 @@ inline ShadowMap::ShadowMap(const int width, const int height) noexcept
 
 inline void ShadowMap::clear() noexcept
 {
-    std::ranges::fill(shadow_map, 1e5f);
+    std::ranges::fill(shadow_map, 1.0f);
 }
 
 inline void ShadowMap::depth_test(const int x, const int y, const float z) noexcept

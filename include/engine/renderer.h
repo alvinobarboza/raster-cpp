@@ -10,7 +10,7 @@ struct Gbuffer {
     Vec3 albedo {};
     Vec3 normal {};
     float roughness {};
-    float depth{1e5f};
+    float depth{1.0f};
 };
 
 enum class RenderMode {
@@ -49,8 +49,8 @@ class RendererRaster {
     alignas(64) std::atomic<bool> stop_flag{false};
 
     // just near and far for now
-    void clip_triangle(const Plane& near, const Plane& far) noexcept;
-    void clip_triangle_sm(const Plane& near, const Plane& far) noexcept; // for shadows
+    void clip_triangle(const Plane& near) noexcept;
+    void clip_triangle_sm(const Plane& near) noexcept; // for shadows
 
     static bool is_outside_screen(const Vec3& ndc0, const Vec3& ndc1, const Vec3& ndc2) noexcept;
 
