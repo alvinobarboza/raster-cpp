@@ -112,6 +112,7 @@ bool RendererRaster::is_outside_screen(const Vec3 &ndc0, const Vec3 &ndc1, const
 
 void RendererRaster::render_scene(SceneRaster* const s)
 {
+    Timer time{"transform"};
     scene = s;
     viewport.clear_frame_buffer();
     viewport.reset_tiles();
@@ -148,6 +149,7 @@ void RendererRaster::render_scene(SceneRaster* const s)
             light.direction_view_space = -(light_world_dir * scene->camera.transform.transposed_rotation_matrix).normalized();
             light.project_view_matrix = light_bias_matrix *
                     light.projection_matrix * light.transform.view_matrix * scene->camera.transform.world_matrix;
+            Timer time2{"shadow"};
             shadow_mapping(light);
         }
     }
@@ -196,7 +198,6 @@ void RendererRaster::render_scene(SceneRaster* const s)
 
             if ((normal * -model->meshData.vertices_view_space[t.v1]) <= 0.0f) continue;
 
-            const auto tangent {t.tangent * m_rotation};
 
             verts_out.clear();
             verts_in.clear();
@@ -259,6 +260,7 @@ void RendererRaster::render_scene(SceneRaster* const s)
         }
     }
 
+    time.~Timer();
     if (render_mode == RenderMode::DEFERRED_TILED_M || render_mode == RenderMode::FORWARD_TILED_M)
     {
         viewport.bin_triangles(tris_buffer);

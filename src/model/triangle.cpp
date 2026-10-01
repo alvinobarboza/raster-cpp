@@ -42,22 +42,19 @@ FullTriangle::FullTriangle(
 
 void FullTriangle::calculate_tri_aabb()
 {
+    const auto min_x {std::min(screen_points[0].x, std::min(screen_points[1].x, screen_points[2].x))};
+    const auto min_y {std::min(screen_points[0].y, std::min(screen_points[1].y, screen_points[2].y))};
+    const auto max_x {std::max(screen_points[0].x, std::max(screen_points[1].x, screen_points[2].x))};
+    const auto max_y {std::max(screen_points[0].y, std::max(screen_points[1].y, screen_points[2].y))};
+
     aabb = {
         {
-            std::floor(
-                std::min(screen_points[0].x, std::min(screen_points[1].x, screen_points[2].x))
-            ),
-            std::floor(
-                std::min(screen_points[0].y, std::min(screen_points[1].y, screen_points[2].y))
-            )
+            static_cast<float>(static_cast<int>(min_x)),
+            static_cast<float>(static_cast<int>(min_y))
         },
         {
-            std::ceil(
-                std::max(screen_points[0].x, std::max(screen_points[1].x, screen_points[2].x))
-            ),
-            std::ceil(
-                std::max(screen_points[0].y, std::max(screen_points[1].y, screen_points[2].y))
-            )
+            static_cast<float>(static_cast<int>(max_x)+1),
+            static_cast<float>(static_cast<int>(max_y)+1)
         }
     };
 }
@@ -139,22 +136,19 @@ float FullTriangle::frag_roughness(const Vec2 uv) const noexcept
 
 void ShadowTriangle::calculate_tri_aabb()
 {
+    const auto min_x {std::min(screen_points[0].x, std::min(screen_points[1].x, screen_points[2].x))};
+    const auto min_y {std::min(screen_points[0].y, std::min(screen_points[1].y, screen_points[2].y))};
+    const auto max_x {std::max(screen_points[0].x, std::max(screen_points[1].x, screen_points[2].x))};
+    const auto max_y {std::max(screen_points[0].y, std::max(screen_points[1].y, screen_points[2].y))};
+
     aabb = {
         {
-            std::floor(
-                std::min(screen_points[0].x, std::min(screen_points[1].x, screen_points[2].x))
-            ),
-            std::floor(
-                std::min(screen_points[0].y, std::min(screen_points[1].y, screen_points[2].y))
-            )
+            static_cast<float>(static_cast<int>(min_x)),
+            static_cast<float>(static_cast<int>(min_y))
         },
         {
-            std::ceil(
-                std::max(screen_points[0].x, std::max(screen_points[1].x, screen_points[2].x))
-            ),
-            std::ceil(
-                std::max(screen_points[0].y, std::max(screen_points[1].y, screen_points[2].y))
-            )
+            static_cast<float>(static_cast<int>(max_x)+1),
+            static_cast<float>(static_cast<int>(max_y)+1)
         }
     };
 }
