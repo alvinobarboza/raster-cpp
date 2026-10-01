@@ -66,17 +66,6 @@ void RendererRaster::clip_triangle(const Plane& near) noexcept
 
 void RendererRaster::clip_triangle_sm(const Plane& near) noexcept
 {
-    const auto p0_d {near.signed_distance_to_point(verts_out_sm[0])};
-    const auto p1_d {near.signed_distance_to_point(verts_out_sm[1])};
-    const auto p2_d {near.signed_distance_to_point(verts_out_sm[2])};
-
-    if (p0_d >= 0.0f && p1_d >= 0.0f && p2_d >= 0.0f) return;
-    if (p0_d <= 0.0f && p1_d <= 0.0f && p2_d <= 0.0f)
-    {
-        verts_out_sm.clear();
-        return;
-    }
-
     std::swap(verts_in_sm, verts_out_sm);
     verts_out_sm.clear();
 
@@ -646,10 +635,14 @@ void RendererRaster::shadow_mapping(Light& light) noexcept
 
         for (const auto &t: model->meshData.triangles)
         {
-            if (!t.is_back_facing(model->meshData.vertices_view_space, model->meshData.normals_view_space))
-            {
-                continue;
-            }
+            const auto p0_d {light.frustum.planes[NEAR_PLANE].signed_distance_to_point(model->meshData.vertices_view_space[t.v1])};
+            const auto p1_d {light.frustum.planes[NEAR_PLANE].signed_distance_to_point(model->meshData.vertices_view_space[t.v2])};
+            const auto p2_d {light.frustum.planes[NEAR_PLANE].signed_distance_to_point(model->meshData.vertices_view_space[t.v3])};
+
+            if (p0_d <= 0.0f && p1_d <= 0.0f && p2_d <= 0.0f) continue;
+
+            if (const auto normal {t.normal * m_rotation};
+                (normal * -model->meshData.vertices_view_space[t.v1]) <= 0.0f) continue;
 
             verts_out_sm.clear();
             verts_in_sm.clear();
@@ -658,7 +651,10 @@ void RendererRaster::shadow_mapping(Light& light) noexcept
             verts_out_sm.emplace_back(model->meshData.vertices_view_space[t.v2]);
             verts_out_sm.emplace_back(model->meshData.vertices_view_space[t.v3]);
 
-            clip_triangle_sm(light.frustum.planes[NEAR_PLANE]);
+            if (!(p0_d >= 0.0f && p1_d >= 0.0f && p2_d >= 0.0f))
+            {
+                clip_triangle_sm(light.frustum.planes[NEAR_PLANE]);
+            }
 
             if (verts_out_sm.size() > 2) {
                 for (size_t j = 1; j < verts_out_sm.size() - 1; ++j) {
