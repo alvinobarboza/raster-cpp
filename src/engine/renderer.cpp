@@ -124,6 +124,13 @@ void RendererRaster::render_scene(SceneRaster* const s)
     }
 
     //update lights
+    constexpr Matrix4x4 light_bias_matrix {
+        0.5f,  0.0f,  0.0f,  0.5f,
+        0.0f, -0.5f,  0.0f,  0.5f,
+        0.0f,  0.0f,  0.5f,  0.5f,
+        0.0f,  0.0f,  0.0f,  1.0f,
+    };
+
     for (auto &light: scene->lights)
     {
         // Since this is used only for the dot product between the light and triangle normal, I'm inverting here
@@ -139,7 +146,8 @@ void RendererRaster::render_scene(SceneRaster* const s)
             light.transform.update_transforms(true);
 
             light.direction_view_space = -(light_world_dir * scene->camera.transform.transposed_rotation_matrix).normalized();
-            light.project_view_matrix = light.projection_matrix * light.transform.view_matrix * scene->camera.transform.world_matrix;
+            light.project_view_matrix = light_bias_matrix *
+                    light.projection_matrix * light.transform.view_matrix * scene->camera.transform.world_matrix;
             shadow_mapping(light);
         }
     }
