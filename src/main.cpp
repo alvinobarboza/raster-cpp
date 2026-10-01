@@ -1,5 +1,6 @@
 #include <chrono>
 #include <iostream>
+#include <numeric>
 
 #include "raylib.h"
 #include "camera/camera.h"
@@ -55,18 +56,28 @@ int main() {
     scene.models.push_back(rm.load_model("../assets/polyhaven_rico_b3d/marble_bust.obj", true));
     scene.models[2]->transforms.position = {0.0f, 0.0f, 1.0f};
     scene.models[2]->update_transforms();
-    //
-    // scene.models.push_back(rm.load_model("../assets/polyhaven_rico_b3d/marble_bust.obj", true));
-    // scene.models[3]->transforms.position = {0.0f, 0.0f, 1.5f};
-    // scene.models[3]->update_transforms();
-    //
-    // scene.models.push_back(rm.load_model("../assets/polyhaven_rico_b3d/marble_bust.obj", true));
-    // scene.models[4]->transforms.position = {-0.5f, 0.0f, 1.0f};
-    // scene.models[4]->update_transforms();
-    //
-    // scene.models.push_back(rm.load_model("../assets/polyhaven_rico_b3d/marble_bust.obj", true));
-    // scene.models[5]->transforms.position = {-0.5f, 0.0f, 1.5f};
-    // scene.models[5]->update_transforms();
+
+    scene.models.push_back(rm.load_model("../assets/polyhaven_rico_b3d/marble_bust.obj", true));
+    scene.models[3]->transforms.position = {0.0f, 0.0f, 1.5f};
+    scene.models[3]->update_transforms();
+
+    scene.models.push_back(rm.load_model("../assets/polyhaven_rico_b3d/marble_bust.obj", true));
+    scene.models[4]->transforms.position = {-0.5f, 0.0f, 1.0f};
+    scene.models[4]->update_transforms();
+
+    scene.models.push_back(rm.load_model("../assets/polyhaven_rico_b3d/marble_bust.obj", true));
+    scene.models[5]->transforms.position = {-0.5f, 0.0f, 1.5f};
+    scene.models[5]->update_transforms();
+
+    const auto total_tris {
+        std::accumulate(
+            scene.models.begin(),
+            scene.models.end(),
+            0,
+            [](const int ac, const ModelRaster* m)
+    {
+        return ac + m->meshData.triangles.size();
+    })};
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 
@@ -162,6 +173,12 @@ int main() {
                 time,
                  avg_time / frame_count,
                  min_time, max_time
+            ),
+            pos, font_size, 0.0f, RAYWHITE);
+        pos.y += (font_size * 4) + 2;
+        DrawTextEx(roboto,
+            TextFormat(
+                "Triangle count: %d", total_tris
             ),
             pos, font_size, 0.0f, RAYWHITE);
         EndDrawing();
