@@ -628,11 +628,6 @@ void RendererRaster::shadow_mapping(Light& light) noexcept
             model->meshData.vertices_view_space[i] = model->meshData.vertices[i] * m_transforms;
         }
 
-        for (size_t i = 0; i < model->meshData.normals.size(); ++i)
-        {
-            model->meshData.normals_view_space[i] = model->meshData.normals[i] * m_rotation;
-        }
-
         for (const auto &t: model->meshData.triangles)
         {
             const auto p0_d {light.frustum.planes[NEAR_PLANE].signed_distance_to_point(model->meshData.vertices_view_space[t.v1])};
