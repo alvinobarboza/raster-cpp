@@ -15,14 +15,14 @@ class Viewport {
 
     int res_factor {};
 
-    float half_width {};
-    float half_height {};
 public:
     static constexpr int TILE_SIZE = 16;
     Grid grid {};
 
     int width {};
     int height {};
+    float half_width {};
+    float half_height {};
 
     Viewport () = default;
     Viewport(int width, int height, int res_factor);

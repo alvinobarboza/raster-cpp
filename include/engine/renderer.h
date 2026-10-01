@@ -8,7 +8,6 @@
 struct G_buffer {
     float depth{1.0f};
     int triangle_id{-1};
-    Vec3 frag_coord {};
     Vec2 uv {};
     Vec3 normal {};
 };

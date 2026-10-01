@@ -14,11 +14,11 @@ CameraRaster::CameraRaster(
     const float near, const float far,
     const Vec3 &position, const Vec3 &rotation):
 fov_angle(fov),
+sensitivity(sensitivity),
 fov_scale(fov_scaling(fov)),
 aspect_ratio(1.0f),
 z_near(near),
-z_far(far),
-sensitivity(sensitivity)
+z_far(far)
 {
     transform.position = position;
     transform.rotation = rotation;

@@ -345,9 +345,6 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> 
         const auto delta_frag_uv_x { tri.projected_vertices[0].uv * delta_alpha_x + tri.projected_vertices[1].uv * delta_beta_x + tri.projected_vertices[2].uv * delta_gamma_x };
         const auto delta_frag_uv_y { tri.projected_vertices[0].uv * delta_alpha_y + tri.projected_vertices[1].uv * delta_beta_y + tri.projected_vertices[2].uv * delta_gamma_y };
 
-        const auto delta_frag_coord_x { tri.projected_vertices[0].point * delta_alpha_x + tri.projected_vertices[1].point * delta_beta_x + tri.projected_vertices[2].point * delta_gamma_x };
-        const auto delta_frag_coord_y { tri.projected_vertices[0].point * delta_alpha_y + tri.projected_vertices[1].point * delta_beta_y + tri.projected_vertices[2].point * delta_gamma_y };
-
         const auto delta_frag_normal_x { tri.projected_vertices[0].normal * delta_alpha_x + tri.projected_vertices[1].normal * delta_beta_x + tri.projected_vertices[2].normal * delta_gamma_x };
         const auto delta_frag_normal_y { tri.projected_vertices[0].normal * delta_alpha_y + tri.projected_vertices[1].normal * delta_beta_y + tri.projected_vertices[2].normal * delta_gamma_y };
 
@@ -355,7 +352,6 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> 
         auto ndc_z_row { (tri.screen_points[0].z * w0_row + tri.screen_points[1].z * w1_row + tri.screen_points[2].z * w2_row) * area };
         auto frag_z_row { (tri.depth_z[0] * w0_row + tri.depth_z[1] * w1_row + tri.depth_z[2] * w2_row) * area };
         auto frag_uv_row { (tri.projected_vertices[0].uv * w0_row + tri.projected_vertices[1].uv * w1_row + tri.projected_vertices[2].uv * w2_row) * area  };
-        auto frag_coord_row { (tri.projected_vertices[0].point * w0_row + tri.projected_vertices[1].point * w1_row + tri.projected_vertices[2].point * w2_row) * area  };
         auto frag_normal_row { (tri.projected_vertices[0].normal * w0_row + tri.projected_vertices[1].normal * w1_row + tri.projected_vertices[2].normal * w2_row) * area  };
 
         for (int y = min_y; y < max_y; y++)
@@ -367,7 +363,6 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> 
             auto z_depth { ndc_z_row };
             auto frag_z { frag_z_row };
             auto frag_uv_over_z { frag_uv_row };
-            auto frag_coord_over_z { frag_coord_row };
             auto frag_normal_over_z { frag_normal_row };
 
             int row_index = (y - tile.offset_y) * Viewport::TILE_SIZE + (min_x - tile.offset_x);
@@ -383,12 +378,10 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> 
                     {
                         const auto frag_depth { 1 / frag_z };
                         const auto frag_uv { frag_uv_over_z * frag_depth };
-                        const auto frag_coord { frag_coord_over_z * frag_depth };
                         const auto frag_normal { frag_normal_over_z * frag_depth };
 
                         g_buffer[row_index].triangle_id = triangle_id;
                         g_buffer[row_index].depth = z_depth;
-                        g_buffer[row_index].frag_coord = frag_coord;
                         g_buffer[row_index].uv = frag_uv;
                         g_buffer[row_index].normal = frag_normal;
                     }
@@ -400,7 +393,6 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> 
                 z_depth += delta_ndc_z_x;
                 frag_z += delta_frag_z_x;
                 frag_uv_over_z += delta_frag_uv_x;
-                frag_coord_over_z += delta_frag_coord_x;
                 frag_normal_over_z += delta_frag_normal_x;
 
                 ++row_index;
@@ -412,10 +404,14 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> 
             ndc_z_row += delta_ndc_z_y;
             frag_z_row += delta_frag_z_y;
             frag_uv_row += delta_frag_uv_y;
-            frag_coord_row += delta_frag_coord_y;
             frag_normal_row += delta_frag_normal_y;
         }
     }
+
+    const auto z_near { scene->camera.z_near };
+    const auto z_far { scene->camera.z_far };
+    const auto aspect_ratio { scene->camera.aspect_ratio };
+    const auto fov_scale { scene->camera.fov_scale };
 
     for (int y = 0; y < Viewport::TILE_SIZE; y++)
     {
@@ -433,6 +429,18 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> 
             viewport.depth_pass(px, py, gb.depth);
             const auto& t {tris_buffer[gb.triangle_id]};
 
+            // Reconstruct frag_coord
+            const auto p_center_x = static_cast<float>(px) + 0.5f;
+            const auto p_center_y = static_cast<float>(py) + 0.5f;
+
+            const auto z_view { ( z_near * z_far ) / ( z_far - ( gb.depth * ( z_far - z_near ) ) ) };
+            const auto x_ndc { ( p_center_x - viewport.half_width ) / viewport.half_width };
+            const auto y_ndc { ( viewport.half_height - p_center_y ) / viewport.half_height };
+            const auto x_view { x_ndc * z_view * ( aspect_ratio / fov_scale ) };
+            const auto y_view { y_ndc * z_view * ( 1.0f / fov_scale ) };
+
+            const Vec3 frag_coord { x_view, y_view, z_view };
+            const Vec3 view_normal {-x_view, -y_view, -z_view};
             const auto albedo { t.frag_color(gb.uv) };
             const auto normal { t.frag_normal(gb.normal.normalized(), gb.uv) };
             const auto roughness { t.frag_roughness(gb.uv) };
@@ -471,10 +479,9 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> 
                 continue;
             }
 
-            const auto view_normal = (-gb.frag_coord).normalized();
             const auto final_color = shader::calculate_light(
-                scene->lights, roughness, gb.frag_coord, albedo,
-                normal, view_normal, scene->skybox.ambient_intensity);
+                scene->lights, roughness, frag_coord, albedo,
+                normal, view_normal.normalized(), scene->skybox.ambient_intensity);
 
             viewport.put_pixel(px, py, final_color);
         }

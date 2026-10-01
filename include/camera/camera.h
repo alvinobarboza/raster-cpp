@@ -10,10 +10,6 @@
 
 class CameraRaster {
     float fov_angle {};
-    float fov_scale {};
-    float aspect_ratio {};
-    float z_near {};
-    float z_far {};
     float sensitivity {};
 
     bool update_view {};
@@ -24,6 +20,10 @@ class CameraRaster {
     void move_up_down(float unit);
     void update_rotation(const Vec2 &rotation);
 public:
+    float fov_scale {};
+    float aspect_ratio {};
+    float z_near {};
+    float z_far {};
     Transforms transform {};
     Matrix4x4 projection_matrix {};
     Frustum frustum {};
