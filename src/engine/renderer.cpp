@@ -302,7 +302,7 @@ void RendererRaster::woke_threads() noexcept
     }
 }
 
-void RendererRaster::render_tile_deferred(const Tile& tile, std::span<Gbuffer> g_buffer) noexcept
+void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> g_buffer) noexcept
 {
     const int max_offset_y = std::min(tile.offset_y+Viewport::TILE_SIZE, viewport.height);
     const int max_offset_x = std::min(tile.offset_x+Viewport::TILE_SIZE, viewport.width);
@@ -395,16 +395,13 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<Gbuffer> g
                         const auto frag_depth { 1 / frag_z };
                         const auto frag_uv { frag_uv_over_z * frag_depth };
                         const auto frag_coord { frag_coord_over_z * frag_depth };
-                        const auto frag_smooth_normal { frag_normal_over_z * frag_depth };
-                        const auto frag_normal = tri.frag_normal(frag_smooth_normal, frag_uv);
-                        const auto frag_color = tri.frag_color(frag_uv);
-                        const float frag_rough = tri.frag_roughness(frag_uv);
+                        const auto frag_normal { frag_normal_over_z * frag_depth };
 
+                        g_buffer[row_index].triangle_id = triangle_id;
                         g_buffer[row_index].depth = z_depth;
                         g_buffer[row_index].frag_coord = frag_coord;
-                        g_buffer[row_index].albedo = {frag_color.x, frag_color.y, frag_color.z};
+                        g_buffer[row_index].uv = frag_uv;
                         g_buffer[row_index].normal = frag_normal;
-                        g_buffer[row_index].roughness = frag_rough;
                     }
                 }
                 w0 += delta_w0_col;
@@ -437,7 +434,7 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<Gbuffer> g
         {
             const int index = x + y * Viewport::TILE_SIZE;
             const auto& gb = g_buffer[index];
-            if (gb.depth >= 1.0f) continue;
+            if (gb.triangle_id < 0) continue;
 
             const auto px = tile.offset_x + x;
             const auto py = tile.offset_y + y;
@@ -445,13 +442,18 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<Gbuffer> g
             if (px >= viewport.width || py >= viewport.height) continue;
 
             viewport.depth_pass(px, py, gb.depth);
+            const auto& t {tris_buffer[gb.triangle_id]};
+
+            const auto albedo { t.frag_color(gb.uv) };
+            const auto normal { t.frag_normal(gb.normal.normalized(), gb.uv) };
+            const auto roughness { t.frag_roughness(gb.uv) };
 
             if (render_normal)
             {
                 const Vec4 final_color{
-                    gb.normal.x * .5f + .5f,
-                    gb.normal.y * .5f + .5f,
-                    -gb.normal.z * .5f + .5f,
+                    normal.x * .5f + .5f,
+                    normal.y * .5f + .5f,
+                    -normal.z * .5f + .5f,
                     1.0f
                 };
 
@@ -472,19 +474,18 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<Gbuffer> g
             if (!render_light)
             {
                 const Vec4 final_color{
-                    std::sqrt(gb.albedo.x),
-                    std::sqrt(gb.albedo.y),
-                    std::sqrt(gb.albedo.z),
+                    std::sqrt(albedo.x),
+                    std::sqrt(albedo.y),
+                    std::sqrt(albedo.z),
                     1.0f};
                 viewport.put_pixel(px, py, final_color);
                 continue;
             }
 
             const auto view_normal = (-gb.frag_coord).normalized();
-            const Vec4 albedo{gb.albedo.x, gb.albedo.y, gb.albedo.z, 1.0f};
             const auto final_color = shader::calculate_light(
-                scene->lights, gb.roughness, gb.frag_coord, albedo,
-                gb.normal, view_normal, scene->skybox.ambient_intensity);
+                scene->lights, roughness, gb.frag_coord, albedo,
+                normal, view_normal, scene->skybox.ambient_intensity);
 
             viewport.put_pixel(px, py, final_color);
         }
@@ -789,7 +790,7 @@ void RendererRaster::render_shadow_map(const Light &value) noexcept {
 
 void RendererRaster::render_multithread() noexcept
 {
-    std::array<Gbuffer, Viewport::TILE_SIZE * Viewport::TILE_SIZE> g_buffer{};
+    std::array<G_buffer, Viewport::TILE_SIZE * Viewport::TILE_SIZE> g_buffer{};
     int last_seen_frame = 0;
     while (!stop_flag.load(std::memory_order_relaxed)) {
         frame_counter.wait(last_seen_frame);

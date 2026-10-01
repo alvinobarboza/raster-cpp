@@ -5,12 +5,12 @@
 #include "scene.h"
 #include "viewport.h"
 
-struct Gbuffer {
-    Vec3 frag_coord {};
-    Vec3 albedo {};
-    Vec3 normal {};
-    float roughness {};
+struct G_buffer {
     float depth{1.0f};
+    int triangle_id{-1};
+    Vec3 frag_coord {};
+    Vec2 uv {};
+    Vec3 normal {};
 };
 
 enum class RenderMode {
@@ -60,7 +60,7 @@ class RendererRaster {
     void draw_wireframe_from_tri_buffer() noexcept;
     void draw_triangle_aabb() noexcept;
 
-    void render_tile_deferred(const Tile& tile, std::span<Gbuffer> g_buffer) noexcept;
+    void render_tile_deferred(const Tile& tile, std::span<G_buffer> g_buffer) noexcept;
     void render_tile_forward(const Tile& tile) noexcept;
 
     void draw_active_tiles() noexcept;
