@@ -3,6 +3,7 @@
 #include <span>
 #include "raylib.h"
 #include "screen_tile.h"
+#include "material/color_convertion.h"
 #include "model/triangle.h"
 
 #include "transforms/vec3.h"
@@ -35,5 +36,9 @@ public:
     [[nodiscard]] Vec3 ndc_to_screen(const Vec3 &point) const;
     [[nodiscard]] float aspect_ratio() const;
     bool depth_pass(int x, int y, float z_depth) noexcept;
-    void put_pixel(int x, int y, const Vec4 &color) noexcept;
+
+    void put_pixel(const int x, const int y, const Vec4 &color) noexcept
+    {
+        frame_buffer[y * width + x] = color_convertion::vec4_to_color(color);
+    }
 };

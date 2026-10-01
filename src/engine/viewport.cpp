@@ -186,8 +186,3 @@ bool Viewport::depth_pass(const int x, const int y, const float z_depth) noexcep
     depth_buffer[index] = z_depth;
     return true;
 }
-
-void Viewport::put_pixel(const int x, const int y, const Vec4 &color) noexcept
-{
-    frame_buffer[y * width + x] = color_convertion::vec4_to_color(color);
-}

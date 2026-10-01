@@ -28,8 +28,24 @@ class TextureRaster {
         return table;
     }();
 
-    [[nodiscard]] static Vec4 color_to_vec4_gamma(Color c) noexcept;
-    [[nodiscard]] static Vec4 color_to_vec4(Color c) noexcept;
+    [[nodiscard]] static Vec4 color_to_vec4_gamma(const Color c) noexcept
+    {
+        return {
+            srgb_to_linear[c.r],
+            srgb_to_linear[c.g],
+            srgb_to_linear[c.b],
+            srgb_to_linear[c.a],
+        };
+    }
+    [[nodiscard]] static Vec4 color_to_vec4(const Color c) noexcept
+    {
+        return {
+            rgb_to_linear[c.r],
+            rgb_to_linear[c.g],
+            rgb_to_linear[c.b],
+            rgb_to_linear[c.a],
+        };
+    }
 
 public:
     std::vector<Color> buffer {};
@@ -38,7 +54,7 @@ public:
     int width_mask {}, height_mask {};
     float f_width {}, f_height {};
 
-    Vec2 texel_coord(Vec2 uv) const noexcept;
+    [[nodiscard]] Vec2 texel_coord(Vec2 uv) const noexcept;
 
     [[nodiscard]] Vec3 texel_normal(Vec2 uv) const noexcept;
     [[nodiscard]] float texel_intensity(Vec2 uv) const noexcept;

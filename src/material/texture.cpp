@@ -117,23 +117,3 @@ Vec4 TextureRaster::bilinear_color_gamma(const Vec2 uv) const noexcept
 
     return top_row.interpolate(bottom_row, weights.y);
 }
-
-Vec4 TextureRaster::color_to_vec4_gamma(const Color c) noexcept
-{
-    return {
-        srgb_to_linear[c.r],
-        srgb_to_linear[c.g],
-        srgb_to_linear[c.b],
-        srgb_to_linear[c.a],
-    };
-}
-
-Vec4 TextureRaster::color_to_vec4(const Color c) noexcept
-{
-    return {
-        rgb_to_linear[c.r],
-        rgb_to_linear[c.g],
-        rgb_to_linear[c.b],
-        rgb_to_linear[c.a],
-    };
-}

@@ -46,7 +46,6 @@ add_executable(${PROJECT_NAME}
         src/model/triangle.cpp
         src/camera/camera.cpp
         include/material/color_convertion.h
-        src/material/color_convertion.cpp
         include/model/mesh.h
         src/model/mesh.cpp
         include/engine/renderer.h
