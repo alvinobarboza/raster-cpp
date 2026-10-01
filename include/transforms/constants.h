@@ -6,5 +6,8 @@ namespace transforms {
     constexpr float DEG_TO_RAD = TAU / 360.0f;
     constexpr float RAD_TO_DEG = 360.0f / TAU;
 
-    float lerp(float a, float b, float t) noexcept;
+    inline float linear_interpolation(const float a, const float b, const float t) noexcept
+    {
+        return a + (b - a) * t;
+    }
 }

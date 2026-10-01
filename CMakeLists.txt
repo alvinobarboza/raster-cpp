@@ -63,7 +63,6 @@ add_executable(${PROJECT_NAME}
         include/engine/viewport.h
         src/engine/viewport.cpp
         include/engine/screen_tile.h
-        src/transforms/constants.cpp
         src/lights/light.cpp
         include/lights/shadow.h
         include/engine/shader.h

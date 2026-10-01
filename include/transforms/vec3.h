@@ -120,16 +120,10 @@ public:
 
     [[nodiscard]] Vec3 interpolate(const Vec3 &rhs, const float t) const
     {
-        if (t <= 0.0f) {
-            return *this;
-        }
-        if (t >= 1.0f) {
-            return rhs;
-        }
         return {
-            transforms::lerp(this->x, rhs.x, t),
-            transforms::lerp(this->y, rhs.y, t),
-            transforms::lerp(this->z, rhs.z, t),
+            transforms::linear_interpolation(this->x, rhs.x, t),
+            transforms::linear_interpolation(this->y, rhs.y, t),
+            transforms::linear_interpolation(this->z, rhs.z, t),
         };
     }
 

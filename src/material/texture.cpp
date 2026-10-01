@@ -52,10 +52,10 @@ float TextureRaster::texel_intensity(const Vec2 uv) const noexcept
     const auto texel_bottom_left {rgb_to_linear[buffer_value[index_bl < max_index ? index_bl : max_index - 1]]};
     const auto texel_bottom_right {rgb_to_linear[buffer_value[index_br < max_index ? index_br : max_index - 1]]};
 
-    const auto top_row {transforms::lerp(texel_top_left, texel_top_right, weights.x)};
-    const auto bottom_row {transforms::lerp(texel_bottom_left, texel_bottom_right, weights.x)};
+    const auto top_row {transforms::linear_interpolation(texel_top_left, texel_top_right, weights.x)};
+    const auto bottom_row {transforms::linear_interpolation(texel_bottom_left, texel_bottom_right, weights.x)};
 
-    return transforms::lerp(top_row, bottom_row, weights.y);
+    return transforms::linear_interpolation(top_row, bottom_row, weights.y);
 }
 
 Vec4 TextureRaster::bilinear_color(const Vec2 uv) const noexcept
@@ -82,10 +82,10 @@ Vec4 TextureRaster::bilinear_color(const Vec2 uv) const noexcept
     const auto texel_bottom_left {color_to_vec4(buffer[index_bl < max_index ? index_bl : max_index - 1])};
     const auto texel_bottom_right {color_to_vec4(buffer[index_br < max_index ? index_br : max_index - 1])};
 
-    const auto top_row {texel_top_left.lerp_to(texel_top_right, weights.x)};
-    const auto bottom_row {texel_bottom_left.lerp_to(texel_bottom_right, weights.x)};
+    const auto top_row {texel_top_left.interpolate(texel_top_right, weights.x)};
+    const auto bottom_row {texel_bottom_left.interpolate(texel_bottom_right, weights.x)};
 
-    return top_row.lerp_to(bottom_row, weights.y);
+    return top_row.interpolate(bottom_row, weights.y);
 }
 
 Vec4 TextureRaster::bilinear_color_gamma(const Vec2 uv) const noexcept
@@ -112,10 +112,10 @@ Vec4 TextureRaster::bilinear_color_gamma(const Vec2 uv) const noexcept
     const auto texel_bottom_left {color_to_vec4_gamma(buffer[index_bl < max_index ? index_bl : max_index - 1])};
     const auto texel_bottom_right {color_to_vec4_gamma(buffer[index_br < max_index ? index_br : max_index - 1])};
 
-    const auto top_row {texel_top_left.lerp_to(texel_top_right, weights.x)};
-    const auto bottom_row {texel_bottom_left.lerp_to(texel_bottom_right, weights.x)};
+    const auto top_row {texel_top_left.interpolate(texel_top_right, weights.x)};
+    const auto bottom_row {texel_bottom_left.interpolate(texel_bottom_right, weights.x)};
 
-    return top_row.lerp_to(bottom_row, weights.y);
+    return top_row.interpolate(bottom_row, weights.y);
 }
 
 Vec4 TextureRaster::color_to_vec4_gamma(const Color c) noexcept

@@ -83,15 +83,9 @@ public:
 
     [[nodiscard]] Vec2 interpolate(const Vec2 rhs, const float t) const
     {
-        if (t <= 0.0f) {
-            return *this;
-        }
-        if (t >= 1.0f) {
-            return rhs;
-        }
         return {
-            transforms::lerp(this->x, rhs.x, t),
-            transforms::lerp(this->y, rhs.y, t),
+            transforms::linear_interpolation(this->x, rhs.x, t),
+            transforms::linear_interpolation(this->y, rhs.y, t),
         };
     }
 
