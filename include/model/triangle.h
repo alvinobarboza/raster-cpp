@@ -29,7 +29,8 @@ struct Vertex {
 
 class FullTriangle {
 public:
-    std::array<Vertex, 3> projected_vertices {};
+    std::array<Vec2, 3> projected_uv {};
+    std::array<Vec3, 3> projected_normal {};
     std::array<Vec3, 3> screen_points {};
     std::array<float, 3> depth_z {};
     AABB2D aabb {};
@@ -52,7 +53,6 @@ public:
     [[nodiscard]] float frag_depth(float alpha, float beta, float gamma) const noexcept;
     [[nodiscard]] float frag_depth_ndc(float alpha, float beta, float gamma) const noexcept;
     [[nodiscard]] Vec2 frag_uv_coord(float alpha, float beta, float gamma, float depth) const noexcept;
-    [[nodiscard]] Vec3 frag_coord(float alpha, float beta, float gamma, float depth) const noexcept;
     [[nodiscard]] Vec3 frag_normal(float alpha, float beta, float gamma, Vec2 uv, float depth) const noexcept;
     [[nodiscard]] Vec3 frag_normal(const Vec3& n, Vec2 uv) const noexcept;
     [[nodiscard]] Vec4 frag_color(Vec2 uv) const noexcept;

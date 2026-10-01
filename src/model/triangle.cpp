@@ -24,17 +24,13 @@ FullTriangle::FullTriangle(
     depth_z[1] = 1 / v2.point.z;
     depth_z[2] = 1 / v3.point.z;
 
-    projected_vertices[0].point = v1.point * depth_z[0];
-    projected_vertices[1].point = v2.point * depth_z[1];
-    projected_vertices[2].point = v3.point * depth_z[2];
+    projected_normal[0] = v1.normal * depth_z[0];
+    projected_normal[1] = v2.normal * depth_z[1];
+    projected_normal[2] = v3.normal * depth_z[2];
 
-    projected_vertices[0].normal = v1.normal * depth_z[0];
-    projected_vertices[1].normal = v2.normal * depth_z[1];
-    projected_vertices[2].normal = v3.normal * depth_z[2];
-
-    projected_vertices[0].uv = v1.uv * depth_z[0];
-    projected_vertices[1].uv = v2.uv * depth_z[1];
-    projected_vertices[2].uv = v3.uv * depth_z[2];
+    projected_uv[0] = v1.uv * depth_z[0];
+    projected_uv[1] = v2.uv * depth_z[1];
+    projected_uv[2] = v3.uv * depth_z[2];
 
     normal = n;
     tangent = t;
@@ -71,16 +67,9 @@ float FullTriangle::frag_depth(const float alpha, const float beta, const float 
 
 Vec2 FullTriangle::frag_uv_coord(const float alpha, const float beta, const float gamma, const float depth) const noexcept
 {
-    return (projected_vertices[0].uv * alpha +
-            projected_vertices[1].uv * beta +
-            projected_vertices[2].uv * gamma) * depth;
-}
-
-Vec3 FullTriangle::frag_coord(const float alpha, const float beta, const float gamma, const float depth) const noexcept
-{
-    return (projected_vertices[0].point * alpha +
-            projected_vertices[1].point * beta +
-            projected_vertices[2].point * gamma) * depth ;
+    return (projected_uv[0] * alpha +
+            projected_uv[1] * beta +
+            projected_uv[2] * gamma) * depth;
 }
 
 Vec3 FullTriangle::frag_normal(
@@ -88,9 +77,9 @@ Vec3 FullTriangle::frag_normal(
     const Vec2 uv, const float depth) const noexcept
 {
     const auto _normal = !smooth ? normal :
-                    ((projected_vertices[0].normal * alpha +
-                    projected_vertices[1].normal * beta +
-                    projected_vertices[2].normal * gamma) * depth).normalized();
+                    ((projected_normal[0] * alpha +
+                    projected_normal[1] * beta +
+                    projected_normal[2] * gamma) * depth).normalized();
 
     if (!material->map_normal) return _normal;
 

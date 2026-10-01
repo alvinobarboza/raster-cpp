@@ -354,17 +354,17 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> 
         const auto delta_frag_z_x { tri.depth_z[0] * delta_alpha_x + tri.depth_z[1] * delta_beta_x + tri.depth_z[2] * delta_gamma_x };
         const auto delta_frag_z_y { tri.depth_z[0] * delta_alpha_y + tri.depth_z[1] * delta_beta_y + tri.depth_z[2] * delta_gamma_y };
 
-        const auto delta_frag_uv_x { tri.projected_vertices[0].uv * delta_alpha_x + tri.projected_vertices[1].uv * delta_beta_x + tri.projected_vertices[2].uv * delta_gamma_x };
-        const auto delta_frag_uv_y { tri.projected_vertices[0].uv * delta_alpha_y + tri.projected_vertices[1].uv * delta_beta_y + tri.projected_vertices[2].uv * delta_gamma_y };
+        const auto delta_frag_uv_x { tri.projected_uv[0] * delta_alpha_x + tri.projected_uv[1] * delta_beta_x + tri.projected_uv[2] * delta_gamma_x };
+        const auto delta_frag_uv_y { tri.projected_uv[0] * delta_alpha_y + tri.projected_uv[1] * delta_beta_y + tri.projected_uv[2] * delta_gamma_y };
 
-        const auto delta_frag_normal_x { tri.projected_vertices[0].normal * delta_alpha_x + tri.projected_vertices[1].normal * delta_beta_x + tri.projected_vertices[2].normal * delta_gamma_x };
-        const auto delta_frag_normal_y { tri.projected_vertices[0].normal * delta_alpha_y + tri.projected_vertices[1].normal * delta_beta_y + tri.projected_vertices[2].normal * delta_gamma_y };
+        const auto delta_frag_normal_x { tri.projected_normal[0] * delta_alpha_x + tri.projected_normal[1] * delta_beta_x + tri.projected_normal[2] * delta_gamma_x };
+        const auto delta_frag_normal_y { tri.projected_normal[0] * delta_alpha_y + tri.projected_normal[1] * delta_beta_y + tri.projected_normal[2] * delta_gamma_y };
 
         // Attributes first values
         auto ndc_z_row { (tri.screen_points[0].z * w0_row + tri.screen_points[1].z * w1_row + tri.screen_points[2].z * w2_row) * area };
         auto frag_z_row { (tri.depth_z[0] * w0_row + tri.depth_z[1] * w1_row + tri.depth_z[2] * w2_row) * area };
-        auto frag_uv_row { (tri.projected_vertices[0].uv * w0_row + tri.projected_vertices[1].uv * w1_row + tri.projected_vertices[2].uv * w2_row) * area  };
-        auto frag_normal_row { (tri.projected_vertices[0].normal * w0_row + tri.projected_vertices[1].normal * w1_row + tri.projected_vertices[2].normal * w2_row) * area  };
+        auto frag_uv_row { (tri.projected_uv[0] * w0_row + tri.projected_uv[1] * w1_row + tri.projected_uv[2] * w2_row) * area  };
+        auto frag_normal_row { (tri.projected_normal[0] * w0_row + tri.projected_normal[1] * w1_row + tri.projected_normal[2] * w2_row) * area  };
 
         for (int y = min_y; y < max_y; y++)
         {
@@ -534,6 +534,12 @@ void RendererRaster::render_tile_forward(const Tile &tile) noexcept
             auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p);
             auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p);
 
+
+            const auto z_near { scene->camera.z_near };
+            const auto z_far { scene->camera.z_far };
+            const auto aspect_ratio { scene->camera.aspect_ratio };
+            const auto fov_scale { scene->camera.fov_scale };
+
             for (int y = min_y; y < max_y; y++)
             {
                 auto w0 = w0_row;
@@ -557,10 +563,20 @@ void RendererRaster::render_tile_forward(const Tile &tile) noexcept
                         {
                             const auto frag_depth = 1 / tri.frag_depth(alpha, beta, gamma);
                             const auto frag_uv = tri.frag_uv_coord(alpha, beta, gamma, frag_depth);
-                            const auto frag_coord = tri.frag_coord(alpha, beta, gamma, frag_depth);
                             const auto frag_normal = tri.frag_normal(alpha, beta, gamma, frag_uv,frag_depth);
                             const auto frag_color = tri.frag_color(frag_uv);
                             const float frag_rough = tri.frag_roughness(frag_uv);
+
+                            const auto p_center_x = static_cast<float>(x) + 0.5f;
+                            const auto p_center_y = static_cast<float>(y) + 0.5f;
+
+                            const auto z_view { ( z_near * z_far ) / ( z_far - ( z_depth * ( z_far - z_near ) ) ) };
+                            const auto x_ndc { ( p_center_x - viewport.half_width ) / viewport.half_width };
+                            const auto y_ndc { ( viewport.half_height - p_center_y ) / viewport.half_height };
+                            const auto x_view { x_ndc * z_view * ( aspect_ratio / fov_scale ) };
+                            const auto y_view { y_ndc * z_view * ( 1.0f / fov_scale ) };
+
+                            const Vec3 frag_coord { x_view, y_view, z_view };
 
                             if (render_normal)
                             {
