@@ -228,13 +228,6 @@ void RendererRaster::render_scene(SceneRaster* const s)
                     const auto p2 = verts_out[j];
                     const auto p3 = verts_out[j + 1];
 
-                    FullTriangle tf {
-                        p1,p2,p3,
-                        model->meshData.materials[t.material_id],
-                        normal, tangent,
-                        t.smooth
-                    };
-
                     const auto ndc0 = scene->camera.vertex_to_ndc(p1.point);
                     const auto ndc1 = scene->camera.vertex_to_ndc(p2.point);
                     const auto ndc2 = scene->camera.vertex_to_ndc(p3.point);
@@ -244,6 +237,15 @@ void RendererRaster::render_scene(SceneRaster* const s)
                         //++count_skipped_tris;
                         continue;
                     }
+
+                    const auto tangent {t.tangent * m_rotation};
+
+                    FullTriangle tf {
+                        p1,p2,p3,
+                        model->meshData.materials[t.material_id],
+                        normal, tangent,
+                        t.smooth
+                    };
 
                     tf.screen_points[0] = viewport.ndc_to_screen(ndc0);
                     tf.screen_points[1] = viewport.ndc_to_screen(ndc1);
@@ -672,8 +674,6 @@ void RendererRaster::shadow_mapping(Light& light) noexcept
                     const auto p2 = verts_out_sm[j];
                     const auto p3 = verts_out_sm[j + 1];
 
-                    ShadowTriangle sf {};
-
                     const auto ndc0 = light.vertex_to_ndc(p1);
                     const auto ndc1 = light.vertex_to_ndc(p2);
                     const auto ndc2 = light.vertex_to_ndc(p3);
@@ -682,6 +682,8 @@ void RendererRaster::shadow_mapping(Light& light) noexcept
                     {
                         continue;
                     }
+
+                    ShadowTriangle sf {};
 
                     sf.screen_points[0] = light.ndc_to_canvas(ndc0);
                     sf.screen_points[1] = light.ndc_to_canvas(ndc1);
