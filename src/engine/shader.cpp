@@ -69,12 +69,14 @@ Vec4 shader::calculate_light(
         {
             const Vec3 frag_light_pos {frag_pos * light.project_view_matrix };
             const float depth_light { frag_light_pos.z };
-            constexpr float bias_depth {0.0008f};
             const Vec2 uv_light_coord { frag_light_pos.x, frag_light_pos.y };
 
-            if (const auto shadow {light.shadow.sample(uv_light_coord)}; frag_light_pos.z <= 1.0f && (depth_light - bias_depth) > shadow)
+            if (depth_light >= 0.0f && depth_light <= 1.0f)
             {
-                continue;
+                if (constexpr float bias_depth {0.0008f}; (depth_light - bias_depth) > light.shadow.sample(uv_light_coord))
+                {
+                    continue;
+                }
             }
         }
 
