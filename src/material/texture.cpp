@@ -4,19 +4,6 @@
 
 #include "transforms/constants.h"
 
-Vec2 TextureRaster::texel_coord(const Vec2 uv) const noexcept
-{
-    const float inverted_y = 1.0f - uv.y;
-    const auto xf = uv.x * f_width;
-    const auto yf = inverted_y * f_height;
-    const auto floor_x = static_cast<float>(static_cast<int>(xf) & width_mask);
-    const auto floor_y = static_cast<float>(static_cast<int>(yf) & height_mask);
-    return {
-        floor_x + (xf - floor_x),
-        floor_y + (yf - floor_y),
-    };
-}
-
 Vec3 TextureRaster::texel_normal(const Vec2 uv) const noexcept
 {
     const auto normal = bilinear_color(uv);
@@ -30,90 +17,44 @@ Vec3 TextureRaster::texel_normal(const Vec2 uv) const noexcept
 
 float TextureRaster::texel_intensity(const Vec2 uv) const noexcept
 {
-    const Vec2 tex_coord {texel_coord(uv)};
+    const auto [tl, tr, bl, br, wx, wy] {bilinear_coord(uv)};
 
-    const auto floor_x {std::floor(tex_coord.x)};
-    const auto floor_y {std::floor(tex_coord.y)};
-    const Vec2 f{floor_x, floor_y};
+    const auto texel_top_left {rgb_to_linear[buffer_value[tl]]};
+    const auto texel_top_right {rgb_to_linear[buffer_value[tr]]};
+    const auto texel_bottom_left {rgb_to_linear[buffer_value[bl]]};
+    const auto texel_bottom_right {rgb_to_linear[buffer_value[br]]};
 
-    const Vec2 weights {tex_coord.x - floor_x, tex_coord.y - floor_y};
-    const int base_x {static_cast<int>(f.x)};
-    const int base_y {static_cast<int>(f.y)};
+    const auto top_row {transforms::linear_interpolation(texel_top_left, texel_top_right, wx)};
+    const auto bottom_row {transforms::linear_interpolation(texel_bottom_left, texel_bottom_right, wx)};
 
-    // x,y offset
-    const int max_index {static_cast<int>(buffer_value.size())};
-    const int index_tl {base_y * width + base_x}; //0,0 offset
-    const int index_tr {base_y * width + (base_x + 1)}; //1,0 offset
-    const int index_bl {(base_y + 1) * width + base_x}; //0,1 offset
-    const int index_br {(base_y + 1) * width + (base_x + 1)}; //1,1 offset
-
-    const auto texel_top_left {rgb_to_linear[buffer_value[index_tl < max_index ? index_tl : max_index - 1]]};
-    const auto texel_top_right {rgb_to_linear[buffer_value[index_tr < max_index ? index_tr : max_index - 1]]};
-    const auto texel_bottom_left {rgb_to_linear[buffer_value[index_bl < max_index ? index_bl : max_index - 1]]};
-    const auto texel_bottom_right {rgb_to_linear[buffer_value[index_br < max_index ? index_br : max_index - 1]]};
-
-    const auto top_row {transforms::linear_interpolation(texel_top_left, texel_top_right, weights.x)};
-    const auto bottom_row {transforms::linear_interpolation(texel_bottom_left, texel_bottom_right, weights.x)};
-
-    return transforms::linear_interpolation(top_row, bottom_row, weights.y);
+    return transforms::linear_interpolation(top_row, bottom_row, wy);
 }
 
 Vec4 TextureRaster::bilinear_color(const Vec2 uv) const noexcept
 {
-    const Vec2 tex_coord {texel_coord(uv)};
+    const auto [tl, tr, bl, br, wx, wy] {bilinear_coord(uv)};
+    const auto texel_top_left {color_to_vec4(buffer[tl])};
+    const auto texel_top_right {color_to_vec4(buffer[tr])};
+    const auto texel_bottom_left {color_to_vec4(buffer[bl])};
+    const auto texel_bottom_right {color_to_vec4(buffer[br])};
 
-    const auto floor_x {std::floor(tex_coord.x)};
-    const auto floor_y {std::floor(tex_coord.y)};
-    const Vec2 f{floor_x, floor_y};
+    const auto top_row {texel_top_left.interpolate(texel_top_right, wx)};
+    const auto bottom_row {texel_bottom_left.interpolate(texel_bottom_right, wx)};
 
-    const Vec2 weights {tex_coord.x - floor_x, tex_coord.y - floor_y};
-    const int base_x {static_cast<int>(f.x)};
-    const int base_y {static_cast<int>(f.y)};
-
-    // x,y offset
-    const int max_index {static_cast<int>(buffer.size())};
-    const int index_tl {base_y * width + base_x}; //0,0 offset
-    const int index_tr {base_y * width + (base_x + 1)}; //1,0 offset
-    const int index_bl {(base_y + 1) * width + base_x}; //0,1 offset
-    const int index_br {(base_y + 1) * width + (base_x + 1)}; //1,1 offset
-
-    const auto texel_top_left {color_to_vec4(buffer[index_tl < max_index ? index_tl : max_index - 1])};
-    const auto texel_top_right {color_to_vec4(buffer[index_tr < max_index ? index_tr : max_index - 1])};
-    const auto texel_bottom_left {color_to_vec4(buffer[index_bl < max_index ? index_bl : max_index - 1])};
-    const auto texel_bottom_right {color_to_vec4(buffer[index_br < max_index ? index_br : max_index - 1])};
-
-    const auto top_row {texel_top_left.interpolate(texel_top_right, weights.x)};
-    const auto bottom_row {texel_bottom_left.interpolate(texel_bottom_right, weights.x)};
-
-    return top_row.interpolate(bottom_row, weights.y);
+    return top_row.interpolate(bottom_row, wy);
 }
 
 Vec4 TextureRaster::bilinear_color_gamma(const Vec2 uv) const noexcept
 {
-    const Vec2 tex_coord {texel_coord(uv)};
+    const auto [tl, tr, bl, br, wx, wy] {bilinear_coord(uv)};
 
-    const auto floor_x {std::floor(tex_coord.x)};
-    const auto floor_y {std::floor(tex_coord.y)};
-    const Vec2 f{floor_x, floor_y};
+    const auto texel_top_left {color_to_vec4_gamma(buffer[tl])};
+    const auto texel_top_right {color_to_vec4_gamma(buffer[tr])};
+    const auto texel_bottom_left {color_to_vec4_gamma(buffer[bl])};
+    const auto texel_bottom_right {color_to_vec4_gamma(buffer[br])};
 
-    const Vec2 weights {tex_coord.x - floor_x, tex_coord.y - floor_y};
-    const int base_x {static_cast<int>(f.x)};
-    const int base_y {static_cast<int>(f.y)};
+    const auto top_row {texel_top_left.interpolate(texel_top_right, wx)};
+    const auto bottom_row {texel_bottom_left.interpolate(texel_bottom_right, wx)};
 
-    // x,y offset
-    const int max_index {static_cast<int>(buffer.size())};
-    const int index_tl {base_y * width + base_x}; //0,0 offset
-    const int index_tr {base_y * width + (base_x + 1)}; //1,0 offset
-    const int index_bl {(base_y + 1) * width + base_x}; //0,1 offset
-    const int index_br {(base_y + 1) * width + (base_x + 1)}; //1,1 offset
-
-    const auto texel_top_left {color_to_vec4_gamma(buffer[index_tl < max_index ? index_tl : max_index - 1])};
-    const auto texel_top_right {color_to_vec4_gamma(buffer[index_tr < max_index ? index_tr : max_index - 1])};
-    const auto texel_bottom_left {color_to_vec4_gamma(buffer[index_bl < max_index ? index_bl : max_index - 1])};
-    const auto texel_bottom_right {color_to_vec4_gamma(buffer[index_br < max_index ? index_br : max_index - 1])};
-
-    const auto top_row {texel_top_left.interpolate(texel_top_right, weights.x)};
-    const auto bottom_row {texel_bottom_left.interpolate(texel_bottom_right, weights.x)};
-
-    return top_row.interpolate(bottom_row, weights.y);
+    return top_row.interpolate(bottom_row, wy);
 }
