@@ -67,7 +67,7 @@ Vec4 shader::calculate_light(
 
         if (light.has_shadows)
         {
-            const Vec3 frag_light_pos {frag_pos * light.project_view_matrix }; //TODO: try to interpolate frag position in the triangle stage
+            const Vec3 frag_light_pos {frag_pos * light.project_view_matrix };
             const float depth_light {(frag_light_pos.z + 1.0f) * 0.5f};
             constexpr float bias_depth {0.0008f};
             const Vec2 uv_light_coord {(frag_light_pos.x + 1.0f) * 0.5f, (1.0f - frag_light_pos.y) * 0.5f};
