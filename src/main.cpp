@@ -181,6 +181,15 @@ int main() {
                 "Triangle count: %d", total_tris
             ),
             pos, font_size, 0.0f, RAYWHITE);
+
+        pos.y += font_size;
+        for (const auto& sample : renderer.time_samples()) {
+            DrawTextEx(roboto,
+                TextFormat("%s: %2dms %2dus", sample.name.c_str(), sample.ms, sample.us),
+                pos, font_size, 0.0f, RAYWHITE);
+            pos.y += font_size;
+        }
+
         EndDrawing();
         if (frame_count % 240 == 0) {
             avg_time = 0;

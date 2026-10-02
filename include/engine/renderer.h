@@ -3,6 +3,7 @@
 #include <thread>
 
 #include "scene.h"
+#include "timer.h"
 #include "viewport.h"
 
 struct G_buffer {
@@ -46,6 +47,8 @@ class RendererRaster {
 
     SceneRaster* scene {nullptr};
     Light* current_light {nullptr}; // Just for now, let's see if I find a better implementation
+
+    std::vector<TimerSample> profile_samples {};
 
     // Sutherland–Hodgman tmp vars
     std::vector<Vertex> verts_in {};
@@ -106,6 +109,7 @@ public:
     void toggle_render_mode();
     void cycle_shadow_index();
 
+    [[nodiscard]] std::span<const TimerSample> time_samples() const noexcept;
     [[nodiscard]] std::string renderer_mode() const noexcept;
 
     void handle_input();

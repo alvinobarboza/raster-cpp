@@ -128,6 +128,7 @@ bool RendererRaster::is_outside_screen(const Vec3& sc1, const Vec3& sc2, const V
 
 void RendererRaster::render_scene(SceneRaster* const s)
 {
+    profile_samples.clear();
     Timer t_total{"total-render-scene"};
 
     {
@@ -136,6 +137,7 @@ void RendererRaster::render_scene(SceneRaster* const s)
         viewport.clear_frame_buffer();
         viewport.reset_tiles();
         t_camera_buffer.clear();
+        profile_samples.push_back(t_clear.stop_and_sample());
     }
 
     if (scene == nullptr)
@@ -176,6 +178,7 @@ void RendererRaster::render_scene(SceneRaster* const s)
                 shadow_mapping();
             }
         }
+        profile_samples.push_back(t_shadow.stop_and_sample());
     }
     {
         Timer t_cam_geom{"3-camera-geometry-transform"};
@@ -321,6 +324,7 @@ void RendererRaster::render_scene(SceneRaster* const s)
                 }
             }
         }
+        profile_samples.push_back(t_cam_geom.stop_and_sample());
     }
 
     //time.stop();
@@ -331,10 +335,12 @@ void RendererRaster::render_scene(SceneRaster* const s)
         {
             Timer t_cam_bin{"4-camera-binning"};
             viewport.bin_triangles(t_camera_buffer);
+            profile_samples.push_back(t_cam_bin.stop_and_sample());
         }
         {
             Timer t_cam_render{"5-camera-render-and-resolve"};
             woke_threads();
+            profile_samples.push_back(t_cam_render.stop_and_sample());
         }
     }
     else if (render_mode == RenderMode::SHADOW_MAPPING)
@@ -357,6 +363,7 @@ void RendererRaster::render_scene(SceneRaster* const s)
     {
         draw_active_tiles();
     }
+    profile_samples.push_back(t_total.stop_and_sample());
 }
 
 void RendererRaster::woke_threads() noexcept
@@ -1121,6 +1128,11 @@ std::string RendererRaster::renderer_mode() const noexcept
             return "Shouldn't happen!!";
     }
     return "";
+}
+
+std::span<const TimerSample> RendererRaster::time_samples() const noexcept
+{
+    return profile_samples;
 }
 
 void RendererRaster::toggle_render_depth()
