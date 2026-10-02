@@ -169,7 +169,7 @@ void RendererRaster::render_scene(SceneRaster* const s)
         }
     }
 
-    Timer time{"transform"};
+    //Timer time{"transform"};
     for (const auto& model: scene->models)
     {
         const auto m_transforms = scene->camera.transform.view_matrix * model->transforms.world_matrix;
@@ -313,8 +313,8 @@ void RendererRaster::render_scene(SceneRaster* const s)
         }
     }
 
-    time.stop();
-    Timer time_r{"render"};
+    //time.stop();
+    //Timer time_r{"render"};
     if (render_mode == RenderMode::DEFERRED_TILED_M || render_mode == RenderMode::FORWARD_TILED_M)
     {
         viewport.bin_triangles(tris_buffer);
@@ -687,7 +687,7 @@ void RendererRaster::render_tile_forward(const Tile &tile) noexcept
 
 void RendererRaster::shadow_mapping(Light& light) noexcept
 {
-    Timer time2{"shadow"};
+    //Timer time2{"shadow"};
     if (!light.has_shadows) return;
 
     light.shadow.clear();
