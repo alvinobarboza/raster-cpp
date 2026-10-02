@@ -51,7 +51,8 @@ class RendererRaster {
     void clip_triangle(const Plane& near) noexcept;
     void clip_triangle_sm(const Plane& near) noexcept; // for shadows
 
-    static bool is_outside_screen(const Vec3& ndc0, const Vec3& ndc1, const Vec3& ndc2) noexcept;
+    static bool is_outside_ndc(const Vec3& ndc0, const Vec3& ndc1, const Vec3& ndc2) noexcept;
+    bool is_outside_screen(const Vec3& sc1, const Vec3& sc2, const Vec3& sc3) const noexcept;
 
     void draw_line(Vec3 a, Vec3 b) noexcept;
     void draw_aabb(const AABB2D& aabb) noexcept;

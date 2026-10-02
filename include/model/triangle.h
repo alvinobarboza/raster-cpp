@@ -48,6 +48,15 @@ public:
         const Vec3& n, const Vec3& t,
         bool smooth);
 
+    FullTriangle(
+        float z1, float z2, float z3,
+        const Vec3 &sc1, const Vec3 &sc2, const Vec3 &sc3,
+        const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
+        const Vec2 &uv1, const Vec2 &uv2, const Vec2 &uv3,
+        const MaterialRaster &material,
+        const Vec3& n, const Vec3& t,
+        bool smooth);
+
     void calculate_tri_aabb();
 
     [[nodiscard]] float frag_depth(float alpha, float beta, float gamma) const noexcept;

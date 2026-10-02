@@ -36,6 +36,37 @@ FullTriangle::FullTriangle(
     tangent = t;
 }
 
+FullTriangle::FullTriangle(
+    const float z1, const float z2, const float z3,
+    const Vec3 &sc1, const Vec3 &sc2, const Vec3 &sc3,
+    const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
+    const Vec2 &uv1, const Vec2 &uv2, const Vec2 &uv3,
+    const MaterialRaster &material,
+    const Vec3& n, const Vec3& t,
+    const bool smooth) : smooth(smooth), material(&material)
+{
+    depth_z[0] = z1;
+    depth_z[1] = z2;
+    depth_z[2] = z3;
+
+    screen_points[0] = sc1;
+    screen_points[1] = sc2;
+    screen_points[2] = sc3;
+
+    projected_normal[0] = n1 * depth_z[0];
+    projected_normal[1] = n2 * depth_z[1];
+    projected_normal[2] = n3 * depth_z[2];
+
+    projected_uv[0] = uv1 * depth_z[0];
+    projected_uv[1] = uv2 * depth_z[1];
+    projected_uv[2] = uv3 * depth_z[2];
+
+    normal = n;
+    tangent = t;
+
+    calculate_tri_aabb();
+}
+
 void FullTriangle::calculate_tri_aabb()
 {
     const auto min_x {std::min(screen_points[0].x, std::min(screen_points[1].x, screen_points[2].x))};

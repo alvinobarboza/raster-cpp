@@ -16,6 +16,8 @@ materials(std::move(materials))
 {
     vertices_view_space.resize(this->vertices.size());
     normals_view_space.resize(this->normals.size());
+    screen_points.resize(this->vertices.size());
+    z_depth.resize(this->vertices.size());
 }
 
 ModelRaster::ModelRaster(

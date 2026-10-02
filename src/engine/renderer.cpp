@@ -96,7 +96,7 @@ void RendererRaster::clip_triangle_sm(const Plane& near) noexcept
     }
 }
 
-bool RendererRaster::is_outside_screen(const Vec3 &ndc0, const Vec3 &ndc1, const Vec3 &ndc2) noexcept
+bool RendererRaster::is_outside_ndc(const Vec3 &ndc0, const Vec3 &ndc1, const Vec3 &ndc2) noexcept
 {
     //UP
     if (ndc0.y > 1.0f && ndc1.y > 1.0f && ndc2.y > 1.0f) return true;
@@ -110,9 +110,28 @@ bool RendererRaster::is_outside_screen(const Vec3 &ndc0, const Vec3 &ndc1, const
     return false;
 }
 
+bool RendererRaster::is_outside_screen(const Vec3& sc1, const Vec3& sc2, const Vec3& sc3) const noexcept
+{
+    const auto width { static_cast<float>(viewport.width) };
+    const auto height { static_cast<float>(viewport.height) };
+
+    //UP
+    if (sc1.y < 0.0f && sc2.y < 0.0f && sc3.y < 0.0f) return true;
+    //DOWN
+    if (sc1.y > height && sc2.y > height && sc3.y > height) return true;
+    //LEFT
+    if (sc1.x < 0.0f && sc2.x < 0.0f && sc3.x < 0.0f) return true;
+    //RIGHT
+    if (sc1.x > width && sc2.x > width && sc3.x > width) return true;
+    //FAR
+    if (sc1.z > scene->camera.z_far && sc2.z > scene->camera.z_far && sc3.z > scene->camera.z_far) return true;
+
+    return false;
+}
+
 void RendererRaster::render_scene(SceneRaster* const s)
 {
-    Timer time{"transform"};
+    //Timer time{"transform"};
     scene = s;
     viewport.clear_frame_buffer();
     viewport.reset_tiles();
@@ -149,7 +168,7 @@ void RendererRaster::render_scene(SceneRaster* const s)
             light.direction_view_space = -(light_world_dir * scene->camera.transform.transposed_rotation_matrix).normalized();
             light.project_view_matrix = light_bias_matrix *
                     light.projection_matrix * light.transform.view_matrix * scene->camera.transform.world_matrix;
-            Timer time2{"shadow"};
+
             shadow_mapping(light);
         }
     }
@@ -178,7 +197,17 @@ void RendererRaster::render_scene(SceneRaster* const s)
 
         for (size_t i = 0; i < model->meshData.vertices.size(); ++i)
         {
-            model->meshData.vertices_view_space[i] = model->meshData.vertices[i] * m_transforms;
+            const auto view_space_vertice { model->meshData.vertices[i] * m_transforms };
+            model->meshData.vertices_view_space[i] = view_space_vertice;
+
+            // precompute projection data for in-front of the screen
+            if (view_space_vertice.z >= scene->camera.z_near)
+            {
+                const auto ndc = scene->camera.vertex_to_ndc( view_space_vertice );
+                model->meshData.screen_points[i] = viewport.ndc_to_screen(ndc);
+
+                model->meshData.z_depth[i] = 1 / view_space_vertice.z;
+            }
         }
 
         for (size_t i = 0; i < model->meshData.normals.size(); ++i)
@@ -198,69 +227,93 @@ void RendererRaster::render_scene(SceneRaster* const s)
 
             if ((normal * -model->meshData.vertices_view_space[t.v1]) <= 0.0f) continue;
 
-
-            verts_out.clear();
-            verts_in.clear();
-
-            verts_out.emplace_back(
-                model->meshData.vertices_view_space[t.v1],
-                model->meshData.normals_view_space[t.n1],
-                model->meshData.uvs[t.u1]);
-
-            verts_out.emplace_back(
-                model->meshData.vertices_view_space[t.v2],
-                model->meshData.normals_view_space[t.n2],
-                model->meshData.uvs[t.u2]);
-
-            verts_out.emplace_back(
-                model->meshData.vertices_view_space[t.v3],
-                model->meshData.normals_view_space[t.n3],
-                model->meshData.uvs[t.u3]);
-
-
-            if (!(p0_d >= 0.0f && p1_d >= 0.0f && p2_d >= 0.0f))
+            if (p0_d >= 0.0f && p1_d >= 0.0f && p2_d >= 0.0f)
             {
-                clip_triangle(scene->camera.frustum.planes[NEAR_PLANE]);
+                const auto sc1 {model->meshData.screen_points[t.v1]};
+                const auto sc2 {model->meshData.screen_points[t.v2]};
+                const auto sc3 {model->meshData.screen_points[t.v3]};
+
+                if (is_outside_screen(sc1, sc2, sc3)) continue;
+
+                const auto tangent {t.tangent * m_rotation};
+
+                tris_buffer.emplace_back(
+                    model->meshData.z_depth[t.v1],
+                    model->meshData.z_depth[t.v2],
+                    model->meshData.z_depth[t.v3],
+                    sc1,
+                    sc2,
+                    sc3,
+                    model->meshData.normals_view_space[t.n1],
+                    model->meshData.normals_view_space[t.n2],
+                    model->meshData.normals_view_space[t.n3],
+                    model->meshData.uvs[t.u1],
+                    model->meshData.uvs[t.u2],
+                    model->meshData.uvs[t.u3],
+                    model->meshData.materials[t.material_id],
+                    normal, tangent, t.smooth
+                    );
             }
+            else
+            {
+                verts_out.clear();
+                verts_in.clear();
 
-            if (verts_out.size() > 2) {
-                for (size_t j = 1; j < verts_out.size() - 1; ++j) {
-                    const auto p1 = verts_out[0];
-                    const auto p2 = verts_out[j];
-                    const auto p3 = verts_out[j + 1];
+                verts_out.emplace_back(
+                    model->meshData.vertices_view_space[t.v1],
+                    model->meshData.normals_view_space[t.n1],
+                    model->meshData.uvs[t.u1]);
 
-                    const auto ndc0 = scene->camera.vertex_to_ndc(p1.point);
-                    const auto ndc1 = scene->camera.vertex_to_ndc(p2.point);
-                    const auto ndc2 = scene->camera.vertex_to_ndc(p3.point);
+                verts_out.emplace_back(
+                    model->meshData.vertices_view_space[t.v2],
+                    model->meshData.normals_view_space[t.n2],
+                    model->meshData.uvs[t.u2]);
 
-                    if (is_outside_screen(ndc0, ndc1, ndc2))
-                    {
-                        //++count_skipped_tris;
-                        continue;
+                verts_out.emplace_back(
+                    model->meshData.vertices_view_space[t.v3],
+                    model->meshData.normals_view_space[t.n3],
+                    model->meshData.uvs[t.u3]);
+
+                clip_triangle(scene->camera.frustum.planes[NEAR_PLANE]);
+                if (verts_out.size() > 2) {
+                    for (size_t j = 1; j < verts_out.size() - 1; ++j) {
+                        const auto p1 = verts_out[0];
+                        const auto p2 = verts_out[j];
+                        const auto p3 = verts_out[j + 1];
+
+                        const auto ndc0 = scene->camera.vertex_to_ndc(p1.point);
+                        const auto ndc1 = scene->camera.vertex_to_ndc(p2.point);
+                        const auto ndc2 = scene->camera.vertex_to_ndc(p3.point);
+
+                        if (is_outside_ndc(ndc0, ndc1, ndc2))
+                        {
+                            //++count_skipped_tris;
+                            continue;
+                        }
+
+                        const auto tangent {t.tangent * m_rotation};
+
+                        FullTriangle tf {
+                            p1,p2,p3,
+                            model->meshData.materials[t.material_id],
+                            normal, tangent,
+                            t.smooth
+                        };
+
+                        tf.screen_points[0] = viewport.ndc_to_screen(ndc0);
+                        tf.screen_points[1] = viewport.ndc_to_screen(ndc1);
+                        tf.screen_points[2] = viewport.ndc_to_screen(ndc2);
+
+                        tf.calculate_tri_aabb();
+
+                        tris_buffer.push_back(tf);
                     }
-
-                    const auto tangent {t.tangent * m_rotation};
-
-                    FullTriangle tf {
-                        p1,p2,p3,
-                        model->meshData.materials[t.material_id],
-                        normal, tangent,
-                        t.smooth
-                    };
-
-                    tf.screen_points[0] = viewport.ndc_to_screen(ndc0);
-                    tf.screen_points[1] = viewport.ndc_to_screen(ndc1);
-                    tf.screen_points[2] = viewport.ndc_to_screen(ndc2);
-
-                    tf.calculate_tri_aabb();
-
-                    tris_buffer.push_back(tf);
                 }
             }
         }
     }
 
-    time.~Timer();
+    //time.~Timer();
     if (render_mode == RenderMode::DEFERRED_TILED_M || render_mode == RenderMode::FORWARD_TILED_M)
     {
         viewport.bin_triangles(tris_buffer);
@@ -633,6 +686,7 @@ void RendererRaster::render_tile_forward(const Tile &tile) noexcept
 
 void RendererRaster::shadow_mapping(Light& light) noexcept
 {
+    //Timer time2{"shadow"};
     if (!light.has_shadows) return;
 
     light.shadow.clear();
@@ -660,7 +714,17 @@ void RendererRaster::shadow_mapping(Light& light) noexcept
 
         for (size_t i = 0; i < model->meshData.vertices.size(); ++i)
         {
-            model->meshData.vertices_view_space[i] = model->meshData.vertices[i] * m_transforms;
+            const auto view_space_vertice { model->meshData.vertices[i] * m_transforms };
+            model->meshData.vertices_view_space[i] = view_space_vertice;
+
+            // precompute projection data for in-front of the shadow volume (hard coded near for now)
+            if (view_space_vertice.z >= 0.1f)
+            {
+                const auto ndc = light.vertex_to_ndc( view_space_vertice );
+                model->meshData.screen_points[i] = light.ndc_to_canvas(ndc);
+
+                model->meshData.z_depth[i] = 1 / view_space_vertice.z;
+            }
         }
 
         for (const auto &t: model->meshData.triangles)
@@ -674,41 +738,52 @@ void RendererRaster::shadow_mapping(Light& light) noexcept
             if (const auto normal {t.normal * m_rotation};
                 (normal * -model->meshData.vertices_view_space[t.v1]) <= 0.0f) continue;
 
-            verts_out_sm.clear();
-            verts_in_sm.clear();
-
-            verts_out_sm.emplace_back(model->meshData.vertices_view_space[t.v1]);
-            verts_out_sm.emplace_back(model->meshData.vertices_view_space[t.v2]);
-            verts_out_sm.emplace_back(model->meshData.vertices_view_space[t.v3]);
-
-            if (!(p0_d >= 0.0f && p1_d >= 0.0f && p2_d >= 0.0f))
+            if (p0_d >= 0.0f && p1_d >= 0.0f && p2_d >= 0.0f)
             {
-                clip_triangle_sm(light.frustum.planes[NEAR_PLANE]);
+                ShadowTriangle sf {};
+
+                sf.screen_points[0] = model->meshData.screen_points[t.v1];
+                sf.screen_points[1] = model->meshData.screen_points[t.v2];
+                sf.screen_points[2] = model->meshData.screen_points[t.v3];
+
+                sf.calculate_tri_aabb();
+                render_shadow_map_triangle(light, sf);
             }
+            else
+            {
+                verts_out_sm.clear();
+                verts_in_sm.clear();
 
-            if (verts_out_sm.size() > 2) {
-                for (size_t j = 1; j < verts_out_sm.size() - 1; ++j) {
-                    const auto p1 = verts_out_sm[0];
-                    const auto p2 = verts_out_sm[j];
-                    const auto p3 = verts_out_sm[j + 1];
+                verts_out_sm.emplace_back(model->meshData.vertices_view_space[t.v1]);
+                verts_out_sm.emplace_back(model->meshData.vertices_view_space[t.v2]);
+                verts_out_sm.emplace_back(model->meshData.vertices_view_space[t.v3]);
 
-                    const auto ndc0 = light.vertex_to_ndc(p1);
-                    const auto ndc1 = light.vertex_to_ndc(p2);
-                    const auto ndc2 = light.vertex_to_ndc(p3);
+                clip_triangle_sm(light.frustum.planes[NEAR_PLANE]);
 
-                    if (is_outside_screen(ndc0, ndc1, ndc2))
-                    {
-                        continue;
+                if (verts_out_sm.size() > 2) {
+                    for (size_t j = 1; j < verts_out_sm.size() - 1; ++j) {
+                        const auto p1 = verts_out_sm[0];
+                        const auto p2 = verts_out_sm[j];
+                        const auto p3 = verts_out_sm[j + 1];
+
+                        const auto ndc0 = light.vertex_to_ndc(p1);
+                        const auto ndc1 = light.vertex_to_ndc(p2);
+                        const auto ndc2 = light.vertex_to_ndc(p3);
+
+                        if (is_outside_ndc(ndc0, ndc1, ndc2))
+                        {
+                            continue;
+                        }
+
+                        ShadowTriangle sf {};
+
+                        sf.screen_points[0] = light.ndc_to_canvas(ndc0);
+                        sf.screen_points[1] = light.ndc_to_canvas(ndc1);
+                        sf.screen_points[2] = light.ndc_to_canvas(ndc2);
+
+                        sf.calculate_tri_aabb();
+                        render_shadow_map_triangle(light, sf);
                     }
-
-                    ShadowTriangle sf {};
-
-                    sf.screen_points[0] = light.ndc_to_canvas(ndc0);
-                    sf.screen_points[1] = light.ndc_to_canvas(ndc1);
-                    sf.screen_points[2] = light.ndc_to_canvas(ndc2);
-
-                    sf.calculate_tri_aabb();
-                    render_shadow_map_triangle(light, sf);
                 }
             }
         }

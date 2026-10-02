@@ -12,6 +12,8 @@ public:
     std::vector<Triangle> triangles {};
     std::vector<Vec3> vertices {}, vertices_view_space {};
     std::vector<Vec3> normals {}, normals_view_space {};
+    std::vector<Vec3> screen_points{};
+    std::vector<float> z_depth {};
     std::vector<Vec2> uvs {};
     std::vector<MaterialRaster> materials {};
 
