@@ -131,7 +131,7 @@ void RendererRaster::render_scene(SceneRaster* const s)
     scene = s;
     viewport.clear_frame_buffer();
     viewport.reset_tiles();
-    tris_buffer.clear();
+    t_camera_buffer.clear();
 
     if (scene == nullptr)
     {
@@ -165,7 +165,9 @@ void RendererRaster::render_scene(SceneRaster* const s)
             light.project_view_matrix = light_bias_matrix *
                     light.projection_matrix * light.transform.view_matrix * scene->camera.transform.world_matrix;
 
-            shadow_mapping(light);
+            render_stage = RenderStage::SHADOW;
+            current_light = &light;
+            shadow_mapping();
         }
     }
 
@@ -237,7 +239,7 @@ void RendererRaster::render_scene(SceneRaster* const s)
 
                 const auto tangent {t.tangent * m_rotation};
 
-                tris_buffer.emplace_back(
+                t_camera_buffer.emplace_back(
                     model->meshData.z_depth[t.v1],
                     model->meshData.z_depth[t.v2],
                     model->meshData.z_depth[t.v3],
@@ -306,7 +308,7 @@ void RendererRaster::render_scene(SceneRaster* const s)
 
                         tf.calculate_tri_aabb();
 
-                        tris_buffer.push_back(tf);
+                        t_camera_buffer.push_back(tf);
                     }
                 }
             }
@@ -317,7 +319,8 @@ void RendererRaster::render_scene(SceneRaster* const s)
     //Timer time_r{"render"};
     if (render_mode == RenderMode::DEFERRED_TILED_M || render_mode == RenderMode::FORWARD_TILED_M)
     {
-        viewport.bin_triangles(tris_buffer);
+        render_stage = RenderStage::CAMERA;
+        viewport.bin_triangles(t_camera_buffer);
         woke_threads();
     }
     else if (render_mode == RenderMode::SHADOW_MAPPING)
@@ -364,12 +367,14 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> 
 
     for (const auto triangle_id : tile.triangles_id)
     {
-        const auto& tri = tris_buffer[triangle_id];
+        const auto& tri = t_camera_buffer[triangle_id];
 
         const auto min_y = std::max(static_cast<int>(tri.aabb.min.y), tile.offset_y);
         const auto max_y = std::min(static_cast<int>(tri.aabb.max.y), max_offset_y);
         const auto min_x = std::max(static_cast<int>(tri.aabb.min.x), tile.offset_x);
         const auto max_x = std::min(static_cast<int>(tri.aabb.max.x), max_offset_x);
+
+        if (min_x >= max_x || min_y >= max_y) continue;
 
         const auto delta_w0_col = tri.screen_points[1].y - tri.screen_points[2].y;
         const auto delta_w1_col = tri.screen_points[2].y - tri.screen_points[0].y;
@@ -420,6 +425,7 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> 
         auto frag_uv_row { (tri.projected_uv[0] * w0_row + tri.projected_uv[1] * w1_row + tri.projected_uv[2] * w2_row) * area  };
         auto frag_normal_row { (tri.projected_normal[0] * w0_row + tri.projected_normal[1] * w1_row + tri.projected_normal[2] * w2_row) * area  };
 
+        int row_offset = (min_y - tile.offset_y) * Viewport::TILE_SIZE + (min_x - tile.offset_x);
         for (int y = min_y; y < max_y; y++)
         {
             auto w0 = w0_row;
@@ -431,7 +437,7 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> 
             auto frag_uv_over_z { frag_uv_row };
             auto frag_normal_over_z { frag_normal_row };
 
-            int row_index = (y - tile.offset_y) * Viewport::TILE_SIZE + (min_x - tile.offset_x);
+            int pixel_index = row_offset;
             for (int x = min_x; x < max_x; x++)
             {
                 const auto w0_check = bias_0 ? w0 >= 0.0f : w0 > 0.0f;
@@ -440,16 +446,16 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> 
 
                 if (w0_check && w1_check && w2_check)
                 {
-                    if (g_buffer[row_index].depth > z_depth)
+                    if (g_buffer[pixel_index].depth > z_depth)
                     {
                         const auto frag_depth { 1 / frag_z };
                         const auto frag_uv { frag_uv_over_z * frag_depth };
                         const auto frag_normal { frag_normal_over_z * frag_depth };
 
-                        g_buffer[row_index].triangle_id = triangle_id;
-                        g_buffer[row_index].depth = z_depth;
-                        g_buffer[row_index].uv = frag_uv;
-                        g_buffer[row_index].normal = frag_normal;
+                        g_buffer[pixel_index].triangle_id = triangle_id;
+                        g_buffer[pixel_index].depth = z_depth;
+                        g_buffer[pixel_index].uv = frag_uv;
+                        g_buffer[pixel_index].normal = frag_normal;
                     }
                 }
                 w0 += delta_w0_col;
@@ -461,7 +467,7 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> 
                 frag_uv_over_z += delta_frag_uv_x;
                 frag_normal_over_z += delta_frag_normal_x;
 
-                ++row_index;
+                ++pixel_index;
             }
             w0_row += delta_w0_row;
             w1_row += delta_w1_row;
@@ -471,6 +477,7 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> 
             frag_z_row += delta_frag_z_y;
             frag_uv_row += delta_frag_uv_y;
             frag_normal_row += delta_frag_normal_y;
+            row_offset += Viewport::TILE_SIZE;
         }
     }
 
@@ -492,8 +499,8 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> 
 
             if (px >= viewport.width || py >= viewport.height) continue;
 
-            viewport.depth_pass(px, py, gb.depth);
-            const auto& t {tris_buffer[gb.triangle_id]};
+            //viewport.depth_pass(px, py, gb.depth);
+            const auto& t {t_camera_buffer[gb.triangle_id]};
 
             // Reconstruct frag_coord
             const auto p_center_x = static_cast<float>(px) + 0.5f;
@@ -556,147 +563,154 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> 
 
 void RendererRaster::render_tile_forward(const Tile &tile) noexcept
 {
-        const int max_offset_y = std::min(tile.offset_y+Viewport::TILE_SIZE, viewport.height);
-        const int max_offset_x = std::min(tile.offset_x+Viewport::TILE_SIZE, viewport.width);
-        for (const auto triangle_id : tile.triangles_id)
+    const int max_offset_y = std::min(tile.offset_y+Viewport::TILE_SIZE, viewport.height);
+    const int max_offset_x = std::min(tile.offset_x+Viewport::TILE_SIZE, viewport.width);
+    for (const auto triangle_id : tile.triangles_id)
+    {
+        const auto& tri = t_camera_buffer[triangle_id];
+
+        const auto min_y = std::max(static_cast<int>(tri.aabb.min.y), tile.offset_y);
+        const auto max_y = std::min(static_cast<int>(tri.aabb.max.y), max_offset_y);
+        const auto min_x = std::max(static_cast<int>(tri.aabb.min.x), tile.offset_x);
+        const auto max_x = std::min(static_cast<int>(tri.aabb.max.x), max_offset_x);
+
+        if (min_x >= max_x || min_y >= max_y) continue;
+
+        const auto delta_w0_col = tri.screen_points[1].y - tri.screen_points[2].y;
+        const auto delta_w1_col = tri.screen_points[2].y - tri.screen_points[0].y;
+        const auto delta_w2_col = tri.screen_points[0].y - tri.screen_points[1].y;
+
+        const auto delta_w0_row = tri.screen_points[2].x - tri.screen_points[1].x;
+        const auto delta_w1_row = tri.screen_points[0].x - tri.screen_points[2].x;
+        const auto delta_w2_row = tri.screen_points[1].x - tri.screen_points[0].x;
+
+        const auto bias_0 {triangle::is_edge_top_or_left(tri.screen_points[1], tri.screen_points[2])};
+        const auto bias_1 {triangle::is_edge_top_or_left(tri.screen_points[2], tri.screen_points[0])};
+        const auto bias_2 {triangle::is_edge_top_or_left(tri.screen_points[0], tri.screen_points[1])};
+
+        const auto cross = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], tri.screen_points[2]);
+        if (cross < 1e-6f) continue; // possible edge case
+        const auto area = 1.0f / cross;
+        const Vec3 p = {static_cast<float>(min_x) + 0.5f, static_cast<float>(min_y) + 0.5f, 0.0f};
+
+        auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p);
+        auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p);
+        auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p);
+
+
+        const auto z_near { scene->camera.z_near };
+        const auto z_far { scene->camera.z_far };
+        const auto aspect_ratio { scene->camera.aspect_ratio };
+        const auto fov_scale { scene->camera.fov_scale };
+
+        for (int y = min_y; y < max_y; y++)
         {
-            const auto& tri = tris_buffer[triangle_id];
+            auto w0 = w0_row;
+            auto w1 = w1_row;
+            auto w2 = w2_row;
 
-            const auto min_y = std::max(static_cast<int>(tri.aabb.min.y), tile.offset_y);
-            const auto max_y = std::min(static_cast<int>(tri.aabb.max.y), max_offset_y);
-            const auto min_x = std::max(static_cast<int>(tri.aabb.min.x), tile.offset_x);
-            const auto max_x = std::min(static_cast<int>(tri.aabb.max.x), max_offset_x);
-
-            const auto delta_w0_col = tri.screen_points[1].y - tri.screen_points[2].y;
-            const auto delta_w1_col = tri.screen_points[2].y - tri.screen_points[0].y;
-            const auto delta_w2_col = tri.screen_points[0].y - tri.screen_points[1].y;
-
-            const auto delta_w0_row = tri.screen_points[2].x - tri.screen_points[1].x;
-            const auto delta_w1_row = tri.screen_points[0].x - tri.screen_points[2].x;
-            const auto delta_w2_row = tri.screen_points[1].x - tri.screen_points[0].x;
-
-            const auto bias_0 {triangle::is_edge_top_or_left(tri.screen_points[1], tri.screen_points[2])};
-            const auto bias_1 {triangle::is_edge_top_or_left(tri.screen_points[2], tri.screen_points[0])};
-            const auto bias_2 {triangle::is_edge_top_or_left(tri.screen_points[0], tri.screen_points[1])};
-
-            const auto cross = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], tri.screen_points[2]);
-            if (cross < 1e-6f) continue; // possible edge case
-            const auto area = 1.0f / cross;
-            const Vec3 p = {static_cast<float>(min_x) + 0.5f, static_cast<float>(min_y) + 0.5f, 0.0f};
-
-            auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p);
-            auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p);
-            auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p);
-
-
-            const auto z_near { scene->camera.z_near };
-            const auto z_far { scene->camera.z_far };
-            const auto aspect_ratio { scene->camera.aspect_ratio };
-            const auto fov_scale { scene->camera.fov_scale };
-
-            for (int y = min_y; y < max_y; y++)
+            for (int x = min_x; x < max_x; x++)
             {
-                auto w0 = w0_row;
-                auto w1 = w1_row;
-                auto w2 = w2_row;
+                const auto w0_check = bias_0 ? w0 >= 0.0f : w0 > 0.0f;
+                const auto w1_check = bias_1 ? w1 >= 0.0f : w1 > 0.0f;
+                const auto w2_check = bias_2 ? w2 >= 0.0f : w2 > 0.0f;
 
-                for (int x = min_x; x < max_x; x++)
+                if (w0_check && w1_check && w2_check)
                 {
-                    const auto w0_check = bias_0 ? w0 >= 0.0f : w0 > 0.0f;
-                    const auto w1_check = bias_1 ? w1 >= 0.0f : w1 > 0.0f;
-                    const auto w2_check = bias_2 ? w2 >= 0.0f : w2 > 0.0f;
+                    const auto alpha = w0 * area;
+                    const auto beta = w1 * area;
+                    const auto gamma = w2 * area;
 
-                    if (w0_check && w1_check && w2_check)
+                    if (const float z_depth = tri.frag_depth_ndc(alpha, beta, gamma);
+                        viewport.depth_pass(x, y, z_depth))
                     {
-                        const auto alpha = w0 * area;
-                        const auto beta = w1 * area;
-                        const auto gamma = w2 * area;
+                        const auto frag_depth = 1 / tri.frag_depth(alpha, beta, gamma);
+                        const auto frag_uv = tri.frag_uv_coord(alpha, beta, gamma, frag_depth);
+                        const auto frag_normal = tri.frag_normal(alpha, beta, gamma, frag_uv,frag_depth);
+                        const auto frag_color = tri.frag_color(frag_uv);
+                        const float frag_rough = tri.frag_roughness(frag_uv);
 
-                        if (const float z_depth = tri.frag_depth_ndc(alpha, beta, gamma);
-                            viewport.depth_pass(x, y, z_depth))
+                        const auto p_center_x = static_cast<float>(x) + 0.5f;
+                        const auto p_center_y = static_cast<float>(y) + 0.5f;
+
+                        const auto z_view { ( z_near * z_far ) / ( z_far - ( z_depth * ( z_far - z_near ) ) ) };
+                        const auto x_ndc { ( p_center_x - viewport.half_width ) / viewport.half_width };
+                        const auto y_ndc { ( viewport.half_height - p_center_y ) / viewport.half_height };
+                        const auto x_view { x_ndc * z_view * ( aspect_ratio / fov_scale ) };
+                        const auto y_view { y_ndc * z_view * ( 1.0f / fov_scale ) };
+
+                        const Vec3 frag_coord { x_view, y_view, z_view };
+
+                        if (render_normal)
                         {
-                            const auto frag_depth = 1 / tri.frag_depth(alpha, beta, gamma);
-                            const auto frag_uv = tri.frag_uv_coord(alpha, beta, gamma, frag_depth);
-                            const auto frag_normal = tri.frag_normal(alpha, beta, gamma, frag_uv,frag_depth);
-                            const auto frag_color = tri.frag_color(frag_uv);
-                            const float frag_rough = tri.frag_roughness(frag_uv);
+                            const Vec4 final_color{
+                                frag_normal.x * .5f + .5f,
+                                frag_normal.y * .5f + .5f,
+                                -frag_normal.z * .5f + .5f,
+                                1.0f
+                            };
 
-                            const auto p_center_x = static_cast<float>(x) + 0.5f;
-                            const auto p_center_y = static_cast<float>(y) + 0.5f;
+                            viewport.put_pixel(x, y, final_color);
+                        }
+                        else if (render_depth)
+                        {
+                            float c = 1-z_depth;
+                            if (c < 0.01) c = 0.01;
 
-                            const auto z_view { ( z_near * z_far ) / ( z_far - ( z_depth * ( z_far - z_near ) ) ) };
-                            const auto x_ndc { ( p_center_x - viewport.half_width ) / viewport.half_width };
-                            const auto y_ndc { ( viewport.half_height - p_center_y ) / viewport.half_height };
-                            const auto x_view { x_ndc * z_view * ( aspect_ratio / fov_scale ) };
-                            const auto y_view { y_ndc * z_view * ( 1.0f / fov_scale ) };
+                            const Vec4 final_color {
+                                c,c,c,1.0f
+                            };
 
-                            const Vec3 frag_coord { x_view, y_view, z_view };
+                            viewport.put_pixel(x, y, final_color);
+                        }
+                        else if (render_light)
+                        {
+                            const auto view_normal = (-frag_coord).normalized();
+                            const auto final_color = shader::calculate_light(
+                                scene->lights, frag_rough, frag_coord, frag_color, frag_normal,
+                                view_normal, scene->skybox.ambient_intensity);
 
-                            if (render_normal)
-                            {
-                                const Vec4 final_color{
-                                    frag_normal.x * .5f + .5f,
-                                    frag_normal.y * .5f + .5f,
-                                    -frag_normal.z * .5f + .5f,
-                                    1.0f
-                                };
-
-                                viewport.put_pixel(x, y, final_color);
-                            }
-                            else if (render_depth)
-                            {
-                                float c = 1-z_depth;
-                                if (c < 0.01) c = 0.01;
-
-                                const Vec4 final_color {
-                                    c,c,c,1.0f
-                                };
-
-                                viewport.put_pixel(x, y, final_color);
-                            }
-                            else if (render_light)
-                            {
-                                const auto view_normal = (-frag_coord).normalized();
-                                const auto final_color = shader::calculate_light(
-                                    scene->lights, frag_rough, frag_coord, frag_color, frag_normal,
-                                    view_normal, scene->skybox.ambient_intensity);
-
-                                viewport.put_pixel(x, y, final_color);
-                            }
-                            else
-                            {
-                                const Vec4 final_color{
-                                    std::sqrt(frag_color.x),
-                                    std::sqrt(frag_color.y),
-                                    std::sqrt(frag_color.z),
-                                    1.0f};
-                                viewport.put_pixel(x, y, final_color);
-                            }
+                            viewport.put_pixel(x, y, final_color);
+                        }
+                        else
+                        {
+                            const Vec4 final_color{
+                                std::sqrt(frag_color.x),
+                                std::sqrt(frag_color.y),
+                                std::sqrt(frag_color.z),
+                                1.0f};
+                            viewport.put_pixel(x, y, final_color);
                         }
                     }
-                    w0 += delta_w0_col;
-                    w1 += delta_w1_col;
-                    w2 += delta_w2_col;
                 }
-                w0_row += delta_w0_row;
-                w1_row += delta_w1_row;
-                w2_row += delta_w2_row;
+                w0 += delta_w0_col;
+                w1 += delta_w1_col;
+                w2 += delta_w2_col;
             }
+            w0_row += delta_w0_row;
+            w1_row += delta_w1_row;
+            w2_row += delta_w2_row;
         }
+    }
 }
 
-void RendererRaster::shadow_mapping(Light& light) noexcept
+void RendererRaster::shadow_mapping() noexcept
 {
-    //Timer time2{"shadow"};
-    if (!light.has_shadows) return;
+    //Timer trans{"shadow-tranform"};
+    if (!current_light || !current_light->has_shadows)
+    {
+        if (current_light == nullptr) std::cout << "Light should never be null...\n";
+        return;
+    }
 
-    light.shadow.clear();
+    t_shadow_buffer.clear();
+    current_light->shadow.clear();
 
     for (const auto& model: scene->models)
     {
-        const auto m_transforms = light.transform.view_matrix * model->transforms.world_matrix;
+        const auto m_transforms = current_light->transform.view_matrix * model->transforms.world_matrix;
         model->boundingSphere.center_view_space = model->boundingSphere.center * m_transforms;
-        model->to_render = light.frustum.is_inside_frustum(model->boundingSphere);
+        model->to_render = current_light->frustum.is_inside_frustum(model->boundingSphere);
     }
 
     std::ranges::sort(scene->models, []( ModelRaster*& a, ModelRaster*& b) {
@@ -710,8 +724,8 @@ void RendererRaster::shadow_mapping(Light& light) noexcept
             continue;
         }
 
-        const auto m_rotation = light.transform.transposed_rotation_matrix * model->transforms.rotation_matrix;
-        const auto m_transforms = light.transform.view_matrix * model->transforms.world_matrix;
+        const auto m_rotation = current_light->transform.transposed_rotation_matrix * model->transforms.rotation_matrix;
+        const auto m_transforms = current_light->transform.view_matrix * model->transforms.world_matrix;
 
         for (size_t i = 0; i < model->meshData.vertices.size(); ++i)
         {
@@ -721,25 +735,29 @@ void RendererRaster::shadow_mapping(Light& light) noexcept
             // precompute projection data for in-front of the shadow volume (hard coded near for now)
             if (view_space_vertice.z >= 1.0f)
             {
-                const auto ndc = light.vertex_to_ndc( view_space_vertice );
-                model->meshData.screen_points[i] = light.ndc_to_canvas(ndc);
+                const auto ndc = current_light->vertex_to_ndc( view_space_vertice );
+                model->meshData.screen_points[i] = current_light->ndc_to_canvas(ndc);
             }
         }
 
 
-        const auto width { static_cast<float>(light.shadow.width) };
-        const auto height { static_cast<float>(light.shadow.height) };
+        const auto width { static_cast<float>(current_light->shadow.width) };
+        const auto height { static_cast<float>(current_light->shadow.height) };
 
         for (const auto &t: model->meshData.triangles)
         {
-            const auto p0_d {light.frustum.planes[NEAR_PLANE].signed_distance_to_point(model->meshData.vertices_view_space[t.v1])};
-            const auto p1_d {light.frustum.planes[NEAR_PLANE].signed_distance_to_point(model->meshData.vertices_view_space[t.v2])};
-            const auto p2_d {light.frustum.planes[NEAR_PLANE].signed_distance_to_point(model->meshData.vertices_view_space[t.v3])};
+            const auto p0_d {current_light->frustum.planes[NEAR_PLANE].signed_distance_to_point(model->meshData.vertices_view_space[t.v1])};
+            const auto p1_d {current_light->frustum.planes[NEAR_PLANE].signed_distance_to_point(model->meshData.vertices_view_space[t.v2])};
+            const auto p2_d {current_light->frustum.planes[NEAR_PLANE].signed_distance_to_point(model->meshData.vertices_view_space[t.v3])};
 
             if (p0_d <= 0.0f && p1_d <= 0.0f && p2_d <= 0.0f) continue;
 
-            if (const auto normal {t.normal * m_rotation};
-                (normal * -model->meshData.vertices_view_space[t.v1]) <= 0.0f) continue;
+            const auto normal {t.normal * m_rotation};
+
+            const bool is_backface = current_light->type == LightType::DIRECTIONAL ? normal.z >= 0.0f :
+                normal * -model->meshData.vertices_view_space[t.v1] <= 0.0f;
+
+            if (is_backface) continue;
 
             if (p0_d >= 0.0f && p1_d >= 0.0f && p2_d >= 0.0f)
             {
@@ -756,7 +774,7 @@ void RendererRaster::shadow_mapping(Light& light) noexcept
                 sf.screen_points[2] = sc3;
 
                 sf.calculate_tri_aabb();
-                render_shadow_map_triangle(light, sf);
+                t_shadow_buffer.push_back(sf);
             }
             else
             {
@@ -767,7 +785,7 @@ void RendererRaster::shadow_mapping(Light& light) noexcept
                 verts_out_sm.emplace_back(model->meshData.vertices_view_space[t.v2]);
                 verts_out_sm.emplace_back(model->meshData.vertices_view_space[t.v3]);
 
-                clip_triangle_sm(light.frustum.planes[NEAR_PLANE]);
+                clip_triangle_sm(current_light->frustum.planes[NEAR_PLANE]);
 
                 if (verts_out_sm.size() > 2) {
                     for (size_t j = 1; j < verts_out_sm.size() - 1; ++j) {
@@ -775,9 +793,9 @@ void RendererRaster::shadow_mapping(Light& light) noexcept
                         const auto p2 = verts_out_sm[j];
                         const auto p3 = verts_out_sm[j + 1];
 
-                        const auto ndc0 = light.vertex_to_ndc(p1);
-                        const auto ndc1 = light.vertex_to_ndc(p2);
-                        const auto ndc2 = light.vertex_to_ndc(p3);
+                        const auto ndc0 = current_light->vertex_to_ndc(p1);
+                        const auto ndc1 = current_light->vertex_to_ndc(p2);
+                        const auto ndc2 = current_light->vertex_to_ndc(p3);
 
                         if (is_outside_ndc(ndc0, ndc1, ndc2))
                         {
@@ -786,90 +804,109 @@ void RendererRaster::shadow_mapping(Light& light) noexcept
 
                         ShadowTriangle sf {};
 
-                        sf.screen_points[0] = light.ndc_to_canvas(ndc0);
-                        sf.screen_points[1] = light.ndc_to_canvas(ndc1);
-                        sf.screen_points[2] = light.ndc_to_canvas(ndc2);
+                        sf.screen_points[0] = current_light->ndc_to_canvas(ndc0);
+                        sf.screen_points[1] = current_light->ndc_to_canvas(ndc1);
+                        sf.screen_points[2] = current_light->ndc_to_canvas(ndc2);
 
                         sf.calculate_tri_aabb();
-                        render_shadow_map_triangle(light, sf);
+                        t_shadow_buffer.push_back(sf);
                     }
                 }
             }
         }
     }
+
+    //trans.stop();
+    current_light->shadow.bin_triangles(t_shadow_buffer);
+    //Timer render{"shadow-render"};
+    woke_threads();
+    //render.stop();
 }
 
-void RendererRaster::render_shadow_map_triangle(Light& light, const ShadowTriangle &tri) noexcept
+void RendererRaster::render_shadow_map_tile(const Tile& tile) const noexcept
 {
-    const auto min_y = std::max(tri.aabb.min.y, 0.0f);
-    const auto max_y = std::min(tri.aabb.max.y, static_cast<float>(light.shadow.height));
-    const auto min_x = std::max(tri.aabb.min.x, 0.0f);
-    const auto max_x = std::min(tri.aabb.max.x, static_cast<float>(light.shadow.width));
-
-    const auto delta_w0_col = tri.screen_points[1].y - tri.screen_points[2].y;
-    const auto delta_w1_col = tri.screen_points[2].y - tri.screen_points[0].y;
-    const auto delta_w2_col = tri.screen_points[0].y - tri.screen_points[1].y;
-
-    const auto delta_w0_row = tri.screen_points[2].x - tri.screen_points[1].x;
-    const auto delta_w1_row = tri.screen_points[0].x - tri.screen_points[2].x;
-    const auto delta_w2_row = tri.screen_points[1].x - tri.screen_points[0].x;
-
-    const auto bias_0 {triangle::is_edge_top_or_left(tri.screen_points[1], tri.screen_points[2])};
-    const auto bias_1 {triangle::is_edge_top_or_left(tri.screen_points[2], tri.screen_points[0])};
-    const auto bias_2 {triangle::is_edge_top_or_left(tri.screen_points[0], tri.screen_points[1])};
-
-    const auto area = 1.0f / triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], tri.screen_points[2]);
-    const Vec3 p = {min_x + 0.5f, min_y + 0.5f, 0.0f};
-
-    auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p);
-    auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p);
-    auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p);
-
-    // Deltas to step over all ndc_depth
-    const auto delta_alpha_x { delta_w0_col * area };
-    const auto delta_beta_x { delta_w1_col * area };
-    const auto delta_gamma_x { delta_w2_col * area };
-
-    const auto delta_alpha_y { delta_w0_row * area };
-    const auto delta_beta_y { delta_w1_row * area };
-    const auto delta_gamma_y { delta_w2_row * area };
-
-    // Attribute delta
-    const auto delta_ndc_z_x { tri.screen_points[0].z * delta_alpha_x + tri.screen_points[1].z * delta_beta_x + tri.screen_points[2].z * delta_gamma_x };
-    const auto delta_ndc_z_y { tri.screen_points[0].z * delta_alpha_y + tri.screen_points[1].z * delta_beta_y + tri.screen_points[2].z * delta_gamma_y };
-
-    // Attribute first value
-    auto ndc_z_row { (tri.screen_points[0].z * w0_row + tri.screen_points[1].z * w1_row + tri.screen_points[2].z * w2_row) * area };
-
-    for (int y = static_cast<int>(min_y); y < max_y; y++)
+    const int max_offset_y = std::min(tile.offset_y+ShadowMap::TILE_SIZE, current_light->shadow.height);
+    const int max_offset_x = std::min(tile.offset_x+ShadowMap::TILE_SIZE, current_light->shadow.width);
+    for (const auto triangle_id : tile.triangles_id)
     {
-        auto w0 { w0_row };
-        auto w1 { w1_row };
-        auto w2 { w2_row };
-        auto z_depth { ndc_z_row };
+        const auto& tri { t_shadow_buffer[triangle_id] };
 
-        for (int x = static_cast<int>(min_x); x < max_x; x++)
+        const auto min_y = std::max(static_cast<int>(tri.aabb.min.y), tile.offset_y);
+        const auto max_y = std::min(static_cast<int>(tri.aabb.max.y), max_offset_y);
+        const auto min_x = std::max(static_cast<int>(tri.aabb.min.x), tile.offset_x);
+        const auto max_x = std::min(static_cast<int>(tri.aabb.max.x), max_offset_x);
+
+        if (min_x >= max_x || min_y >= max_y) continue;
+
+        const auto delta_w0_col = tri.screen_points[1].y - tri.screen_points[2].y;
+        const auto delta_w1_col = tri.screen_points[2].y - tri.screen_points[0].y;
+        const auto delta_w2_col = tri.screen_points[0].y - tri.screen_points[1].y;
+
+        const auto delta_w0_row = tri.screen_points[2].x - tri.screen_points[1].x;
+        const auto delta_w1_row = tri.screen_points[0].x - tri.screen_points[2].x;
+        const auto delta_w2_row = tri.screen_points[1].x - tri.screen_points[0].x;
+
+        const auto bias_0 {triangle::is_edge_top_or_left(tri.screen_points[1], tri.screen_points[2])};
+        const auto bias_1 {triangle::is_edge_top_or_left(tri.screen_points[2], tri.screen_points[0])};
+        const auto bias_2 {triangle::is_edge_top_or_left(tri.screen_points[0], tri.screen_points[1])};
+
+        const auto area = 1.0f / triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], tri.screen_points[2]);
+        const Vec3 p = {min_x + 0.5f, min_y + 0.5f, 0.0f};
+
+        auto w0_row = triangle::edge_cross(tri.screen_points[1], tri.screen_points[2], p);
+        auto w1_row = triangle::edge_cross(tri.screen_points[2], tri.screen_points[0], p);
+        auto w2_row = triangle::edge_cross(tri.screen_points[0], tri.screen_points[1], p);
+
+        // Deltas to step over all ndc_depth
+        const auto delta_alpha_x { delta_w0_col * area };
+        const auto delta_beta_x { delta_w1_col * area };
+        const auto delta_gamma_x { delta_w2_col * area };
+
+        const auto delta_alpha_y { delta_w0_row * area };
+        const auto delta_beta_y { delta_w1_row * area };
+        const auto delta_gamma_y { delta_w2_row * area };
+
+        // Attribute delta
+        const auto delta_ndc_z_x { tri.screen_points[0].z * delta_alpha_x + tri.screen_points[1].z * delta_beta_x + tri.screen_points[2].z * delta_gamma_x };
+        const auto delta_ndc_z_y { tri.screen_points[0].z * delta_alpha_y + tri.screen_points[1].z * delta_beta_y + tri.screen_points[2].z * delta_gamma_y };
+
+        // Attribute first value
+        auto ndc_z_row { (tri.screen_points[0].z * w0_row + tri.screen_points[1].z * w1_row + tri.screen_points[2].z * w2_row) * area };
+
+        int row_offset = min_y * current_light->shadow.width + min_x;
+        for (int y = min_y; y < max_y; y++)
         {
-            const auto w0_check = bias_0 ? w0 >= 0.0f : w0 > 0.0f;
-            const auto w1_check = bias_1 ? w1 >= 0.0f : w1 > 0.0f;
-            const auto w2_check = bias_2 ? w2 >= 0.0f : w2 > 0.0f;
+            auto w0 { w0_row };
+            auto w1 { w1_row };
+            auto w2 { w2_row };
+            auto z_depth { ndc_z_row };
 
-            if (w0_check && w1_check && w2_check)
+            int pixel_index = row_offset;
+            for (int x = min_x; x < max_x; x++)
             {
-                light.shadow.depth_test(x, y, z_depth);
+                const auto w0_check = bias_0 ? w0 >= 0.0f : w0 > 0.0f;
+                const auto w1_check = bias_1 ? w1 >= 0.0f : w1 > 0.0f;
+                const auto w2_check = bias_2 ? w2 >= 0.0f : w2 > 0.0f;
+
+                if (w0_check && w1_check && w2_check)
+                {
+                    current_light->shadow.depth_test(pixel_index, z_depth);
+                }
+
+                w0 += delta_w0_col;
+                w1 += delta_w1_col;
+                w2 += delta_w2_col;
+
+                z_depth += delta_ndc_z_x;
+                ++pixel_index;
             }
+            w0_row += delta_w0_row;
+            w1_row += delta_w1_row;
+            w2_row += delta_w2_row;
 
-            w0 += delta_w0_col;
-            w1 += delta_w1_col;
-            w2 += delta_w2_col;
-
-            z_depth += delta_ndc_z_x;
+            ndc_z_row += delta_ndc_z_y;
+            row_offset += current_light->shadow.width;
         }
-        w0_row += delta_w0_row;
-        w1_row += delta_w1_row;
-        w2_row += delta_w2_row;
-
-        ndc_z_row += delta_ndc_z_y;
     }
 }
 
@@ -887,7 +924,7 @@ void RendererRaster::render_shadow_map(const Light &value) noexcept {
             if (const auto depth = value.shadow.sample(uv); depth < 1.0f)
             {
                 const Vec4 color = {
-                    depth, depth, depth, 1.0f
+                    1.0f-depth, 1.0f-depth, 1.0f-depth, 1.0f
                 };
                 viewport.put_pixel(x+offset, y, color);
             }
@@ -911,19 +948,34 @@ void RendererRaster::render_multithread() noexcept
         while (true) {
             constexpr int CHUNK_SIZE = 8;
             const int t_start = tile_index.fetch_add(CHUNK_SIZE, std::memory_order_relaxed);
-            if (t_start >= viewport.grid.total_tiles) break;
 
-            const int t_end = std::min(t_start + CHUNK_SIZE, viewport.grid.total_tiles);
-            for (int t = t_start; t < t_end; ++t)
-            {
-                const auto& tile = viewport.grid.tiles[t];
-                if (tile.triangles_id.empty()) continue;
-                if (render_mode == RenderMode::DEFERRED_TILED_M)
+            if ( render_stage == RenderStage::CAMERA ){
+                if (t_start >= viewport.grid.total_tiles) break;
+
+                const int t_end = std::min(t_start + CHUNK_SIZE, viewport.grid.total_tiles);
+                for (int t = t_start; t < t_end; ++t)
                 {
-                    g_buffer.fill({});
-                    render_tile_deferred(tile, g_buffer);
-                };
-                if (render_mode == RenderMode::FORWARD_TILED_M) render_tile_forward(tile);
+                    const auto& tile = viewport.grid.tiles[t];
+                    if (tile.triangles_id.empty()) continue;
+                    if (render_mode == RenderMode::DEFERRED_TILED_M)
+                    {
+                        g_buffer.fill({});
+                        render_tile_deferred(tile, g_buffer);
+                    };
+                    if (render_mode == RenderMode::FORWARD_TILED_M) render_tile_forward(tile);
+                }
+            }
+            if ( render_stage == RenderStage::SHADOW)
+            {
+                if (t_start >= current_light->shadow.grid.total_tiles) break;
+
+                const int t_end = std::min(t_start + CHUNK_SIZE, current_light->shadow.grid.total_tiles);
+                for (int t = t_start; t < t_end; ++t)
+                {
+                    const auto& tile = current_light->shadow.grid.tiles[t];
+                    if (tile.triangles_id.empty()) continue;
+                    render_shadow_map_tile(tile);
+                }
             }
         }
 
@@ -1003,7 +1055,7 @@ void RendererRaster::draw_wireframe_triangle(const FullTriangle &triangle) noexc
 
 void RendererRaster::draw_wireframe_from_tri_buffer() noexcept
 {
-    for (const auto &tri : tris_buffer)
+    for (const auto &tri : t_camera_buffer)
     {
         draw_wireframe_triangle(tri);
     }
@@ -1011,7 +1063,7 @@ void RendererRaster::draw_wireframe_from_tri_buffer() noexcept
 
 void RendererRaster::draw_triangle_aabb() noexcept
 {
-    for (const auto& tri : tris_buffer)
+    for (const auto& tri : t_camera_buffer)
     {
         draw_aabb(tri.aabb);
     }

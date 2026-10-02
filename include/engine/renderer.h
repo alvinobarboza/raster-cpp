@@ -20,6 +20,11 @@ enum class RenderMode {
     MAX_VALUE
 };
 
+enum class RenderStage {
+    SHADOW,
+    CAMERA,
+};
+
 class RendererRaster {
     bool render_light {};
     bool render_depth {};
@@ -27,10 +32,12 @@ class RendererRaster {
     bool render_wireframe {};
     bool render_triangle_aabb {};
     bool render_active_tiles {};
-    RenderMode render_mode {RenderMode::DEFERRED_TILED_M};
+    RenderMode render_mode { RenderMode::DEFERRED_TILED_M };
+    RenderStage render_stage { RenderStage::CAMERA };
     int shadow_index {0};
 
     SceneRaster* scene {nullptr};
+    Light* current_light {nullptr}; // Just for now, let's see if I find a better implementation
 
     // Sutherland–Hodgman tmp vars
     std::vector<Vertex> verts_in {};
@@ -40,7 +47,8 @@ class RendererRaster {
     std::vector<Vec3> verts_out_sm {}; // for shadow mapping
 
     std::vector<std::jthread> workers{};
-    std::vector<FullTriangle> tris_buffer {};
+    std::vector<FullTriangle> t_camera_buffer {};
+    std::vector<ShadowTriangle> t_shadow_buffer {};
 
     alignas(64) std::atomic<int> frame_counter{0};
     alignas(64) std::atomic<int> tile_index{0};
@@ -68,8 +76,8 @@ class RendererRaster {
     void woke_threads() noexcept;
     void render_multithread() noexcept;
 
-    void shadow_mapping(Light& light) noexcept;
-    static void render_shadow_map_triangle(Light& light, const ShadowTriangle &tri) noexcept;
+    void shadow_mapping() noexcept;
+    void render_shadow_map_tile(const Tile &tile) const noexcept;
     void render_shadow_map(const Light& value) noexcept;
 public:
     Viewport viewport {};
