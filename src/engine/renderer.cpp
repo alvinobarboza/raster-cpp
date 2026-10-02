@@ -110,28 +110,24 @@ bool RendererRaster::is_outside_ndc(const Vec3 &ndc0, const Vec3 &ndc1, const Ve
     return false;
 }
 
-bool RendererRaster::is_outside_screen(const Vec3& sc1, const Vec3& sc2, const Vec3& sc3) const noexcept
+bool RendererRaster::is_outside_screen(const Vec3& sc1, const Vec3& sc2, const Vec3& sc3, const float w, const float h) noexcept
 {
-    const auto width { static_cast<float>(viewport.width) };
-    const auto height { static_cast<float>(viewport.height) };
-
     //UP
     if (sc1.y < 0.0f && sc2.y < 0.0f && sc3.y < 0.0f) return true;
     //DOWN
-    if (sc1.y > height && sc2.y > height && sc3.y > height) return true;
+    if (sc1.y > h && sc2.y > h && sc3.y > h) return true;
     //LEFT
     if (sc1.x < 0.0f && sc2.x < 0.0f && sc3.x < 0.0f) return true;
     //RIGHT
-    if (sc1.x > width && sc2.x > width && sc3.x > width) return true;
+    if (sc1.x > w && sc2.x > w && sc3.x > w) return true;
     //FAR
-    if (sc1.z > scene->camera.z_far && sc2.z > scene->camera.z_far && sc3.z > scene->camera.z_far) return true;
+    if (sc1.z > 1.0f && sc2.z > 1.0f && sc3.z > 1.0f) return true;
 
     return false;
 }
 
 void RendererRaster::render_scene(SceneRaster* const s)
 {
-    //Timer time{"transform"};
     scene = s;
     viewport.clear_frame_buffer();
     viewport.reset_tiles();
@@ -173,6 +169,7 @@ void RendererRaster::render_scene(SceneRaster* const s)
         }
     }
 
+    Timer time{"transform"};
     for (const auto& model: scene->models)
     {
         const auto m_transforms = scene->camera.transform.view_matrix * model->transforms.world_matrix;
@@ -215,6 +212,9 @@ void RendererRaster::render_scene(SceneRaster* const s)
             model->meshData.normals_view_space[i] = model->meshData.normals[i] * m_rotation;
         }
 
+        const auto width { static_cast<float>(viewport.width) };
+        const auto height { static_cast<float>(viewport.height) };
+
         for (const auto &t: model->meshData.triangles)
         {
             const auto p0_d {scene->camera.frustum.planes[NEAR_PLANE].signed_distance_to_point(model->meshData.vertices_view_space[t.v1])};
@@ -233,7 +233,7 @@ void RendererRaster::render_scene(SceneRaster* const s)
                 const auto sc2 {model->meshData.screen_points[t.v2]};
                 const auto sc3 {model->meshData.screen_points[t.v3]};
 
-                if (is_outside_screen(sc1, sc2, sc3)) continue;
+                if (is_outside_screen(sc1, sc2, sc3, width, height)) continue;
 
                 const auto tangent {t.tangent * m_rotation};
 
@@ -313,7 +313,8 @@ void RendererRaster::render_scene(SceneRaster* const s)
         }
     }
 
-    //time.~Timer();
+    time.stop();
+    Timer time_r{"render"};
     if (render_mode == RenderMode::DEFERRED_TILED_M || render_mode == RenderMode::FORWARD_TILED_M)
     {
         viewport.bin_triangles(tris_buffer);
@@ -686,7 +687,7 @@ void RendererRaster::render_tile_forward(const Tile &tile) noexcept
 
 void RendererRaster::shadow_mapping(Light& light) noexcept
 {
-    //Timer time2{"shadow"};
+    Timer time2{"shadow"};
     if (!light.has_shadows) return;
 
     light.shadow.clear();
@@ -718,14 +719,16 @@ void RendererRaster::shadow_mapping(Light& light) noexcept
             model->meshData.vertices_view_space[i] = view_space_vertice;
 
             // precompute projection data for in-front of the shadow volume (hard coded near for now)
-            if (view_space_vertice.z >= 0.1f)
+            if (view_space_vertice.z >= 1.0f)
             {
                 const auto ndc = light.vertex_to_ndc( view_space_vertice );
                 model->meshData.screen_points[i] = light.ndc_to_canvas(ndc);
-
-                model->meshData.z_depth[i] = 1 / view_space_vertice.z;
             }
         }
+
+
+        const auto width { static_cast<float>(light.shadow.width) };
+        const auto height { static_cast<float>(light.shadow.height) };
 
         for (const auto &t: model->meshData.triangles)
         {
@@ -740,11 +743,17 @@ void RendererRaster::shadow_mapping(Light& light) noexcept
 
             if (p0_d >= 0.0f && p1_d >= 0.0f && p2_d >= 0.0f)
             {
+                const auto sc1 { model->meshData.screen_points[t.v1] };
+                const auto sc2 { model->meshData.screen_points[t.v2] };
+                const auto sc3 { model->meshData.screen_points[t.v3] };
+
+                if (is_outside_screen(sc1, sc2, sc3, width, height)) continue;
+
                 ShadowTriangle sf {};
 
-                sf.screen_points[0] = model->meshData.screen_points[t.v1];
-                sf.screen_points[1] = model->meshData.screen_points[t.v2];
-                sf.screen_points[2] = model->meshData.screen_points[t.v3];
+                sf.screen_points[0] = sc1;
+                sf.screen_points[1] = sc2;
+                sf.screen_points[2] = sc3;
 
                 sf.calculate_tri_aabb();
                 render_shadow_map_triangle(light, sf);
