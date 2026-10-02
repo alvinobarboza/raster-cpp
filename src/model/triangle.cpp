@@ -131,7 +131,7 @@ Vec3 FullTriangle::frag_normal(
 
     const auto normal_map = material->map_normal->texel_normal(uv);
     const auto nt = _normal * tangent;
-    const auto t = (tangent - (_normal * nt)).normalized();
+    const auto t = tangent - _normal * nt;
     const auto b = t.cross(_normal);
 
     return (t * normal_map.x) + (b * normal_map.y) + (_normal * normal_map.z);
