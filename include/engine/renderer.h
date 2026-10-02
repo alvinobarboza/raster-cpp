@@ -25,6 +25,13 @@ enum class RenderStage {
     CAMERA,
 };
 
+enum class ShadingMode {
+    DEPTH,
+    ALBEDO,
+    NORMAL,
+    LIT
+};
+
 class RendererRaster {
     bool render_light {};
     bool render_depth {};
@@ -34,6 +41,7 @@ class RendererRaster {
     bool render_active_tiles {};
     RenderMode render_mode { RenderMode::DEFERRED_TILED_M };
     RenderStage render_stage { RenderStage::CAMERA };
+    ShadingMode shading_mode { ShadingMode::ALBEDO };
     int shadow_index {0};
 
     SceneRaster* scene {nullptr};
@@ -68,7 +76,9 @@ class RendererRaster {
     void draw_wireframe_from_tri_buffer() noexcept;
     void draw_triangle_aabb() noexcept;
 
+    template<ShadingMode mode>
     void render_tile_deferred(const Tile& tile, std::span<G_buffer> g_buffer) noexcept;
+
     void render_tile_forward(const Tile& tile) noexcept;
 
     void draw_active_tiles() noexcept;

@@ -360,6 +360,7 @@ void RendererRaster::woke_threads() noexcept
     }
 }
 
+template<ShadingMode mode>
 void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> g_buffer) noexcept
 {
     const int max_offset_y = std::min(tile.offset_y+Viewport::TILE_SIZE, viewport.height);
@@ -499,7 +500,7 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> 
 
             if (px >= viewport.width || py >= viewport.height) continue;
 
-            //viewport.depth_pass(px, py, gb.depth);
+            if (render_wireframe) viewport.depth_pass(px, py, gb.depth); // this is for wireframe occlusion
             const auto& t {t_camera_buffer[gb.triangle_id]};
 
             // Reconstruct frag_coord
@@ -518,7 +519,7 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> 
             const auto normal { t.frag_normal(gb.normal.normalized(), gb.uv) };
             const auto roughness { t.frag_roughness(gb.uv) };
 
-            if (render_normal)
+            if constexpr (mode == ShadingMode::NORMAL)
             {
                 const Vec4 final_color{
                     normal.x * .5f + .5f,
@@ -528,9 +529,8 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> 
                 };
 
                 viewport.put_pixel(px, py, final_color);
-                continue;
             }
-            if (render_depth)
+            else if constexpr (mode == ShadingMode::DEPTH)
             {
                 const Vec4 final_color{
                     1-gb.depth,
@@ -539,9 +539,8 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> 
                     1.0f
                 };
                 viewport.put_pixel(px, py, final_color);
-                continue;
             }
-            if (!render_light)
+            else if constexpr (mode == ShadingMode::ALBEDO)
             {
                 const Vec4 final_color{
                     std::sqrt(albedo.x),
@@ -551,12 +550,15 @@ void RendererRaster::render_tile_deferred(const Tile& tile, std::span<G_buffer> 
                 viewport.put_pixel(px, py, final_color);
                 continue;
             }
+            else if constexpr (mode == ShadingMode::LIT)
+            {
+                const auto final_color = shader::calculate_light(
+                    scene->lights, roughness, frag_coord, albedo,
+                    normal, view_normal.normalized(), scene->skybox.ambient_intensity);
 
-            const auto final_color = shader::calculate_light(
-                scene->lights, roughness, frag_coord, albedo,
-                normal, view_normal.normalized(), scene->skybox.ambient_intensity);
+                viewport.put_pixel(px, py, final_color);
+            }
 
-            viewport.put_pixel(px, py, final_color);
         }
     }
 }
@@ -960,7 +962,13 @@ void RendererRaster::render_multithread() noexcept
                     if (render_mode == RenderMode::DEFERRED_TILED_M)
                     {
                         g_buffer.fill({});
-                        render_tile_deferred(tile, g_buffer);
+                        switch (shading_mode)
+                        {
+                            case ShadingMode::ALBEDO:   render_tile_deferred<ShadingMode::ALBEDO>(tile, g_buffer); break;
+                            case ShadingMode::NORMAL:   render_tile_deferred<ShadingMode::NORMAL>(tile, g_buffer); break;
+                            case ShadingMode::DEPTH:    render_tile_deferred<ShadingMode::DEPTH>(tile, g_buffer); break;
+                            case ShadingMode::LIT:      render_tile_deferred<ShadingMode::LIT>(tile, g_buffer); break;
+                        }
                     };
                     if (render_mode == RenderMode::FORWARD_TILED_M) render_tile_forward(tile);
                 }
@@ -1103,7 +1111,9 @@ std::string RendererRaster::renderer_mode() const noexcept
 
 void RendererRaster::toggle_render_depth()
 {
+    shading_mode = ShadingMode::DEPTH;
     render_depth = !render_depth;
+    if (!render_depth) shading_mode = ShadingMode::ALBEDO;
 }
 
 void RendererRaster::toggle_wireframe()
@@ -1113,12 +1123,16 @@ void RendererRaster::toggle_wireframe()
 
 void RendererRaster::toggle_render_normal()
 {
+    shading_mode = ShadingMode::NORMAL;
     render_normal = !render_normal;
+    if (!render_normal) shading_mode = ShadingMode::ALBEDO;
 }
 
 void RendererRaster::toggle_render_light()
 {
+    shading_mode = ShadingMode::LIT;
     render_light = !render_light;
+    if (!render_light) shading_mode = ShadingMode::ALBEDO;
 }
 
 void RendererRaster::toggle_render_triangle_aabb()
