@@ -6,6 +6,7 @@
 class Timer {
     std::string t_name;
     std::chrono::time_point<std::chrono::steady_clock> start {};
+    bool stopped {false};
 public:
     explicit Timer(std::string name): t_name(std::move(name))
     {
@@ -14,6 +15,13 @@ public:
 
     ~Timer()
     {
+        if (!stopped) stop();
+    }
+
+    void stop()
+    {
+        if (stopped) return;
+        stopped = true;
         const auto end = std::chrono::steady_clock::now();
         const auto diff = end - start;
         const auto duration_milli = std::chrono::duration_cast<std::chrono::milliseconds>(diff);
